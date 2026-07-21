@@ -1,10 +1,9 @@
-import { neon } from "@neondatabase/serverless";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import AddToCart from "@/components/store/AddToCart";
-import CartButton from "@/components/store/CartButton";
+import StoreHeader from "@/components/store/StoreHeader";
+import { getStoreProductBySlug } from "@/lib/store-catalog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,144 +12,158 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function formatPrice(value: string) {
-  return `TZS ${Number(value).toLocaleString("en-US")}`;
+function formatPrice(value: string | number) {
+  return `TZS ${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
 }
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
+  const result = await getStoreProductBySlug(slug);
 
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL missing");
-  }
+  if (!result) notFound();
 
-  const sql = neon(process.env.DATABASE_URL);
-
-  const rows = await sql`
-    SELECT
-      p.id,
-      p.name,
-      p.slug,
-      p.short_description AS "shortDescription",
-      p.description,
-      p.price::text AS price,
-      p.brand,
-      c.name AS "categoryName"
-    FROM products p
-    LEFT JOIN categories c ON c.id = p.category_id
-    WHERE LOWER(TRIM(p.slug)) = ${slug}
-      AND p.status::text = 'active'
-    LIMIT 1
-  `;
-
-  const product = rows[0] as
-    | {
-        id: string;
-        name: string;
-        slug: string;
-        shortDescription: string | null;
-        description: string | null;
-        price: string;
-        brand: string | null;
-        categoryName: string | null;
-      }
-    | undefined;
-
-  if (!product) {
-    notFound();
-  }
-
-  const variants = (await sql`
-    SELECT
-      id,
-      name,
-      price::text AS price,
-      stock_quantity AS "stockQuantity"
-    FROM product_variants
-    WHERE product_id = ${product.id}
-      AND is_active = true
-    ORDER BY name
-  `) as Array<{
-    id: string;
-    name: string;
-    price: string;
-    stockQuantity: number;
-  }>;
+  const { product, images, variants } = result;
+  const mainImage = images[0]?.source ? String(images[0].source) : null;
+  const compareAt = Number(product.compareAtPrice || 0);
+  const current = Number(product.price || 0);
+  const discount =
+    compareAt > current && compareAt > 0
+      ? Math.round(((compareAt - current) / compareAt) * 100)
+      : 0;
 
   return (
-    <main className="min-h-screen bg-[#eaeded] text-[#0f1111]">
-      <header className="bg-[#101820] text-white shadow-md">
-        <div className="mx-auto flex h-16 max-w-[1500px] items-center gap-4 px-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-12 w-[72px]">
-              <Image
-                src="/brand/logo-mark.png"
-                alt=""
-                fill
-                priority
-                sizes="72px"
-                className="object-contain"
-              />
+    <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
+      <StoreHeader />
+
+      <div className="mx-auto max-w-[1520px] px-4 py-6 sm:px-6 lg:py-10">
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#81796e]">
+          <Link href="/" className="hover:text-[#9b762c]">Home</Link>
+          <span>/</span>
+          <Link href="/products" className="hover:text-[#9b762c]">Collection</Link>
+          <span>/</span>
+          <span>{String(product.categoryName || "General")}</span>
+        </div>
+
+        <section className="grid border border-[#d8cfbf] bg-[#fffdf8] lg:grid-cols-[minmax(380px,1.05fr)_minmax(360px,.95fr)_340px]">
+          <div className="border-b border-[#d8cfbf] p-5 lg:border-b-0 lg:border-r lg:p-8">
+            <div className="flex aspect-square items-center justify-center overflow-hidden bg-[#f1ece3]">
+              {mainImage ? (
+                <img
+                  src={mainImage}
+                  alt={String(product.name)}
+                  className="h-full w-full object-contain p-8"
+                />
+              ) : (
+                <div className="font-serif text-5xl text-[#9f9586]">WAI</div>
+              )}
             </div>
-            <div className="hidden sm:block">
-              <div className="font-black tracking-[0.12em]">WHOKEAS</div>
-              <div className="text-[10px] font-black tracking-[0.3em] text-[#f3b61f]">
-                ALL IN
+
+            {images.length > 1 && (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {images.slice(0, 4).map((image, index) => (
+                  <div
+                    key={`${String(image.source).slice(0, 40)}-${index}`}
+                    className="aspect-square overflow-hidden border border-[#d8cfbf] bg-[#f1ece3]"
+                  >
+                    <img src={String(image.source)} alt="" className="h-full w-full object-contain p-2" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-b border-[#d8cfbf] p-6 sm:p-9 lg:border-b-0 lg:border-r lg:p-10">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">
+                {String(product.categoryName || "General")}
+              </span>
+              {product.supplierPlatform === "cj" && (
+                <span className="border-l border-[#d8cfbf] pl-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">
+                  Supplier verified
+                </span>
+              )}
+            </div>
+
+            <h1 className="mt-5 text-4xl font-normal leading-tight sm:text-5xl">
+              {String(product.name)}
+            </h1>
+            <p className="mt-5 text-sm leading-7 text-[#6f675c]">
+              {String(product.shortDescription || "")}
+            </p>
+
+            <div className="mt-7 border-y border-[#ddd4c6] py-6">
+              <div className="flex flex-wrap items-end gap-3">
+                <p className="text-3xl font-bold text-[#171512]">
+                  {formatPrice(String(product.price))}
+                </p>
+                {compareAt > current && (
+                  <>
+                    <p className="pb-1 text-sm text-[#9d958a] line-through">{formatPrice(compareAt)}</p>
+                    <span className="mb-1 bg-[#171512] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                      Save {discount}%
+                    </span>
+                  </>
+                )}
+              </div>
+              <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#81796e]">
+                Price displayed in Tanzanian shillings
+              </p>
+            </div>
+
+            <div className="mt-7 grid border-l border-t border-[#ddd4c6] sm:grid-cols-2">
+              <div className="border-b border-r border-[#ddd4c6] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Delivery</p>
+                <p className="mt-2 text-sm font-semibold">
+                  {product.deliveryDays ? `Estimated ${product.deliveryDays} days` : "Confirmed before fulfilment"}
+                </p>
+              </div>
+              <div className="border-b border-r border-[#ddd4c6] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Order support</p>
+                <p className="mt-2 text-sm font-semibold">Managed locally by WHOKEAS</p>
               </div>
             </div>
-          </Link>
 
-          <div className="flex-1" />
-          <CartButton />
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-[1500px] px-4 py-6">
-        <section className="grid gap-8 bg-white p-6 shadow-sm lg:grid-cols-[1fr_1fr_330px]">
-          <div className="relative flex aspect-square items-center justify-center rounded-lg bg-gradient-to-br from-slate-50 to-amber-100">
-            <div className="relative h-44 w-72">
-              <Image
-                src="/brand/logo-mark.png"
-                alt=""
-                fill
-                sizes="288px"
-                className="object-contain opacity-80"
-              />
-            </div>
+            {product.description && (
+              <div className="mt-8">
+                <h2 className="text-2xl font-normal">Product details</h2>
+                <div className="classic-rule mt-4" />
+                <p className="mt-5 whitespace-pre-line text-sm leading-8 text-[#6f675c]">
+                  {String(product.description)}
+                </p>
+              </div>
+            )}
           </div>
 
-          <div>
-            <p className="text-sm text-[#007185]">
-              {product.brand ?? "WHOKEAS ALL IN"}
-            </p>
-            <h1 className="mt-2 text-3xl font-medium">{product.name}</h1>
-            <p className="mt-4 border-y border-slate-200 py-4 text-3xl text-[#b12704]">
-              {formatPrice(product.price)}
+          <aside className="h-fit bg-[#f7f2e9] p-6 lg:sticky lg:top-36 lg:p-7">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">Your selection</p>
+            <p className="mt-3 text-2xl font-bold">{formatPrice(String(product.price))}</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-[#5b745f]">Available to order</p>
+            <p className="mt-4 text-xs leading-6 text-[#746d62]">
+              Payment and delivery details are verified before supplier fulfilment.
             </p>
 
-            <h2 className="mt-6 font-black">About this item</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6">
-              <li>{product.shortDescription}</li>
-              <li>Category: {product.categoryName ?? "General"}</li>
-              <li>Pricing displayed in Tanzanian shillings.</li>
-              <li>Sold through WHOKEAS ALL IN.</li>
-            </ul>
-          </div>
-
-          <aside className="h-fit rounded-xl border border-slate-300 p-5">
-            <p className="text-2xl">{formatPrice(product.price)}</p>
-            <p className="mt-4 text-emerald-700">Available to order</p>
-            <div className="mt-5">
+            <div className="mt-6">
               <AddToCart
                 product={{
-                  id: product.id,
-                  slug: product.slug,
-                  name: product.name,
-                  price: product.price,
+                  id: String(product.id),
+                  slug: String(product.slug),
+                  name: String(product.name),
+                  price: String(product.price),
                 }}
-                variants={variants}
+                variants={variants.map((variant) => ({
+                  id: String(variant.id),
+                  name: String(variant.name),
+                  price: String(variant.price),
+                  stockQuantity: Number(variant.stockQuantity),
+                }))}
               />
+            </div>
+
+            <div className="mt-6 space-y-3 border-t border-[#d8cfbf] pt-6 text-[10px] font-bold uppercase tracking-[0.1em] text-[#6e665b]">
+              <p>✓ Secure order recording</p>
+              <p>✓ Manual payment verification</p>
+              <p>✓ Controlled supplier fulfilment</p>
             </div>
           </aside>
         </section>

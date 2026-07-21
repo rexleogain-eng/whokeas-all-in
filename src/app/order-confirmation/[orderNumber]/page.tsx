@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
-import Image from "next/image";
 import Link from "next/link";
+
+import StoreHeader from "@/components/store/StoreHeader";
 import { notFound } from "next/navigation";
 
 import PaymentReferenceForm from "@/components/payments/PaymentReferenceForm";
@@ -121,32 +122,11 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
     order.paymentProvider === "manual_bank_transfer";
 
   return (
-    <main className="min-h-screen bg-[#eaeded] text-[#0f1111]">
-      <header className="bg-[#101820] text-white shadow-md">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center px-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-12 w-[72px]">
-              <Image
-                src="/brand/logo-mark.png"
-                alt=""
-                fill
-                priority
-                sizes="72px"
-                className="object-contain"
-              />
-            </div>
-            <div>
-              <div className="font-black tracking-[0.12em]">WHOKEAS</div>
-              <div className="text-[10px] font-black tracking-[0.3em] text-[#f3b61f]">
-                ALL IN
-              </div>
-            </div>
-          </Link>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#f4efe6] text-slate-900">
+      <StoreHeader />
 
       <div className="mx-auto max-w-[1050px] px-4 py-8">
-        <section className="bg-white p-7 shadow-sm sm:p-10">
+        <section className="rounded-3xl border border-[#d8cfbf] bg-white p-7 shadow-sm sm:p-10">
           <SuccessIcon />
 
           <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-emerald-700">
@@ -157,24 +137,24 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
             Thank you, {order.customerName}.
           </h1>
 
-          <p className="mt-4 max-w-2xl leading-7 text-slate-600">
+          <p className="mt-4 max-w-2xl leading-7 text-[#6f675c]">
             Follow the payment instructions below. Supplier fulfilment starts
             only after payment verification or cash-on-delivery approval.
           </p>
 
-          <div className="mt-7 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-5 sm:grid-cols-3">
+          <div className="mt-7 grid gap-4 rounded-lg border border-[#d8cfbf] bg-slate-50 p-5 sm:grid-cols-3">
             <div>
-              <p className="text-xs font-bold text-slate-500">ORDER NUMBER</p>
+              <p className="text-xs font-bold text-[#81796e]">ORDER NUMBER</p>
               <p className="mt-1 font-black">{order.orderNumber}</p>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500">STATUS</p>
-              <p className="mt-1 font-black text-[#b12704]">
+              <p className="text-xs font-bold text-[#81796e]">STATUS</p>
+              <p className="mt-1 font-black text-[#9b762c]">
                 {order.status.replaceAll("_", " ")}
               </p>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500">TOTAL</p>
+              <p className="text-xs font-bold text-[#81796e]">TOTAL</p>
               <p className="mt-1 font-black">{formatPrice(order.total)}</p>
             </div>
           </div>
@@ -183,7 +163,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
             <div>
               <h2 className="text-2xl font-black">Items ordered</h2>
 
-              <div className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+              <div className="mt-4 divide-y divide-slate-200 border-y border-[#d8cfbf]">
                 {items.map((item) => (
                   <div
                     key={`${item.productName}-${item.variantName ?? ""}`}
@@ -191,7 +171,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                   >
                     <div>
                       <p className="font-bold">{String(item.productName)}</p>
-                      <p className="mt-1 text-sm text-slate-500">
+                      <p className="mt-1 text-sm text-[#81796e]">
                         {item.variantName ? (
                           <>
                             <span>{String(item.variantName)}</span>
@@ -208,9 +188,9 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 ))}
               </div>
 
-              <div className="mt-7 rounded-lg border border-slate-200 p-5">
+              <div className="mt-7 rounded-lg border border-[#d8cfbf] p-5">
                 <h2 className="font-black">Delivery details</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-3 text-sm leading-6 text-[#6f675c]">
                   {order.shippingAddress?.addressLine}
                   <br />
                   {order.shippingAddress?.district}
@@ -227,15 +207,15 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               </div>
             </div>
 
-            <aside className="h-fit rounded-xl border border-slate-300 p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            <aside className="h-fit rounded-xl border border-[#cfc4b1] p-5 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#81796e]">
                 Payment instructions
               </p>
 
               {order.paymentProvider === "cash_on_delivery" && (
                 <div className="mt-4">
                   <h2 className="text-xl font-black">Cash on Delivery</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                  <p className="mt-3 text-sm leading-6 text-[#6f675c]">
                     We will contact you to confirm delivery availability and the
                     final delivery charge. Pay when the product is delivered.
                   </p>
@@ -245,18 +225,18 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               {order.paymentProvider === "manual_mobile_money" && (
                 <div className="mt-4">
                   <h2 className="text-xl font-black">Mobile Money</h2>
-                  <div className="mt-4 rounded-lg bg-[#fff8df] p-4">
-                    <p className="text-xs font-bold text-slate-500">
+                  <div className="mt-4 rounded-lg bg-[#f3ead9] p-4">
+                    <p className="text-xs font-bold text-[#81796e]">
                       SEND EXACTLY
                     </p>
                     <p className="mt-1 text-2xl font-black">
                       {formatPrice(order.total)}
                     </p>
-                    <p className="mt-4 text-xs font-bold text-slate-500">
+                    <p className="mt-4 text-xs font-bold text-[#81796e]">
                       NUMBER
                     </p>
                     <p className="mt-1 text-lg font-black">{mobileNumber}</p>
-                    <p className="mt-1 text-sm text-slate-600">{mobileName}</p>
+                    <p className="mt-1 text-sm text-[#6f675c]">{mobileName}</p>
                   </div>
                 </div>
               )}
@@ -292,7 +272,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 />
               )}
 
-              <div className="mt-5 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+              <div className="mt-5 border-t border-[#d8cfbf] pt-4 text-xs leading-5 text-[#81796e]">
                 Payment status: {order.paymentStatus ?? "pending"}
                 {supportPhone ? (
                   <>
@@ -307,7 +287,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
           <div className="mt-8">
             <Link
               href="/"
-              className="inline-block rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold hover:bg-[#f7ca00]"
+              className="inline-block rounded-full bg-[#171512] text-white px-6 py-3 text-sm font-bold hover:bg-[#9b762c]"
             >
               Continue shopping
             </Link>

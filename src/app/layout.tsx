@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-body",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -18,19 +8,13 @@ export const metadata: Metadata = {
     template: "%s | WHOKEAS ALL IN",
   },
   description:
-    "A modern Tanzanian marketplace for technology, lifestyle, study and original products.",
+    "A refined Tanzania-first marketplace for technology, home, fashion, study and lifestyle essentials.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${spaceGrotesk.variable}`}>
-        {children}
-      </body>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,0 +1,37 @@
+WHOKEAS ALL IN — FINAL CATALOGUE + CJ FIX
+
+What was actually wrong
+-----------------------
+1. The original Drizzle database uses product_images.
+2. Later patches switched parts of the app to product_media.
+3. Product Control also required a suppliers table and columns that were not
+   guaranteed to exist.
+4. CJ descriptions and variant names/SKUs could exceed the original database
+   varchar limits.
+5. This caused GET /api/admin/products and POST /api/admin/cj/import to return 500.
+
+What this package changes
+-------------------------
+- Uses product_images as the single canonical image table.
+- Repairs missing catalogue columns automatically and idempotently.
+- Migrates compatible product_media records into product_images.
+- Stores supplier information safely in products.supplier_raw_data JSONB.
+- Makes CJ import errors show the exact failed stage.
+- Imports CJ products as Draft and verifies the Neon row after saving.
+- Adds fallback CJ variant loading and non-fatal Tanzania freight checks.
+- Adds catalogue health API: /api/admin/catalog-health
+- Adds Product Control refresh, empty-state and visible API errors.
+- Redesigns customer pages with a clean CJ-inspired orange/white marketplace UI.
+
+After extracting this package over the existing project
+--------------------------------------------------------
+Run in PowerShell:
+
+cd "$HOME\Desktop\whokeas-all-in"
+powershell -ExecutionPolicy Bypass -File .\APPLY-WHOKEAS-FINAL-FIX.ps1
+npm run dev
+
+Important
+---------
+Keep the existing .env.local file. This package does not include or overwrite it.
+Do not run the older repair scripts again.

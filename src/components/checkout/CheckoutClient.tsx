@@ -88,14 +88,18 @@ export default function CheckoutClient() {
   });
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("whokeas-cart");
-      setItems(raw ? JSON.parse(raw) : []);
-    } catch {
-      setItems([]);
-    } finally {
-      setReady(true);
-    }
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const raw = localStorage.getItem("whokeas-cart");
+        setItems(raw ? JSON.parse(raw) : []);
+      } catch {
+        setItems([]);
+      } finally {
+        setReady(true);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const displayedSubtotal = useMemo(
@@ -163,7 +167,7 @@ export default function CheckoutClient() {
         <h1 className="text-3xl font-black">Your cart is empty</h1>
         <Link
           href="/#products"
-          className="mt-6 inline-block rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold"
+          className="mt-6 inline-block rounded-full bg-[#171512] text-white px-6 py-3 text-sm font-bold"
         >
           Return to products
         </Link>
@@ -178,7 +182,7 @@ export default function CheckoutClient() {
     >
       <div className="space-y-5">
         <section className="bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#c45500]">Step 1 of 2</p>
+          <p className="text-sm font-bold text-[#171512]">Step 1 of 2</p>
           <h1 className="mt-2 text-3xl font-black">Delivery details</h1>
 
           <div className="mt-7 grid gap-5 sm:grid-cols-2">
@@ -190,7 +194,7 @@ export default function CheckoutClient() {
                 onChange={(event) =>
                   updateField("fullName", event.target.value)
                 }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -204,7 +208,7 @@ export default function CheckoutClient() {
                 placeholder="07XXXXXXXX or +255..."
                 value={form.phone}
                 onChange={(event) => updateField("phone", event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -214,7 +218,7 @@ export default function CheckoutClient() {
                 type="email"
                 value={form.email}
                 onChange={(event) => updateField("email", event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -224,7 +228,7 @@ export default function CheckoutClient() {
                 required
                 value={form.region}
                 onChange={(event) => updateField("region", event.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] bg-white px-4 py-3 outline-none focus:border-[#171512]"
               >
                 {regions.map((region) => (
                   <option key={region}>{region}</option>
@@ -240,7 +244,7 @@ export default function CheckoutClient() {
                 onChange={(event) =>
                   updateField("district", event.target.value)
                 }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -249,7 +253,7 @@ export default function CheckoutClient() {
               <input
                 value={form.ward}
                 onChange={(event) => updateField("ward", event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -264,7 +268,7 @@ export default function CheckoutClient() {
                 onChange={(event) =>
                   updateField("addressLine", event.target.value)
                 }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
 
@@ -276,16 +280,16 @@ export default function CheckoutClient() {
                 rows={2}
                 value={form.notes}
                 onChange={(event) => updateField("notes", event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+                className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
               />
             </label>
           </div>
         </section>
 
         <section className="bg-white p-6 shadow-sm">
-          <p className="text-sm font-bold text-[#c45500]">Step 2 of 2</p>
+          <p className="text-sm font-bold text-[#171512]">Step 2 of 2</p>
           <h2 className="mt-2 text-3xl font-black">Payment method</h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[#6f675c]">
             Payment is verified manually before supplier fulfilment.
           </p>
 
@@ -298,8 +302,8 @@ export default function CheckoutClient() {
                   key={method.value}
                   className={`cursor-pointer rounded-xl border p-4 transition ${
                     selected
-                      ? "border-[#e49b00] bg-[#fff8df] ring-1 ring-[#e49b00]"
-                      : "border-slate-300 hover:border-slate-500"
+                      ? "border-[#171512] bg-[#f3ead9] ring-1 ring-[#171512]"
+                      : "border-[#cfc4b1] hover:border-slate-500"
                   }`}
                 >
                   <div className="flex gap-3">
@@ -315,7 +319,7 @@ export default function CheckoutClient() {
                     />
                     <div>
                       <p className="font-black">{method.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                      <p className="mt-1 text-sm leading-6 text-[#6f675c]">
                         {method.description}
                       </p>
                     </div>
@@ -330,12 +334,12 @@ export default function CheckoutClient() {
       <aside className="h-fit bg-white p-6 shadow-sm lg:sticky lg:top-24">
         <h2 className="text-2xl font-black">Order summary</h2>
 
-        <div className="mt-5 max-h-72 space-y-4 overflow-y-auto border-y border-slate-200 py-4">
+        <div className="mt-5 max-h-72 space-y-4 overflow-y-auto border-y border-[#d8cfbf] py-4">
           {items.map((item) => (
             <div key={item.key} className="flex justify-between gap-4 text-sm">
               <div>
                 <p className="font-bold">{item.name}</p>
-                <p className="mt-1 text-slate-500">
+                <p className="mt-1 text-[#81796e]">
                   {item.variantName ? `${item.variantName} - ` : ""}
                   Qty {item.quantity}
                 </p>
@@ -356,7 +360,7 @@ export default function CheckoutClient() {
             <span>Delivery</span>
             <span>Confirmed separately</span>
           </div>
-          <div className="flex justify-between border-t border-slate-200 pt-4 text-xl font-black text-[#b12704]">
+          <div className="flex justify-between border-t border-[#d8cfbf] pt-4 text-xl font-black text-[#9b762c]">
             <span>Current total</span>
             <span>{formatPrice(displayedSubtotal)}</span>
           </div>
@@ -371,12 +375,12 @@ export default function CheckoutClient() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-6 w-full rounded-full bg-[#ffd814] px-5 py-3 text-sm font-bold shadow-sm hover:bg-[#f7ca00] disabled:opacity-60"
+          className="mt-6 w-full rounded-full bg-[#171512] text-white px-5 py-3 text-sm font-bold shadow-sm hover:bg-[#9b762c] disabled:opacity-60"
         >
           {submitting ? "Creating order..." : "Place Order"}
         </button>
 
-        <p className="mt-3 text-center text-xs leading-5 text-slate-500">
+        <p className="mt-3 text-center text-xs leading-5 text-[#81796e]">
           Orders remain pending until payment or cash-on-delivery approval.
         </p>
       </aside>

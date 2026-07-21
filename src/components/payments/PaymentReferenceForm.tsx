@@ -64,14 +64,14 @@ export default function PaymentReferenceForm({
           value={reference}
           onChange={(event) => setReference(event.target.value)}
           placeholder="Example: ABC123XYZ"
-          className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+          className="w-full rounded-lg border border-[#cfc4b1] px-4 py-3 outline-none focus:border-[#171512]"
         />
       </label>
 
       <button
         type="submit"
         disabled={submitting}
-        className="mt-3 w-full rounded-full bg-[#ffd814] px-5 py-3 text-sm font-bold hover:bg-[#f7ca00] disabled:opacity-60"
+        className="mt-3 w-full rounded-full bg-[#171512] text-white px-5 py-3 text-sm font-bold hover:bg-[#9b762c] disabled:opacity-60"
       >
         {submitting ? "Submitting..." : "Submit Reference"}
       </button>

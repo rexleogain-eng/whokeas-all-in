@@ -23,14 +23,17 @@ export default function CartClient() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("whokeas-cart");
-      setItems(raw ? JSON.parse(raw) : []);
-    } catch {
-      setItems([]);
-    } finally {
-      setReady(true);
-    }
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const raw = localStorage.getItem("whokeas-cart");
+        setItems(raw ? JSON.parse(raw) : []);
+      } catch {
+        setItems([]);
+      } finally {
+        setReady(true);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   function save(nextItems: CartItem[]) {
@@ -40,11 +43,7 @@ export default function CartClient() {
   }
 
   function changeQuantity(key: string, quantity: number) {
-    save(
-      items.map((item) =>
-        item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item,
-      ),
-    );
+    save(items.map((item) => item.key === key ? { ...item, quantity: Math.max(1, quantity) } : item));
   }
 
   function removeItem(key: string) {
@@ -57,114 +56,63 @@ export default function CartClient() {
   );
 
   if (!ready) {
-    return <div className="p-8 text-sm text-slate-500">Loading cart...</div>;
+    return <div className="border border-[#d8cfbf] bg-[#fffdf8] p-8 text-sm text-[#746d62]">Loading cart...</div>;
   }
 
   if (items.length === 0) {
     return (
-      <section className="bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-black">Your cart is empty</h1>
-        <p className="mt-3 text-slate-600">
-          Explore the store and add products you want to order.
-        </p>
-        <Link
-          href="/#products"
-          className="mt-6 inline-block rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold hover:bg-[#f7ca00]"
-        >
-          Continue shopping
-        </Link>
+      <section className="border border-[#d8cfbf] bg-[#fffdf8] p-10 shadow-[0_18px_55px_rgba(39,31,21,.06)]">
+        <p className="classic-kicker">Your selection</p>
+        <h1 className="mt-3 text-4xl font-normal">Your cart is empty.</h1>
+        <p className="mt-4 text-sm text-[#746d62]">Explore the collection and select the products you would like to order.</p>
+        <Link href="/#products" className="classic-button-dark mt-7">Continue shopping</Link>
       </section>
     );
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_330px]">
-      <section className="bg-white p-5 shadow-sm">
-        <div className="border-b border-slate-200 pb-4">
-          <h1 className="text-3xl font-black">Shopping Cart</h1>
+    <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+      <section className="border border-[#d8cfbf] bg-[#fffdf8] p-5 sm:p-7">
+        <div className="border-b border-[#d8cfbf] pb-5">
+          <p className="classic-kicker">Your selection</p>
+          <h1 className="mt-2 text-4xl font-normal">Shopping cart</h1>
         </div>
 
-        <div className="divide-y divide-slate-200">
+        <div className="divide-y divide-[#ded5c7]">
           {items.map((item) => (
-            <article
-              key={item.key}
-              className="grid gap-4 py-6 sm:grid-cols-[140px_1fr_auto]"
-            >
-              <div className="flex aspect-square items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-amber-100">
-                <span className="text-2xl font-black text-slate-500">WAI</span>
-              </div>
-
+            <article key={item.key} className="grid gap-5 py-7 sm:grid-cols-[120px_1fr_auto]">
+              <div className="flex aspect-square items-center justify-center bg-[#f1ece3] font-serif text-2xl text-[#9f9586]">WAI</div>
               <div>
-                <Link
-                  href={`/products/${item.slug}`}
-                  className="text-lg font-bold hover:text-[#c7511f]"
-                >
-                  {item.name}
-                </Link>
-
-                {item.variantName && (
-                  <p className="mt-2 text-sm text-slate-500">
-                    Option: {item.variantName}
-                  </p>
-                )}
-
-                <p className="mt-2 text-sm font-semibold text-emerald-700">
-                  Available to order
-                </p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Link href={`/products/${item.slug}`} className="text-xl font-normal hover:text-[#9b762c]">{item.name}</Link>
+                {item.variantName && <p className="mt-2 text-xs text-[#746d62]">Option: {item.variantName}</p>}
+                <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">Available to order</p>
+                <div className="mt-5 flex flex-wrap items-center gap-4">
                   <select
                     aria-label={`Quantity for ${item.name}`}
                     value={item.quantity}
-                    onChange={(event) =>
-                      changeQuantity(item.key, Number(event.target.value))
-                    }
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    onChange={(event) => changeQuantity(item.key, Number(event.target.value))}
+                    className="border border-[#cfc4b1] bg-[#fffdf8] px-3 py-2 text-xs outline-none focus:border-[#9b762c]"
                   >
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <option key={value} value={value}>
-                        Qty: {value}
-                      </option>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>Qty: {value}</option>)}
                   </select>
-
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.key)}
-                    className="text-sm font-semibold text-[#007185] hover:text-[#c7511f] hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <button type="button" onClick={() => removeItem(item.key)} className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9b762c] hover:text-[#171512]">Remove</button>
                 </div>
               </div>
-
-              <p className="font-black">{formatPrice(item.price)}</p>
+              <p className="text-sm font-bold">{formatPrice(item.price)}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <aside className="h-fit bg-white p-5 shadow-sm lg:sticky lg:top-32">
-        <p className="text-lg">
-          Subtotal ({items.reduce((total, item) => total + item.quantity, 0)}{" "}
-          items):
-          <span className="ml-2 font-black">{formatPrice(subtotal)}</span>
-        </p>
-
-        <div className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
-          Delivery fee will be confirmed before payment.
+      <aside className="h-fit border border-[#d8cfbf] bg-[#f7f2e9] p-6 lg:sticky lg:top-40">
+        <p className="classic-kicker">Order summary</p>
+        <div className="mt-5 flex items-end justify-between border-b border-[#d8cfbf] pb-5">
+          <span className="text-sm">Subtotal ({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
+          <span className="text-xl font-bold">{formatPrice(subtotal)}</span>
         </div>
-
-        <Link
-          href="/checkout"
-          className="mt-5 block w-full rounded-full bg-[#ffd814] px-5 py-3 text-center text-sm font-bold shadow-sm hover:bg-[#f7ca00]"
-        >
-          Proceed to Checkout
-        </Link>
-
-        <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-          No payment is taken during this test checkout.
-        </p>
+        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Delivery fee is confirmed before payment and supplier fulfilment.</div>
+        <Link href="/checkout" className="classic-button-dark mt-5 w-full">Proceed to checkout</Link>
+        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Secure order recording · Local verification</p>
       </aside>
     </div>
   );
