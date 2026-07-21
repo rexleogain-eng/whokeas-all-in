@@ -14,6 +14,11 @@ type CartItem = {
   quantity: number;
 };
 
+type PaymentMethod =
+  | "cash_on_delivery"
+  | "manual_mobile_money"
+  | "manual_bank_transfer";
+
 type FormState = {
   fullName: string;
   phone: string;
@@ -23,40 +28,41 @@ type FormState = {
   ward: string;
   addressLine: string;
   notes: string;
+  paymentMethod: PaymentMethod;
 };
 
 const regions = [
-  "Arusha",
-  "Dar es Salaam",
-  "Dodoma",
-  "Geita",
-  "Iringa",
-  "Kagera",
-  "Katavi",
-  "Kigoma",
-  "Kilimanjaro",
-  "Lindi",
-  "Manyara",
-  "Mara",
-  "Mbeya",
-  "Morogoro",
-  "Mtwara",
-  "Mwanza",
-  "Njombe",
-  "Pemba North",
-  "Pemba South",
-  "Pwani",
-  "Rukwa",
-  "Ruvuma",
-  "Shinyanga",
-  "Simiyu",
-  "Singida",
-  "Songwe",
-  "Tabora",
-  "Tanga",
-  "Unguja North",
-  "Unguja South",
-  "Unguja Urban West",
+  "Arusha", "Dar es Salaam", "Dodoma", "Geita", "Iringa", "Kagera",
+  "Katavi", "Kigoma", "Kilimanjaro", "Lindi", "Manyara", "Mara",
+  "Mbeya", "Morogoro", "Mtwara", "Mwanza", "Njombe", "Pemba North",
+  "Pemba South", "Pwani", "Rukwa", "Ruvuma", "Shinyanga", "Simiyu",
+  "Singida", "Songwe", "Tabora", "Tanga", "Unguja North",
+  "Unguja South", "Unguja Urban West"
+];
+
+const methods: Array<{
+  value: PaymentMethod;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "cash_on_delivery",
+    title: "Cash on Delivery",
+    description:
+      "Available only where delivery and collection can be confirmed.",
+  },
+  {
+    value: "manual_mobile_money",
+    title: "Mobile Money Transfer",
+    description:
+      "Pay using the number shown after ordering, then submit the reference.",
+  },
+  {
+    value: "manual_bank_transfer",
+    title: "NMB Bank Transfer",
+    description:
+      "Transfer to the displayed NMB account, then submit the reference.",
+  },
 ];
 
 function formatPrice(value: number) {
@@ -78,6 +84,7 @@ export default function CheckoutClient() {
     ward: "",
     addressLine: "",
     notes: "",
+    paymentMethod: "manual_mobile_money",
   });
 
   useEffect(() => {
@@ -96,7 +103,10 @@ export default function CheckoutClient() {
     [items],
   );
 
-  function updateField(field: keyof FormState, value: string) {
+  function updateField<K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -117,6 +127,7 @@ export default function CheckoutClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customer: form,
+          paymentMethod: form.paymentMethod,
           items: items.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
@@ -136,9 +147,7 @@ export default function CheckoutClient() {
       window.location.href = `/order-confirmation/${result.orderNumber}`;
     } catch (caught) {
       setError(
-        caught instanceof Error
-          ? caught.message
-          : "Could not create the order.",
+        caught instanceof Error ? caught.message : "Could not create the order.",
       );
       setSubmitting(false);
     }
@@ -167,107 +176,156 @@ export default function CheckoutClient() {
       onSubmit={submitOrder}
       className="grid gap-5 lg:grid-cols-[1fr_380px]"
     >
-      <section className="bg-white p-6 shadow-sm">
-        <p className="text-sm font-bold text-[#c45500]">Step 1 of 2</p>
-        <h1 className="mt-2 text-3xl font-black">Delivery details</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Enter accurate information so the order can be confirmed and delivered.
-        </p>
+      <div className="space-y-5">
+        <section className="bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#c45500]">Step 1 of 2</p>
+          <h1 className="mt-2 text-3xl font-black">Delivery details</h1>
 
-        <div className="mt-7 grid gap-5 sm:grid-cols-2">
-          <label className="sm:col-span-2">
-            <span className="mb-2 block text-sm font-bold">Full name *</span>
-            <input
-              required
-              value={form.fullName}
-              onChange={(event) => updateField("fullName", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00] focus:ring-1 focus:ring-[#e49b00]"
-            />
-          </label>
+          <div className="mt-7 grid gap-5 sm:grid-cols-2">
+            <label className="sm:col-span-2">
+              <span className="mb-2 block text-sm font-bold">Full name *</span>
+              <input
+                required
+                value={form.fullName}
+                onChange={(event) =>
+                  updateField("fullName", event.target.value)
+                }
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label>
-            <span className="mb-2 block text-sm font-bold">Phone number *</span>
-            <input
-              required
-              inputMode="tel"
-              placeholder="07XXXXXXXX or +255..."
-              value={form.phone}
-              onChange={(event) => updateField("phone", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00] focus:ring-1 focus:ring-[#e49b00]"
-            />
-          </label>
+            <label>
+              <span className="mb-2 block text-sm font-bold">
+                Phone number *
+              </span>
+              <input
+                required
+                inputMode="tel"
+                placeholder="07XXXXXXXX or +255..."
+                value={form.phone}
+                onChange={(event) => updateField("phone", event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label>
-            <span className="mb-2 block text-sm font-bold">Email</span>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(event) => updateField("email", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00] focus:ring-1 focus:ring-[#e49b00]"
-            />
-          </label>
+            <label>
+              <span className="mb-2 block text-sm font-bold">Email</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(event) => updateField("email", event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label>
-            <span className="mb-2 block text-sm font-bold">Region *</span>
-            <select
-              required
-              value={form.region}
-              onChange={(event) => updateField("region", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-[#e49b00]"
-            >
-              {regions.map((region) => (
-                <option key={region}>{region}</option>
-              ))}
-            </select>
-          </label>
+            <label>
+              <span className="mb-2 block text-sm font-bold">Region *</span>
+              <select
+                required
+                value={form.region}
+                onChange={(event) => updateField("region", event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none focus:border-[#e49b00]"
+              >
+                {regions.map((region) => (
+                  <option key={region}>{region}</option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            <span className="mb-2 block text-sm font-bold">District *</span>
-            <input
-              required
-              value={form.district}
-              onChange={(event) => updateField("district", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
-            />
-          </label>
+            <label>
+              <span className="mb-2 block text-sm font-bold">District *</span>
+              <input
+                required
+                value={form.district}
+                onChange={(event) =>
+                  updateField("district", event.target.value)
+                }
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label>
-            <span className="mb-2 block text-sm font-bold">Ward</span>
-            <input
-              value={form.ward}
-              onChange={(event) => updateField("ward", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
-            />
-          </label>
+            <label>
+              <span className="mb-2 block text-sm font-bold">Ward</span>
+              <input
+                value={form.ward}
+                onChange={(event) => updateField("ward", event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label className="sm:col-span-2">
-            <span className="mb-2 block text-sm font-bold">
-              Street, village, landmark or pickup details *
-            </span>
-            <textarea
-              required
-              rows={3}
-              value={form.addressLine}
-              onChange={(event) =>
-                updateField("addressLine", event.target.value)
-              }
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
-            />
-          </label>
+            <label className="sm:col-span-2">
+              <span className="mb-2 block text-sm font-bold">
+                Street, village, landmark or pickup details *
+              </span>
+              <textarea
+                required
+                rows={3}
+                value={form.addressLine}
+                onChange={(event) =>
+                  updateField("addressLine", event.target.value)
+                }
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
 
-          <label className="sm:col-span-2">
-            <span className="mb-2 block text-sm font-bold">
-              Optional order notes
-            </span>
-            <textarea
-              rows={2}
-              value={form.notes}
-              onChange={(event) => updateField("notes", event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
-            />
-          </label>
-        </div>
-      </section>
+            <label className="sm:col-span-2">
+              <span className="mb-2 block text-sm font-bold">
+                Optional order notes
+              </span>
+              <textarea
+                rows={2}
+                value={form.notes}
+                onChange={(event) => updateField("notes", event.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-[#e49b00]"
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className="bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold text-[#c45500]">Step 2 of 2</p>
+          <h2 className="mt-2 text-3xl font-black">Payment method</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Payment is verified manually before supplier fulfilment.
+          </p>
+
+          <div className="mt-6 grid gap-3">
+            {methods.map((method) => {
+              const selected = form.paymentMethod === method.value;
+
+              return (
+                <label
+                  key={method.value}
+                  className={`cursor-pointer rounded-xl border p-4 transition ${
+                    selected
+                      ? "border-[#e49b00] bg-[#fff8df] ring-1 ring-[#e49b00]"
+                      : "border-slate-300 hover:border-slate-500"
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.value}
+                      checked={selected}
+                      onChange={() =>
+                        updateField("paymentMethod", method.value)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="font-black">{method.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        {method.description}
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      </div>
 
       <aside className="h-fit bg-white p-6 shadow-sm lg:sticky lg:top-24">
         <h2 className="text-2xl font-black">Order summary</h2>
@@ -278,7 +336,7 @@ export default function CheckoutClient() {
               <div>
                 <p className="font-bold">{item.name}</p>
                 <p className="mt-1 text-slate-500">
-                  {item.variantName ? `${item.variantName} Â· ` : ""}
+                  {item.variantName ? `${item.variantName} - ` : ""}
                   Qty {item.quantity}
                 </p>
               </div>
@@ -296,7 +354,7 @@ export default function CheckoutClient() {
           </div>
           <div className="flex justify-between">
             <span>Delivery</span>
-            <span>Confirmed before payment</span>
+            <span>Confirmed separately</span>
           </div>
           <div className="flex justify-between border-t border-slate-200 pt-4 text-xl font-black text-[#b12704]">
             <span>Current total</span>
@@ -313,14 +371,13 @@ export default function CheckoutClient() {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-6 w-full rounded-full bg-[#ffd814] px-5 py-3 text-sm font-bold shadow-sm hover:bg-[#f7ca00] disabled:cursor-wait disabled:opacity-60"
+          className="mt-6 w-full rounded-full bg-[#ffd814] px-5 py-3 text-sm font-bold shadow-sm hover:bg-[#f7ca00] disabled:opacity-60"
         >
           {submitting ? "Creating order..." : "Place Order"}
         </button>
 
         <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-          Payment is not collected yet. The order will be saved as pending
-          payment.
+          Orders remain pending until payment or cash-on-delivery approval.
         </p>
       </aside>
     </form>

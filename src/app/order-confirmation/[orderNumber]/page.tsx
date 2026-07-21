@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import PaymentReferenceForm from "@/components/payments/PaymentReferenceForm";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -16,10 +18,7 @@ function formatPrice(value: string | number) {
 
 function SuccessIcon() {
   return (
-    <div
-      aria-label="Order successful"
-      className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
-    >
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
       <svg
         viewBox="0 0 24 24"
         className="h-9 w-9"
@@ -48,19 +47,25 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
 
   const orders = await sql`
     SELECT
-      id,
-      order_number AS "orderNumber",
-      customer_name AS "customerName",
-      customer_phone AS "customerPhone",
-      customer_email AS "customerEmail",
-      status::text AS status,
-      subtotal::text AS subtotal,
-      shipping_fee::text AS "shippingFee",
-      total::text AS total,
-      shipping_address AS "shippingAddress",
-      created_at AS "createdAt"
-    FROM orders
-    WHERE order_number = ${orderNumber}
+      o.id,
+      o.order_number AS "orderNumber",
+      o.customer_name AS "customerName",
+      o.customer_phone AS "customerPhone",
+      o.status::text AS status,
+      o.total::text AS total,
+      o.shipping_address AS "shippingAddress",
+      p.provider AS "paymentProvider",
+      p.provider_reference AS "paymentReference",
+      p.status::text AS "paymentStatus"
+    FROM orders o
+    LEFT JOIN LATERAL (
+      SELECT provider, provider_reference, status
+      FROM payments
+      WHERE order_id = o.id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) p ON true
+    WHERE o.order_number = ${orderNumber}
     LIMIT 1
   `;
 
@@ -70,10 +75,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         orderNumber: string;
         customerName: string;
         customerPhone: string;
-        customerEmail: string | null;
         status: string;
-        subtotal: string;
-        shippingFee: string;
         total: string;
         shippingAddress: {
           region?: string;
@@ -81,7 +83,9 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
           ward?: string;
           addressLine?: string;
         };
-        createdAt: string;
+        paymentProvider: string | null;
+        paymentReference: string | null;
+        paymentStatus: string | null;
       }
     | undefined;
 
@@ -94,12 +98,27 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
       product_name AS "productName",
       variant_name AS "variantName",
       quantity,
-      unit_price::text AS "unitPrice",
       line_total::text AS "lineTotal"
     FROM order_items
     WHERE order_id = ${order.id}
     ORDER BY product_name
   `;
+
+  const mobileNumber =
+    process.env.MOBILE_MONEY_NUMBER || "Configure MOBILE_MONEY_NUMBER";
+  const mobileName =
+    process.env.MOBILE_MONEY_NAME || "Configure MOBILE_MONEY_NAME";
+  const nmbAccount =
+    process.env.NMB_ACCOUNT_NUMBER || "Configure NMB_ACCOUNT_NUMBER";
+  const nmbName =
+    process.env.NMB_ACCOUNT_NAME || "Configure NMB_ACCOUNT_NAME";
+  const bankName = process.env.NMB_BANK_NAME || "NMB Bank Plc";
+  const supportPhone =
+    process.env.SUPPORT_PHONE || process.env.MOBILE_MONEY_NUMBER || "";
+
+  const requiresReference =
+    order.paymentProvider === "manual_mobile_money" ||
+    order.paymentProvider === "manual_bank_transfer";
 
   return (
     <main className="min-h-screen bg-[#eaeded] text-[#0f1111]">
@@ -116,7 +135,6 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 className="object-contain"
               />
             </div>
-
             <div>
               <div className="font-black tracking-[0.12em]">WHOKEAS</div>
               <div className="text-[10px] font-black tracking-[0.3em] text-[#f3b61f]">
@@ -127,7 +145,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1000px] px-4 py-8">
+      <div className="mx-auto max-w-[1050px] px-4 py-8">
         <section className="bg-white p-7 shadow-sm sm:p-10">
           <SuccessIcon />
 
@@ -140,9 +158,8 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
           </h1>
 
           <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-            Your order has been saved. Payment and delivery charges have not
-            been collected yet. The next step will connect secure payment and
-            confirmation.
+            Follow the payment instructions below. Supplier fulfilment starts
+            only after payment verification or cash-on-delivery approval.
           </p>
 
           <div className="mt-7 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-5 sm:grid-cols-3">
@@ -150,19 +167,19 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               <p className="text-xs font-bold text-slate-500">ORDER NUMBER</p>
               <p className="mt-1 font-black">{order.orderNumber}</p>
             </div>
-
             <div>
               <p className="text-xs font-bold text-slate-500">STATUS</p>
-              <p className="mt-1 font-black text-[#b12704]">Pending payment</p>
+              <p className="mt-1 font-black text-[#b12704]">
+                {order.status.replaceAll("_", " ")}
+              </p>
             </div>
-
             <div>
-              <p className="text-xs font-bold text-slate-500">CURRENT TOTAL</p>
+              <p className="text-xs font-bold text-slate-500">TOTAL</p>
               <p className="mt-1 font-black">{formatPrice(order.total)}</p>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-8 md:grid-cols-[1fr_320px]">
+          <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
             <div>
               <h2 className="text-2xl font-black">Items ordered</h2>
 
@@ -174,62 +191,125 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                   >
                     <div>
                       <p className="font-bold">{String(item.productName)}</p>
-
                       <p className="mt-1 text-sm text-slate-500">
                         {item.variantName ? (
                           <>
                             <span>{String(item.variantName)}</span>
-                            <span className="mx-2" aria-hidden="true">
-                              -
-                            </span>
+                            <span className="mx-2">-</span>
                           </>
                         ) : null}
-                        <span>Qty {Number(item.quantity)}</span>
+                        Qty {Number(item.quantity)}
                       </p>
                     </div>
-
                     <p className="font-bold">
                       {formatPrice(String(item.lineTotal))}
                     </p>
                   </div>
                 ))}
               </div>
+
+              <div className="mt-7 rounded-lg border border-slate-200 p-5">
+                <h2 className="font-black">Delivery details</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  {order.shippingAddress?.addressLine}
+                  <br />
+                  {order.shippingAddress?.district}
+                  {order.shippingAddress?.ward
+                    ? `, ${order.shippingAddress.ward}`
+                    : ""}
+                  <br />
+                  {order.shippingAddress?.region}, Tanzania
+                </p>
+                <p className="mt-4 text-sm">
+                  <span className="font-bold">Phone:</span>{" "}
+                  {order.customerPhone}
+                </p>
+              </div>
             </div>
 
-            <aside className="rounded-lg border border-slate-200 p-5">
-              <h2 className="font-black">Delivery details</h2>
-
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                {order.shippingAddress?.addressLine}
-                <br />
-                {order.shippingAddress?.district}
-                {order.shippingAddress?.ward
-                  ? `, ${order.shippingAddress.ward}`
-                  : ""}
-                <br />
-                {order.shippingAddress?.region}, Tanzania
+            <aside className="h-fit rounded-xl border border-slate-300 p-5 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+                Payment instructions
               </p>
 
-              <p className="mt-5 text-sm">
-                <span className="font-bold">Phone:</span>{" "}
-                {order.customerPhone}
-              </p>
+              {order.paymentProvider === "cash_on_delivery" && (
+                <div className="mt-4">
+                  <h2 className="text-xl font-black">Cash on Delivery</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    We will contact you to confirm delivery availability and the
+                    final delivery charge. Pay when the product is delivered.
+                  </p>
+                </div>
+              )}
+
+              {order.paymentProvider === "manual_mobile_money" && (
+                <div className="mt-4">
+                  <h2 className="text-xl font-black">Mobile Money</h2>
+                  <div className="mt-4 rounded-lg bg-[#fff8df] p-4">
+                    <p className="text-xs font-bold text-slate-500">
+                      SEND EXACTLY
+                    </p>
+                    <p className="mt-1 text-2xl font-black">
+                      {formatPrice(order.total)}
+                    </p>
+                    <p className="mt-4 text-xs font-bold text-slate-500">
+                      NUMBER
+                    </p>
+                    <p className="mt-1 text-lg font-black">{mobileNumber}</p>
+                    <p className="mt-1 text-sm text-slate-600">{mobileName}</p>
+                  </div>
+                </div>
+              )}
+
+              {order.paymentProvider === "manual_bank_transfer" && (
+                <div className="mt-4">
+                  <h2 className="text-xl font-black">NMB Bank Transfer</h2>
+                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                    <p className="text-sm">
+                      <span className="font-bold">Bank:</span> {bankName}
+                    </p>
+                    <p className="mt-2 text-sm">
+                      <span className="font-bold">Account:</span> {nmbAccount}
+                    </p>
+                    <p className="mt-2 text-sm">
+                      <span className="font-bold">Name:</span> {nmbName}
+                    </p>
+                    <p className="mt-4 text-sm">
+                      Transfer exactly{" "}
+                      <span className="font-black">
+                        {formatPrice(order.total)}
+                      </span>
+                      .
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {requiresReference && (
+                <PaymentReferenceForm
+                  orderNumber={order.orderNumber}
+                  existingReference={order.paymentReference}
+                />
+              )}
+
+              <div className="mt-5 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+                Payment status: {order.paymentStatus ?? "pending"}
+                {supportPhone ? (
+                  <>
+                    <br />
+                    Support: {supportPhone}
+                  </>
+                ) : null}
+              </div>
             </aside>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8">
             <Link
               href="/"
-              className="rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold hover:bg-[#f7ca00]"
+              className="inline-block rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold hover:bg-[#f7ca00]"
             >
               Continue shopping
-            </Link>
-
-            <Link
-              href="/cart"
-              className="rounded-full border border-slate-300 px-6 py-3 text-sm font-bold hover:bg-slate-50"
-            >
-              View cart
             </Link>
           </div>
         </section>

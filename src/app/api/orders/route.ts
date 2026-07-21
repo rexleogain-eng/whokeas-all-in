@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+type PaymentMethod =
+  | "cash_on_delivery"
+  | "manual_mobile_money"
+  | "manual_bank_transfer";
+
 type RequestItem = {
   productId?: string;
   variantId?: string | null;
@@ -21,6 +26,7 @@ type RequestBody = {
     addressLine?: string;
     notes?: string;
   };
+  paymentMethod?: PaymentMethod;
   items?: RequestItem[];
 };
 
@@ -35,6 +41,12 @@ type CanonicalItem = {
   unitCost: number;
   lineTotal: number;
 };
+
+const allowedMethods: PaymentMethod[] = [
+  "cash_on_delivery",
+  "manual_mobile_money",
+  "manual_bank_transfer",
+];
 
 function clean(value: unknown, max = 300) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -60,6 +72,14 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RequestBody;
     const customer = body.customer;
     const requestedItems = Array.isArray(body.items) ? body.items : [];
+    const paymentMethod = body.paymentMethod;
+
+    if (!paymentMethod || !allowedMethods.includes(paymentMethod)) {
+      return NextResponse.json(
+        { ok: false, error: "Choose a valid payment method." },
+        { status: 400 },
+      );
+    }
 
     const fullName = clean(customer?.fullName, 160);
     const phone = clean(customer?.phone, 30);
@@ -99,7 +119,12 @@ export async function POST(request: Request) {
       const variantId = clean(requested.variantId, 50) || null;
       const quantity = Math.floor(Number(requested.quantity));
 
-      if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 5) {
+      if (
+        !productId ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 5
+      ) {
         return NextResponse.json(
           { ok: false, error: "One cart item is invalid." },
           { status: 400 },
@@ -137,7 +162,8 @@ export async function POST(request: Request) {
           return NextResponse.json(
             {
               ok: false,
-              error: "A selected product option is unavailable or has insufficient stock.",
+              error:
+                "A selected product option is unavailable or has insufficient stock.",
             },
             { status: 409 },
           );
@@ -208,6 +234,7 @@ export async function POST(request: Request) {
     const shippingFee = 0;
     const total = subtotal + shippingFee;
     const orderId = randomUUID();
+    const paymentId = randomUUID();
     const orderNumber = createOrderNumber();
 
     const shippingAddress = {
@@ -223,68 +250,39 @@ export async function POST(request: Request) {
     const queries = [
       sql`
         INSERT INTO orders (
-          id,
-          order_number,
-          customer_name,
-          customer_phone,
-          customer_email,
-          status,
-          currency,
-          subtotal,
-          shipping_fee,
-          discount_amount,
-          total,
-          supplier_cost_total,
-          shipping_address,
-          source,
-          customer_notes,
-          created_at,
-          updated_at
+          id, order_number, customer_name, customer_phone, customer_email,
+          status, currency, subtotal, shipping_fee, discount_amount, total,
+          supplier_cost_total, shipping_address, source, customer_notes,
+          created_at, updated_at
         )
         VALUES (
-          ${orderId},
-          ${orderNumber},
-          ${fullName},
-          ${phone},
-          ${email || null},
-          'pending_payment',
-          'TZS',
-          ${subtotal},
-          ${shippingFee},
-          0,
-          ${total},
-          ${supplierCostTotal},
-          ${JSON.stringify(shippingAddress)}::jsonb,
-          'website',
-          ${notes || null},
-          NOW(),
+          ${orderId}, ${orderNumber}, ${fullName}, ${phone}, ${email || null},
+          'pending_payment', 'TZS', ${subtotal}, ${shippingFee}, 0, ${total},
+          ${supplierCostTotal}, ${JSON.stringify(shippingAddress)}::jsonb,
+          'website', ${notes || null}, NOW(), NOW()
+        )
+      `,
+      sql`
+        INSERT INTO payments (
+          id, order_id, provider, status, amount, fee, currency,
+          raw_response, created_at
+        )
+        VALUES (
+          ${paymentId}, ${orderId}, ${paymentMethod}, 'pending', ${total},
+          0, 'TZS', ${JSON.stringify({ source: "manual_checkout" })}::jsonb,
           NOW()
         )
       `,
       ...canonicalItems.map(
         (item) => sql`
           INSERT INTO order_items (
-            order_id,
-            product_id,
-            variant_id,
-            product_name,
-            variant_name,
-            sku,
-            quantity,
-            unit_price,
-            unit_cost,
-            line_total
+            order_id, product_id, variant_id, product_name, variant_name,
+            sku, quantity, unit_price, unit_cost, line_total
           )
           VALUES (
-            ${orderId},
-            ${item.productId},
-            ${item.variantId},
-            ${item.productName},
-            ${item.variantName},
-            ${item.sku},
-            ${item.quantity},
-            ${item.unitPrice},
-            ${item.unitCost},
+            ${orderId}, ${item.productId}, ${item.variantId},
+            ${item.productName}, ${item.variantName}, ${item.sku},
+            ${item.quantity}, ${item.unitPrice}, ${item.unitCost},
             ${item.lineTotal}
           )
         `,
@@ -296,10 +294,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: true,
-        orderId,
         orderNumber,
-        subtotal,
-        shippingFee,
+        paymentMethod,
         total,
         status: "pending_payment",
       },
