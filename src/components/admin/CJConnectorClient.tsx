@@ -53,7 +53,7 @@ export default function CJConnectorClient() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const [usdToTzsRate, setUsdToTzsRate] = useState(2700);
-  const [marginPercent, setMarginPercent] = useState(35);
+  const [marginPercent] = useState(30);
   const [reserveTzs, setReserveTzs] = useState(3000);
 
   useEffect(() => {
@@ -70,7 +70,6 @@ export default function CJConnectorClient() {
 
         setConnected(true);
         setUsdToTzsRate(result.defaults.usdToTzsRate);
-        setMarginPercent(result.defaults.marginPercent);
         setReserveTzs(result.defaults.reserveTzs);
       } catch (caught) {
         setConnected(false);
@@ -84,16 +83,21 @@ export default function CJConnectorClient() {
   const pricingExample = useMemo(() => {
     const supplier = 10 * usdToTzsRate;
     const shipping = 5 * usdToTzsRate;
+    const landed = supplier + shipping + reserveTzs;
+    const paymentFeeRate = 0.03;
     const selling =
       Math.ceil(
-        ((supplier + shipping + reserveTzs) * (1 + marginPercent / 100)) / 500,
+        (landed / (1 - marginPercent / 100 - paymentFeeRate)) / 500,
       ) * 500;
+    const paymentFee = selling * paymentFeeRate;
+    const profit = selling - landed - paymentFee;
 
     return {
       supplier,
       shipping,
       selling,
-      profit: selling - supplier - shipping,
+      profit,
+      margin: selling > 0 ? (profit / selling) * 100 : 0,
     };
   }, [usdToTzsRate, marginPercent, reserveTzs]);
 
@@ -292,13 +296,13 @@ export default function CJConnectorClient() {
               />
             </label>
             <label>
-              <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.15em] text-white/45">Markup %</span>
+              <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.15em] text-white/45">Gross margin %</span>
               <input
                 type="number"
-                min={0}
-                value={marginPercent}
-                onChange={(event) => setMarginPercent(Number(event.target.value))}
-                className="w-full border border-white/15 bg-white/[0.06] px-3 py-3 text-sm text-white outline-none focus:border-[#b9944d]"
+                value={30}
+                readOnly
+                disabled
+                className="w-full cursor-not-allowed border border-white/15 bg-white/[0.03] px-3 py-3 text-sm text-white/70 outline-none"
               />
             </label>
             <label>
@@ -323,6 +327,8 @@ export default function CJConnectorClient() {
               <p className="text-right font-semibold">{formatTzs(pricingExample.selling)}</p>
               <p className="text-[#d4b56f]">Estimated profit</p>
               <p className="text-right font-semibold text-[#d4b56f]">{formatTzs(pricingExample.profit)}</p>
+              <p className="text-white/45">Gross margin</p>
+              <p className="text-right font-semibold">{pricingExample.margin.toFixed(1)}%</p>
             </div>
           </div>
 

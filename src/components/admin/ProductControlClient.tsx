@@ -127,6 +127,25 @@ const fieldClass =
 const labelClass =
   "mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-[#625a50]";
 
+const FIXED_GROSS_MARGIN_RATE = 0.3;
+const PAYMENT_FEE_RATE = 0.03;
+const PRICE_ROUNDING_TZS = 500;
+
+function automaticSellingPrice(baseCost: string, shippingCost: string) {
+  const landedCost =
+    Math.max(0, Number(baseCost || 0)) +
+    Math.max(0, Number(shippingCost || 0));
+
+  if (landedCost <= 0) return "";
+
+  const raw =
+    landedCost / (1 - FIXED_GROSS_MARGIN_RATE - PAYMENT_FEE_RATE);
+
+  return String(
+    Math.ceil(raw / PRICE_ROUNDING_TZS) * PRICE_ROUNDING_TZS,
+  );
+}
+
 function statusTone(status: string) {
   if (status === "active") return "border-emerald-200 bg-emerald-50 text-emerald-800";
   if (status === "archived") return "border-slate-200 bg-slate-100 text-slate-600";
@@ -175,13 +194,19 @@ export default function ProductControlClient() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const profit = useMemo(
-    () =>
-      Number(form.price || 0) -
-      Number(form.baseCost || 0) -
-      Number(form.shippingCost || 0),
-    [form.price, form.baseCost, form.shippingCost],
-  );
+  const profit = useMemo(() => {
+    const sellingPrice = Number(form.price || 0);
+    const landedCost =
+      Number(form.baseCost || 0) + Number(form.shippingCost || 0);
+    const paymentFee = sellingPrice * PAYMENT_FEE_RATE;
+
+    return sellingPrice - landedCost - paymentFee;
+  }, [form.price, form.baseCost, form.shippingCost]);
+
+  const actualMargin = useMemo(() => {
+    const sellingPrice = Number(form.price || 0);
+    return sellingPrice > 0 ? (profit / sellingPrice) * 100 : 0;
+  }, [form.price, profit]);
 
   const stats = useMemo(
     () => ({
@@ -407,13 +432,13 @@ export default function ProductControlClient() {
               <legend className="mb-4 font-serif text-xl font-semibold">Commercial settings</legend>
               <div className="grid gap-4 sm:grid-cols-3">
                 <label>
-                  <span className={labelClass}>Selling price *</span>
+                  <span className={labelClass}>Selling price — automatic 30% margin *</span>
                   <input
                     required
+                    readOnly
                     inputMode="decimal"
                     value={form.price}
-                    onChange={(event) => update("price", event.target.value)}
-                    className={fieldClass}
+                    className={`${fieldClass} cursor-not-allowed bg-[#f3efe7]`}
                   />
                 </label>
                 <label>
@@ -422,7 +447,17 @@ export default function ProductControlClient() {
                     required
                     inputMode="decimal"
                     value={form.baseCost}
-                    onChange={(event) => update("baseCost", event.target.value)}
+                    onChange={(event) => {
+                      const baseCost = event.target.value;
+                      setForm((current) => ({
+                        ...current,
+                        baseCost,
+                        price: automaticSellingPrice(
+                          baseCost,
+                          current.shippingCost,
+                        ),
+                      }));
+                    }}
                     className={fieldClass}
                   />
                 </label>
@@ -431,7 +466,17 @@ export default function ProductControlClient() {
                   <input
                     inputMode="decimal"
                     value={form.shippingCost}
-                    onChange={(event) => update("shippingCost", event.target.value)}
+                    onChange={(event) => {
+                      const shippingCost = event.target.value;
+                      setForm((current) => ({
+                        ...current,
+                        shippingCost,
+                        price: automaticSellingPrice(
+                          current.baseCost,
+                          shippingCost,
+                        ),
+                      }));
+                    }}
                     className={fieldClass}
                   />
                 </label>
@@ -446,9 +491,12 @@ export default function ProductControlClient() {
                     <p className={`mt-2 font-serif text-3xl font-semibold ${profit >= 0 ? "text-emerald-900" : "text-red-900"}`}>
                       {price(profit)}
                     </p>
+                    <p className="mt-1 text-xs font-bold text-[#6f685e]">
+                      Gross margin: {actualMargin.toFixed(1)}% · Target: 30%
+                    </p>
                   </div>
                   <p className="max-w-[180px] text-right text-xs leading-5 text-[#6f685e]">
-                    Selling price minus supplier and shipping costs.
+                    After supplier cost, shipping and an estimated 3% payment fee.
                   </p>
                 </div>
               </div>

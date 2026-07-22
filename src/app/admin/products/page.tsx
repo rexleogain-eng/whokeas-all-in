@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import AdminShell from "@/components/admin/AdminShell";
-import ProductControlClient from "@/components/admin/ProductControlClient";
+import ProductControlLoader from "@/components/admin/ProductControlLoader";
 import { isAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +36,7 @@ export default async function AdminProductsPage() {
         </>
       }
     >
-      <ProductControlClient />
+      <ProductControlLoader />
     </AdminShell>
   );
 }
