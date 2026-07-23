@@ -9,7 +9,9 @@
     "lint": "eslint",
     "catalog:repair": "tsx src/db/repair-catalog-final.ts",
     "automation:repair": "tsx src/db/repair-catalog-automation.ts",
-    "pricing:30": "tsx src/db/apply-fixed-30-margin.ts"
+    "pricing:30": "tsx src/db/apply-fixed-30-margin.ts",
+    "catalogue:expand:repair": "tsx src/db/repair-catalogue-expansion.ts",
+    "catalogue:trials:clean": "tsx src/db/cleanup-trial-products.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -1,0 +1,53 @@
+WHOKEAS ALL IN — UNATTENDED CATALOGUE AUTOMATION
+
+A. VERCEL ENVIRONMENT VARIABLES
+Open Vercel > whokeas-all-in > Settings > Environment Variables.
+Confirm these exist in Production, Preview and Development:
+
+DATABASE_URL
+ADMIN_SECRET
+CJ_API_KEY
+CRON_SECRET
+CJ_MIN_REQUEST_INTERVAL_MS = 1400
+CJ_MAX_RETRIES = 4
+CJ_DEFAULT_MARGIN_PERCENT = 30
+
+Redeploy after changing environment variables.
+
+B. BUILT-IN VERCEL DAILY RUN
+The package adds:
+/api/cron/catalogue-expansion at 04:15 UTC daily.
+
+Each job discovers candidates when the queue is low and processes a maximum of two products sequentially.
+
+C. OPTIONAL FREE GITHUB ACTIONS — EVERY THREE HOURS
+The workflow is installed but remains disabled until you enable it.
+
+In GitHub > repository > Settings > Secrets and variables > Actions:
+
+Repository secrets:
+1. CRON_SECRET
+   Use exactly the same private value configured in Vercel.
+2. CATALOGUE_CRON_URL
+   https://whokeas.store/api/cron/catalogue-expansion
+
+Repository variable:
+3. ENABLE_CATALOGUE_EXPANSION
+   true
+
+The workflow then runs one protected safe cycle every three hours. It never sends the CJ API key to GitHub; it only calls your protected Vercel route.
+
+D. SAFE DEFAULTS
+Initial target: 170 real supplier products
+Import batch: 2 products per server job
+Minimum inventory: 20
+Required images: 2
+Exact freight markets during initial import: 1
+Gross margin target: approximately 30%
+CJ request interval: at least 1.4 seconds
+Automatic retry: up to 4 attempts
+
+E. CONTROL PAGE
+https://whokeas.store/admin/catalogue
+
+Use it to pause, discover, process, clean trials, inspect failures and change category targets.
