@@ -1,14 +1,14 @@
-﻿export async function readApiResponse<T = Record<string, unknown>>(
+export async function readApiResponse<T = any>(
   response: Response,
 ): Promise<T> {
-  const text = await response.text();
-  let payload: unknown = {};
+  const rawText = await response.text();
+  let payload: any = {};
 
-  if (text.trim()) {
+  if (rawText.trim()) {
     try {
-      payload = JSON.parse(text);
+      payload = JSON.parse(rawText);
     } catch {
-      const preview = text
+      const preview = rawText
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 500);
@@ -22,17 +22,11 @@
   }
 
   if (!response.ok) {
-    const body = payload as {
-      error?: unknown;
-      message?: unknown;
-      detail?: unknown;
-    };
-
     throw new Error(
       String(
-        body.error ??
-          body.message ??
-          body.detail ??
+        payload?.error ??
+          payload?.message ??
+          payload?.detail ??
           `Request failed with HTTP ${response.status}.`,
       ),
     );
