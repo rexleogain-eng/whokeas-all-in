@@ -1,14 +1,17 @@
 ﻿export async function readApiResponse<T = Record<string, unknown>>(
   response: Response,
 ): Promise<T> {
-  const responseText = await response.text();
+  const text = await response.text();
   let payload: unknown = {};
 
-  if (responseText.trim()) {
+  if (text.trim()) {
     try {
-      payload = JSON.parse(responseText);
+      payload = JSON.parse(text);
     } catch {
-      const preview = responseText.replace(/\s+/g, " ").slice(0, 400);
+      const preview = text
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 500);
 
       throw new Error(
         `Server returned HTTP ${response.status} instead of JSON: ${
@@ -19,15 +22,17 @@
   }
 
   if (!response.ok) {
-    const errorPayload = payload as {
+    const body = payload as {
       error?: unknown;
       message?: unknown;
+      detail?: unknown;
     };
 
     throw new Error(
       String(
-        errorPayload.error ??
-          errorPayload.message ??
+        body.error ??
+          body.message ??
+          body.detail ??
           `Request failed with HTTP ${response.status}.`,
       ),
     );

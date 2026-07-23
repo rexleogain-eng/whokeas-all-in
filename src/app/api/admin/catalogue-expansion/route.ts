@@ -58,3 +58,6 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+export const runtime = "nodejs";
+export const maxDuration = 300;

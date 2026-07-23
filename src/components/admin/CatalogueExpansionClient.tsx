@@ -1,5 +1,7 @@
 "use client";
 
+import { readApiResponse } from "@/lib/read-api-response";
+
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
@@ -49,7 +51,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
       cache: "no-store",
       ...init,
     });
-    const result = await response.json();
+    const result = await readApiResponse(response);
     if (!response.ok || !result.ok) {
       throw new Error(
         result.report?.message || result.error || "The operation failed.",
