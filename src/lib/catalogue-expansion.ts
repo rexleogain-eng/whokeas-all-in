@@ -23,6 +23,7 @@ import {
   isCJThrottleError,
 } from "@/lib/cj";
 import { ensureGlobalMarketSchema } from "@/lib/global-markets";
+import { processDraftAutopilot } from "@/lib/draft-autopilot";
 
 export type CatalogueTarget = {
   key: string;
@@ -1331,6 +1332,7 @@ export async function runDailyCatalogueExpansion() {
       ? await discoverCatalogueCandidates({ trigger: "cron" })
       : null;
   const processing = await processCatalogueQueue({ trigger: "cron" });
+  const draftAutopilot = await processDraftAutopilot(10);
 
   return {
     discovery,

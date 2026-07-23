@@ -248,7 +248,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
         </div>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card, index) => (
           <article
             key={card.label}
@@ -286,7 +286,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
             browser session stops after six short import cycles.
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <button
               type="button"
               onClick={runSafeFill}
@@ -322,6 +322,22 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
               className="border border-[#2a261f] bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-[#2a261f] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy === "process" ? "Importing…" : "Process next batch"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                runAction(
+                  "drafts",
+                  "/api/admin/catalogue-expansion/drafts",
+                  (result) => result.report.message,
+                )
+              }
+              disabled={Boolean(busy)}
+              className="border border-[#8a6a31] bg-[#f4ead3] px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-[#3b2d16] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy === "drafts"
+                ? "Operating drafts…"
+                : "Process drafts automatically"}
             </button>
             {busy === "fill" ? (
               <button
