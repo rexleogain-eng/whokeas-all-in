@@ -188,6 +188,7 @@ export async function syncFxRates(input?: {
   const response = await fetch(endpoint, {
     headers: { Accept: "application/json" },
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {

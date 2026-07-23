@@ -1,11 +1,10 @@
+export const runtime = "nodejs";
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/admin-auth";
 import { processCatalogueQueue } from "@/lib/catalogue-expansion";
-
-export const dynamic = "force-dynamic";
-export const maxDuration = 60;
-
 export async function POST() {
   if (!(await isAdmin())) {
     return NextResponse.json(

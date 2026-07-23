@@ -75,12 +75,27 @@ function minimumRequestIntervalMs() {
 }
 
 function maximumRetries() {
-  return Math.floor(numberInRange(process.env.CJ_MAX_RETRIES, 4, 0, 7));
+  // A serverless request must finish quickly. Failed supplier calls are
+  // returned to the database queue for a later invocation.
+  return Math.floor(
+    numberInRange(process.env.CJ_MAX_RETRIES, 1, 0, 1),
+  );
+}
+function requestTimeoutMs() {
+  return Math.floor(
+    numberInRange(
+      process.env.CJ_REQUEST_TIMEOUT_MS,
+      12000,
+      5000,
+      20000,
+    ),
+  );
 }
 
 async function scheduledFetch(url: string, init: RequestInit) {
   let release!: () => void;
   const previous = requestTail;
+
   requestTail = new Promise<void>((resolve) => {
     release = resolve;
   });
@@ -89,9 +104,63 @@ async function scheduledFetch(url: string, init: RequestInit) {
 
   try {
     const waitMs = Math.max(0, nextRequestAt - Date.now());
-    if (waitMs > 0) await sleep(waitMs);
+
+    if (waitMs > 0) {
+      await sleep(waitMs);
+    }
+
     nextRequestAt = Date.now() + minimumRequestIntervalMs();
-    return await fetch(url, init);
+
+    const timeoutMs = requestTimeoutMs();
+    const controller = new AbortController();
+    const upstreamSignal = init.signal;
+    let timedOut = false;
+
+    const abortFromUpstream = () => {
+      controller.abort();
+    };
+
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) {
+        abortFromUpstream();
+      } else {
+        upstreamSignal.addEventListener(
+          "abort",
+          abortFromUpstream,
+          { once: true },
+        );
+      }
+    }
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (timedOut) {
+        throw new CJRequestError({
+          message: `CJ request timed out after ${timeoutMs} ms.`,
+          retryable: true,
+        });
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timer);
+
+      if (upstreamSignal) {
+        upstreamSignal.removeEventListener(
+          "abort",
+          abortFromUpstream,
+        );
+      }
+    }
   } finally {
     release();
   }

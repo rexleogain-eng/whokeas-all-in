@@ -212,7 +212,7 @@ export const DEFAULT_CATALOGUE_EXPANSION_CONFIG: CatalogueExpansionConfig = {
   targetTotal: 170,
   discoveryCategoriesPerRun: 4,
   searchResultsPerCategory: 20,
-  processBatchSize: 2,
+  processBatchSize: 1,
   minimumScore: 42,
   minimumInventory: 20,
   minimumImages: 2,
@@ -520,7 +520,7 @@ export async function ensureCatalogueExpansionSchema() {
           last_error = COALESCE(last_error, 'Recovered after an interrupted job.'),
           updated_at = NOW()
         WHERE status = 'processing'
-          AND locked_at < NOW() - INTERVAL '20 minutes'
+          AND locked_at < NOW() - INTERVAL '2 minutes'
       `;
     })().catch((error) => {
       schemaPromise = null;
@@ -1134,7 +1134,7 @@ export async function processCatalogueQueue(input?: {
 
     const lockToken = randomUUID();
     const claimed = await claimQueue(
-      expansionConfig.processBatchSize,
+      1,
       lockToken,
     );
     report.claimed = claimed.length;
@@ -1283,7 +1283,7 @@ export async function processCatalogueQueue(input?: {
         }
       }
 
-      await sleep(expansionConfig.delayBetweenProductsMs);
+      // Exactly one product is processed per invocation.
     }
 
     report.status =
