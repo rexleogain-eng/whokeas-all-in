@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/admin-auth";
@@ -5,9 +8,6 @@ import {
   getCatalogueExpansionDashboard,
   saveCatalogueExpansionSettings,
 } from "@/lib/catalogue-expansion";
-
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   if (!(await isAdmin())) {
     return NextResponse.json(
@@ -58,6 +58,3 @@ export async function PUT(request: Request) {
     );
   }
 }
-
-export const runtime = "nodejs";
-export const maxDuration = 300;
