@@ -70,9 +70,23 @@ export async function getStoreProducts(options?: {
       )
       AND (${featuredOnly} = false OR p.is_featured = true)
     ORDER BY
-      CASE WHEN ${sort} = 'price-low' THEN p.price END ASC,
-      CASE WHEN ${sort} = 'price-high' THEN p.price END DESC,
-      CASE WHEN ${sort} = 'newest' THEN p.created_at END DESC,
+      CASE
+        WHEN ${query} <> ''
+          AND LOWER(TRIM(p.name)) = LOWER(TRIM(${query}))
+          THEN 0
+        WHEN ${query} <> ''
+          AND p.is_featured = true
+          THEN 1
+        WHEN ${query} <> ''
+          AND p.name ILIKE ${`${query}%`}
+          THEN 2
+        WHEN ${query} <> ''
+          THEN 3
+        ELSE 4
+      END ASC,
+      CASE WHEN ${query} = '' AND ${sort} = 'price-low' THEN p.price END ASC,
+      CASE WHEN ${query} = '' AND ${sort} = 'price-high' THEN p.price END DESC,
+      CASE WHEN ${query} = '' AND ${sort} = 'newest' THEN p.created_at END DESC,
       p.is_featured DESC,
       p.created_at DESC
     LIMIT ${limit}
