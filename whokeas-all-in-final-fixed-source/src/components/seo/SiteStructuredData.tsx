@@ -3,7 +3,7 @@ import {
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
-} from "@/lib/seo";
+} from "../../lib/seo";
 
 export default function SiteStructuredData() {
   const structuredData = [

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { getStoreProductBySlug } from "@/lib/store-catalog";
+import { getStoreProductBySlug } from "../../../lib/store-catalog";
 import {
   DEFAULT_SOCIAL_IMAGE,
   SITE_NAME,
   SITE_URL,
-} from "@/lib/seo";
+} from "../../../lib/seo";
 
 type ProductRouteProps = {
   params: Promise<{

@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 import {
   catalogSql,
   ensureCatalogSchema,
-} from "@/lib/catalog-schema";
-import { SITE_URL } from "@/lib/seo";
+} from "../lib/catalog-schema";
+import { SITE_URL } from "../lib/seo";
 
 export const revalidate = 3600;
 

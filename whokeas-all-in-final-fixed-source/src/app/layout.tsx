@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import SiteStructuredData from "@/components/seo/SiteStructuredData";
+import SiteStructuredData from "../components/seo/SiteStructuredData";
 import {
   DEFAULT_SOCIAL_IMAGE,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
-} from "@/lib/seo";
+} from "../lib/seo";
 
 import "./globals.css";
 
