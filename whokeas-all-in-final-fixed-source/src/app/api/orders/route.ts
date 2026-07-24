@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import {
   countryNameFor,
   isSupportedCountryCode,
-} from "@/lib/countries";
+} from "../../../lib/countries";
 
 export const dynamic = "force-dynamic";
 

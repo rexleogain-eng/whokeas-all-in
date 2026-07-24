@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { countries, countryNameFor } from "@/lib/countries";
+import { countries, countryNameFor } from "../../lib/countries";
 
 type CartItem = {
   key: string;
