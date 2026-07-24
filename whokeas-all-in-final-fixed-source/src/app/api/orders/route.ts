@@ -2,6 +2,11 @@ import { neon } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
+import {
+  countryNameFor,
+  isSupportedCountryCode,
+} from "@/lib/countries";
+
 export const dynamic = "force-dynamic";
 
 type PaymentMethod =
@@ -20,11 +25,16 @@ type RequestBody = {
     fullName?: string;
     phone?: string;
     email?: string;
-    region?: string;
-    district?: string;
+    countryCode?: string;
+    country?: string;
+    stateProvince?: string;
+    city?: string;
     ward?: string;
+    postalCode?: string;
     addressLine?: string;
     notes?: string;
+    region?: string;
+    district?: string;
   };
   paymentMethod?: PaymentMethod;
   items?: RequestItem[];
@@ -50,6 +60,14 @@ const allowedMethods: PaymentMethod[] = [
 
 function clean(value: unknown, max = 300) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function isValidPhone(phone: string) {
+  return /^\+?[0-9][0-9\s().-]{6,24}$/.test(phone);
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function createOrderNumber() {
@@ -84,22 +102,67 @@ export async function POST(request: Request) {
     const fullName = clean(customer?.fullName, 160);
     const phone = clean(customer?.phone, 30);
     const email = clean(customer?.email, 200);
-    const region = clean(customer?.region, 100);
-    const district = clean(customer?.district, 100);
+    const countryCode = clean(customer?.countryCode, 2).toUpperCase() || "TZ";
+    const stateProvince = clean(
+      customer?.stateProvince || customer?.region,
+      100,
+    );
+    const city = clean(customer?.city || customer?.district, 100);
     const ward = clean(customer?.ward, 100);
+    const postalCode = clean(customer?.postalCode, 30);
     const addressLine = clean(customer?.addressLine, 500);
     const notes = clean(customer?.notes, 1000);
 
-    if (!fullName || !phone || !region || !district || !addressLine) {
+    if (!isSupportedCountryCode(countryCode)) {
+      return NextResponse.json(
+        { ok: false, error: "Choose a supported destination country." },
+        { status: 400 },
+      );
+    }
+
+    const country = countryNameFor(countryCode);
+    const isTanzania = countryCode === "TZ";
+
+    if (!fullName || !phone || !stateProvince || !city || !addressLine) {
       return NextResponse.json(
         { ok: false, error: "Complete all required delivery fields." },
         { status: 400 },
       );
     }
 
-    if (!/^(?:\+?255|0)[67]\d{8}$/.test(phone.replace(/\s+/g, ""))) {
+    if (!isValidPhone(phone)) {
       return NextResponse.json(
-        { ok: false, error: "Enter a valid Tanzanian phone number." },
+        {
+          ok: false,
+          error: "Enter a valid phone number, including the country code when outside Tanzania.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (email && !isValidEmail(email)) {
+      return NextResponse.json(
+        { ok: false, error: "Enter a valid email address." },
+        { status: 400 },
+      );
+    }
+
+    if (!isTanzania && !email) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Email is required for international delivery updates.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!isTanzania && paymentMethod !== "manual_bank_transfer") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "International orders currently require bank-transfer confirmation.",
+        },
         { status: 400 },
       );
     }
@@ -240,12 +303,18 @@ export async function POST(request: Request) {
     const shippingAddress = {
       recipientName: fullName,
       phone,
-      country: "Tanzania",
-      region,
-      district,
+      country,
+      countryCode,
+      stateProvince,
+      city,
       ...(ward ? { ward } : {}),
+      ...(postalCode ? { postalCode } : {}),
       addressLine,
+      region: stateProvince,
+      district: city,
     };
+
+    const source = isTanzania ? "website" : "website_international";
 
     const queries = [
       sql`
@@ -259,7 +328,7 @@ export async function POST(request: Request) {
           ${orderId}, ${orderNumber}, ${fullName}, ${phone}, ${email || null},
           'pending_payment', 'TZS', ${subtotal}, ${shippingFee}, 0, ${total},
           ${supplierCostTotal}, ${JSON.stringify(shippingAddress)}::jsonb,
-          'website', ${notes || null}, NOW(), NOW()
+          ${source}, ${notes || null}, NOW(), NOW()
         )
       `,
       sql`
@@ -269,7 +338,11 @@ export async function POST(request: Request) {
         )
         VALUES (
           ${paymentId}, ${orderId}, ${paymentMethod}, 'pending', ${total},
-          0, 'TZS', ${JSON.stringify({ source: "manual_checkout" })}::jsonb,
+          0, 'TZS',
+          ${JSON.stringify({
+            source: "manual_checkout",
+            destinationCountryCode: countryCode,
+          })}::jsonb,
           NOW()
         )
       `,
@@ -297,6 +370,8 @@ export async function POST(request: Request) {
         orderNumber,
         paymentMethod,
         total,
+        currency: "TZS",
+        destinationCountry: country,
         status: "pending_payment",
       },
       { status: 201 },

@@ -119,9 +119,13 @@ export const orders = pgTable("orders", {
       recipientName: string;
       phone: string;
       country: string;
+      countryCode?: string;
+      stateProvince?: string;
+      city?: string;
       region: string;
       district?: string;
       ward?: string;
+      postalCode?: string;
       addressLine: string;
     }>()
     .notNull(),

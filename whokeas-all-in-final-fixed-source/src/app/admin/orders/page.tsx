@@ -9,8 +9,30 @@ import { isAdmin } from "@/lib/admin-auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function formatPrice(value: string | number) {
-  return `TZS ${Number(value).toLocaleString("en-US")}`;
+type ShippingAddress = {
+  country?: string;
+  countryCode?: string;
+  stateProvince?: string;
+  city?: string;
+  region?: string;
+  district?: string;
+  ward?: string;
+  postalCode?: string;
+  addressLine?: string;
+};
+
+function formatMoney(value: string | number, currency: string) {
+  const amount = Number(value);
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: currency === "TZS" ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString("en-US")}`;
+  }
 }
 
 function formatDate(value: string) {
@@ -39,8 +61,10 @@ export default async function AdminOrdersPage() {
       o.customer_phone AS "customerPhone",
       o.customer_email AS "customerEmail",
       o.status::text AS "orderStatus",
+      o.currency,
       o.total::text AS total,
       o.shipping_address AS "shippingAddress",
+      o.source,
       o.created_at AS "createdAt",
       p.provider AS "paymentProvider",
       p.provider_reference AS "paymentReference",
@@ -93,7 +117,7 @@ export default async function AdminOrdersPage() {
 
       <div className="mx-auto max-w-[1500px] px-4 py-7 lg:px-6">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#b36f00]">
-          Manual payment verification
+          Local and international payment verification
         </p>
         <h1 className="mt-2 text-4xl font-black">Orders</h1>
 
@@ -104,12 +128,14 @@ export default async function AdminOrdersPage() {
         ) : (
           <div className="mt-6 space-y-4">
             {orders.map((order) => {
-              const address = order.shippingAddress as {
-                region?: string;
-                district?: string;
-                ward?: string;
-                addressLine?: string;
-              };
+              const address = (order.shippingAddress ?? {}) as ShippingAddress;
+              const stateProvince =
+                address.stateProvince || address.region || "";
+              const city = address.city || address.district || "";
+              const country = address.country || "Tanzania";
+              const isInternational =
+                (address.countryCode || (country === "Tanzania" ? "TZ" : "")) !==
+                "TZ";
 
               return (
                 <article
@@ -117,9 +143,16 @@ export default async function AdminOrdersPage() {
                   className="grid gap-5 bg-white p-5 shadow-sm lg:grid-cols-[1fr_1fr_1fr]"
                 >
                   <div>
-                    <p className="text-xs font-bold text-slate-500">
-                      ORDER NUMBER
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-bold text-slate-500">
+                        ORDER NUMBER
+                      </p>
+                      {isInternational && (
+                        <span className="rounded-full bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-blue-800">
+                          International
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 font-black">
                       {String(order.orderNumber)}
                     </p>
@@ -127,10 +160,16 @@ export default async function AdminOrdersPage() {
                       {formatDate(String(order.createdAt))}
                     </p>
                     <p className="mt-3 text-2xl font-black text-[#b12704]">
-                      {formatPrice(String(order.total))}
+                      {formatMoney(
+                        String(order.total),
+                        String(order.currency || "TZS"),
+                      )}
                     </p>
                     <p className="mt-3 text-sm font-bold">
                       Order: {String(order.orderStatus).replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Source: {String(order.source || "website")}
                     </p>
                   </div>
 
@@ -144,12 +183,15 @@ export default async function AdminOrdersPage() {
                     )}
 
                     <p className="mt-4 text-sm leading-6 text-slate-600">
-                      {address?.addressLine}
+                      {address.addressLine}
                       <br />
-                      {address?.district}
-                      {address?.ward ? `, ${address.ward}` : ""}
+                      {city}
+                      {address.ward ? `, ${address.ward}` : ""}
+                      {address.postalCode ? `, ${address.postalCode}` : ""}
                       <br />
-                      {address?.region}, Tanzania
+                      {stateProvince}
+                      <br />
+                      <strong>{country}</strong>
                     </p>
                   </div>
 

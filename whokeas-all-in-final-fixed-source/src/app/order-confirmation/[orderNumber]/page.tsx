@@ -1,7 +1,6 @@
 import { neon } from "@neondatabase/serverless";
+import Image from "next/image";
 import Link from "next/link";
-
-import StoreHeader from "@/components/store/StoreHeader";
 import { notFound } from "next/navigation";
 
 import PaymentReferenceForm from "@/components/payments/PaymentReferenceForm";
@@ -13,8 +12,30 @@ type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
 
-function formatPrice(value: string | number) {
-  return `TZS ${Number(value).toLocaleString("en-US")}`;
+type ShippingAddress = {
+  country?: string;
+  countryCode?: string;
+  stateProvince?: string;
+  city?: string;
+  region?: string;
+  district?: string;
+  ward?: string;
+  postalCode?: string;
+  addressLine?: string;
+};
+
+function formatMoney(value: string | number, currency: string) {
+  const amount = Number(value);
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: currency === "TZS" ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString("en-US")}`;
+  }
 }
 
 function SuccessIcon() {
@@ -52,7 +73,9 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
       o.order_number AS "orderNumber",
       o.customer_name AS "customerName",
       o.customer_phone AS "customerPhone",
+      o.customer_email AS "customerEmail",
       o.status::text AS status,
+      o.currency,
       o.total::text AS total,
       o.shipping_address AS "shippingAddress",
       p.provider AS "paymentProvider",
@@ -76,14 +99,11 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
         orderNumber: string;
         customerName: string;
         customerPhone: string;
+        customerEmail: string | null;
         status: string;
+        currency: string;
         total: string;
-        shippingAddress: {
-          region?: string;
-          district?: string;
-          ward?: string;
-          addressLine?: string;
-        };
+        shippingAddress: ShippingAddress;
         paymentProvider: string | null;
         paymentReference: string | null;
         paymentStatus: string | null;
@@ -105,28 +125,81 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
     ORDER BY product_name
   `;
 
+  const address = order.shippingAddress ?? {};
+  const stateProvince = address.stateProvince || address.region || "";
+  const city = address.city || address.district || "";
+  const country = address.country || "Tanzania";
+  const countryCode = address.countryCode || (country === "Tanzania" ? "TZ" : "");
+  const isInternational = countryCode !== "TZ";
+
   const mobileNumber =
     process.env.MOBILE_MONEY_NUMBER || "Configure MOBILE_MONEY_NUMBER";
   const mobileName =
     process.env.MOBILE_MONEY_NAME || "Configure MOBILE_MONEY_NAME";
-  const nmbAccount =
+
+  const localBankName = process.env.NMB_BANK_NAME || "NMB Bank Plc";
+  const localBankAccount =
     process.env.NMB_ACCOUNT_NUMBER || "Configure NMB_ACCOUNT_NUMBER";
-  const nmbName =
+  const localBankAccountName =
     process.env.NMB_ACCOUNT_NAME || "Configure NMB_ACCOUNT_NAME";
-  const bankName = process.env.NMB_BANK_NAME || "NMB Bank Plc";
+
+  const internationalBankName =
+    process.env.INTERNATIONAL_BANK_NAME || process.env.NMB_BANK_NAME || "";
+  const internationalBankAccount =
+    process.env.INTERNATIONAL_BANK_ACCOUNT_NUMBER ||
+    process.env.NMB_ACCOUNT_NUMBER ||
+    "";
+  const internationalBankAccountName =
+    process.env.INTERNATIONAL_BANK_ACCOUNT_NAME ||
+    process.env.NMB_ACCOUNT_NAME ||
+    "";
+  const internationalBankSwift =
+    process.env.INTERNATIONAL_BANK_SWIFT || "";
+  const internationalBankIban =
+    process.env.INTERNATIONAL_BANK_IBAN || "";
+
+  const internationalInstructionsReady = Boolean(
+    internationalBankName &&
+      internationalBankAccount &&
+      internationalBankAccountName &&
+      internationalBankSwift,
+  );
+
   const supportPhone =
     process.env.SUPPORT_PHONE || process.env.MOBILE_MONEY_NUMBER || "";
+  const supportEmail = process.env.SUPPORT_EMAIL || "";
 
   const requiresReference =
     order.paymentProvider === "manual_mobile_money" ||
     order.paymentProvider === "manual_bank_transfer";
 
   return (
-    <main className="min-h-screen bg-[#f5f6f8] text-slate-900">
-      <StoreHeader />
+    <main className="min-h-screen bg-[#eaeded] text-[#0f1111]">
+      <header className="bg-[#101820] text-white shadow-md">
+        <div className="mx-auto flex h-16 max-w-[1200px] items-center px-4">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative h-12 w-[72px]">
+              <Image
+                src="/brand/logo-mark.png"
+                alt=""
+                fill
+                priority
+                sizes="72px"
+                className="object-contain"
+              />
+            </div>
+            <div>
+              <div className="font-black tracking-[0.12em]">WHOKEAS</div>
+              <div className="text-[10px] font-black tracking-[0.3em] text-[#f3b61f]">
+                ALL IN
+              </div>
+            </div>
+          </Link>
+        </div>
+      </header>
 
       <div className="mx-auto max-w-[1050px] px-4 py-8">
-        <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-10">
+        <section className="bg-white p-7 shadow-sm sm:p-10">
           <SuccessIcon />
 
           <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-emerald-700">
@@ -138,8 +211,8 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
           </h1>
 
           <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-            Follow the payment instructions below. Supplier fulfilment starts
-            only after payment verification or cash-on-delivery approval.
+            Your order is recorded. Supplier fulfilment starts only after
+            payment verification and destination delivery confirmation.
           </p>
 
           <div className="mt-7 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-5 sm:grid-cols-3">
@@ -149,15 +222,25 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
             </div>
             <div>
               <p className="text-xs font-bold text-slate-500">STATUS</p>
-              <p className="mt-1 font-black text-[#ff4d00]">
+              <p className="mt-1 font-black text-[#b12704]">
                 {order.status.replaceAll("_", " ")}
               </p>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-500">TOTAL</p>
-              <p className="mt-1 font-black">{formatPrice(order.total)}</p>
+              <p className="text-xs font-bold text-slate-500">CURRENT TOTAL</p>
+              <p className="mt-1 font-black">
+                {formatMoney(order.total, order.currency)}
+              </p>
             </div>
           </div>
+
+          {isInternational && (
+            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+              This is an international order to <strong>{country}</strong>.
+              Final freight, customs responsibility, and delivery time must be
+              confirmed before fulfilment.
+            </div>
+          )}
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
             <div>
@@ -182,7 +265,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                       </p>
                     </div>
                     <p className="font-bold">
-                      {formatPrice(String(item.lineTotal))}
+                      {formatMoney(String(item.lineTotal), order.currency)}
                     </p>
                   </div>
                 ))}
@@ -191,19 +274,26 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               <div className="mt-7 rounded-lg border border-slate-200 p-5">
                 <h2 className="font-black">Delivery details</h2>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                  {order.shippingAddress?.addressLine}
+                  {address.addressLine}
                   <br />
-                  {order.shippingAddress?.district}
-                  {order.shippingAddress?.ward
-                    ? `, ${order.shippingAddress.ward}`
-                    : ""}
+                  {city}
+                  {address.ward ? `, ${address.ward}` : ""}
+                  {address.postalCode ? `, ${address.postalCode}` : ""}
                   <br />
-                  {order.shippingAddress?.region}, Tanzania
+                  {stateProvince}
+                  <br />
+                  {country}
                 </p>
                 <p className="mt-4 text-sm">
                   <span className="font-bold">Phone:</span>{" "}
                   {order.customerPhone}
                 </p>
+                {order.customerEmail ? (
+                  <p className="mt-1 text-sm">
+                    <span className="font-bold">Email:</span>{" "}
+                    {order.customerEmail}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -216,8 +306,9 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 <div className="mt-4">
                   <h2 className="text-xl font-black">Cash on Delivery</h2>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    We will contact you to confirm delivery availability and the
-                    final delivery charge. Pay when the product is delivered.
+                    We will contact you to confirm delivery availability and
+                    the final delivery charge. Pay when the product is
+                    delivered.
                   </p>
                 </div>
               )}
@@ -225,12 +316,12 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               {order.paymentProvider === "manual_mobile_money" && (
                 <div className="mt-4">
                   <h2 className="text-xl font-black">Mobile Money</h2>
-                  <div className="mt-4 rounded-lg bg-[#fff0e6] p-4">
+                  <div className="mt-4 rounded-lg bg-[#fff8df] p-4">
                     <p className="text-xs font-bold text-slate-500">
                       SEND EXACTLY
                     </p>
                     <p className="mt-1 text-2xl font-black">
-                      {formatPrice(order.total)}
+                      {formatMoney(order.total, order.currency)}
                     </p>
                     <p className="mt-4 text-xs font-bold text-slate-500">
                       NUMBER
@@ -241,43 +332,102 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
                 </div>
               )}
 
-              {order.paymentProvider === "manual_bank_transfer" && (
-                <div className="mt-4">
-                  <h2 className="text-xl font-black">NMB Bank Transfer</h2>
-                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
-                    <p className="text-sm">
-                      <span className="font-bold">Bank:</span> {bankName}
-                    </p>
-                    <p className="mt-2 text-sm">
-                      <span className="font-bold">Account:</span> {nmbAccount}
-                    </p>
-                    <p className="mt-2 text-sm">
-                      <span className="font-bold">Name:</span> {nmbName}
-                    </p>
-                    <p className="mt-4 text-sm">
-                      Transfer exactly{" "}
-                      <span className="font-black">
-                        {formatPrice(order.total)}
-                      </span>
-                      .
-                    </p>
+              {order.paymentProvider === "manual_bank_transfer" &&
+                !isInternational && (
+                  <div className="mt-4">
+                    <h2 className="text-xl font-black">NMB Bank Transfer</h2>
+                    <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                      <p className="text-sm">
+                        <span className="font-bold">Bank:</span>{" "}
+                        {localBankName}
+                      </p>
+                      <p className="mt-2 text-sm">
+                        <span className="font-bold">Account:</span>{" "}
+                        {localBankAccount}
+                      </p>
+                      <p className="mt-2 text-sm">
+                        <span className="font-bold">Name:</span>{" "}
+                        {localBankAccountName}
+                      </p>
+                      <p className="mt-4 text-sm">
+                        Transfer exactly{" "}
+                        <span className="font-black">
+                          {formatMoney(order.total, order.currency)}
+                        </span>
+                        .
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {requiresReference && (
-                <PaymentReferenceForm
-                  orderNumber={order.orderNumber}
-                  existingReference={order.paymentReference}
-                />
-              )}
+              {order.paymentProvider === "manual_bank_transfer" &&
+                isInternational && (
+                  <div className="mt-4">
+                    <h2 className="text-xl font-black">
+                      International Bank Transfer
+                    </h2>
+
+                    {internationalInstructionsReady ? (
+                      <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                        <p className="text-sm">
+                          <span className="font-bold">Bank:</span>{" "}
+                          {internationalBankName}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          <span className="font-bold">Account:</span>{" "}
+                          {internationalBankAccount}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          <span className="font-bold">Account name:</span>{" "}
+                          {internationalBankAccountName}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          <span className="font-bold">SWIFT / BIC:</span>{" "}
+                          {internationalBankSwift}
+                        </p>
+                        {internationalBankIban ? (
+                          <p className="mt-2 text-sm">
+                            <span className="font-bold">IBAN:</span>{" "}
+                            {internationalBankIban}
+                          </p>
+                        ) : null}
+                        <p className="mt-4 text-sm leading-6">
+                          Use the order number{" "}
+                          <span className="font-black">{order.orderNumber}</span>{" "}
+                          as the payment narration. Transfer fees and any
+                          currency-conversion costs are paid by the customer.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                        Do not transfer money yet. Support will confirm the
+                        final delivery cost and send verified international
+                        payment instructions.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {requiresReference &&
+                (!isInternational || internationalInstructionsReady) && (
+                  <PaymentReferenceForm
+                    orderNumber={order.orderNumber}
+                    existingReference={order.paymentReference}
+                  />
+                )}
 
               <div className="mt-5 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
                 Payment status: {order.paymentStatus ?? "pending"}
                 {supportPhone ? (
                   <>
                     <br />
-                    Support: {supportPhone}
+                    Support phone: {supportPhone}
+                  </>
+                ) : null}
+                {supportEmail ? (
+                  <>
+                    <br />
+                    Support email: {supportEmail}
                   </>
                 ) : null}
               </div>
@@ -287,7 +437,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
           <div className="mt-8">
             <Link
               href="/"
-              className="inline-block rounded-full bg-[#ff6a00] text-white px-6 py-3 text-sm font-bold hover:bg-[#e85f00]"
+              className="inline-block rounded-full bg-[#ffd814] px-6 py-3 text-sm font-bold hover:bg-[#f7ca00]"
             >
               Continue shopping
             </Link>

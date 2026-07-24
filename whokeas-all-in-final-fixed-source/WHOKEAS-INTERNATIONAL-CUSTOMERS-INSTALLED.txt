@@ -1,0 +1,18 @@
+WHOKEAS INTERNATIONAL CUSTOMERS INSTALLATION
+Installed: 2026-07-24 16:55:57
+Project: C:\Users\Hp\Desktop\whokeas-all-in\whokeas-all-in-final-fixed-source
+Backup: C:\Users\Hp\Desktop\WHOKEAS-BACKUPS\international-customers-20260724-165540
+Build verification: PASSED
+
+Installed capabilities:
+- 196-country checkout selector
+- international address and phone validation
+- international order flag in admin
+- safe bank-transfer confirmation flow
+- restored order-confirmation page
+- restored customer payment-reference API
+- restored admin order-action API
+
+Database migration: NOT REQUIRED
+CJ catalogue algorithm: NOT CHANGED
+Product data: NOT CHANGED
