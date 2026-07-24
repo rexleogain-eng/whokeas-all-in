@@ -110,9 +110,9 @@ export default function CartClient() {
           <span className="text-sm">Subtotal ({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
           <span className="text-xl font-bold">{formatPrice(subtotal)}</span>
         </div>
-        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Delivery fee is confirmed before payment and supplier fulfilment.</div>
+        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Your final market currency and international delivery price are calculated securely at checkout.</div>
         <Link href="/checkout" className="classic-button-dark mt-5 w-full">Proceed to checkout</Link>
-        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Secure order recording · Local verification</p>
+        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Guest checkout · International market quote · Secure verification</p>
       </aside>
     </div>
   );

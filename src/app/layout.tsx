@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s | WHOKEAS ALL IN",
   },
   description:
-    "A refined Tanzania-first marketplace for technology, home, fashion, study and lifestyle essentials.",
+    "A refined international marketplace for technology, home, fashion, study and lifestyle essentials with market-aware pricing.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
