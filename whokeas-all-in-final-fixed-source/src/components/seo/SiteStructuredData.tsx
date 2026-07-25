@@ -1,30 +1,46 @@
 import {
-  DEFAULT_SOCIAL_IMAGE,
+  BRAND_ALTERNATE_NAMES,
+  BRAND_LOGO_URL,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
 } from "../../lib/seo";
 
 export default function SiteStructuredData() {
-  const structuredData = [
+  const organizationId = `${SITE_URL}/#organization`;
+  const websiteId = `${SITE_URL}/#website`;
+
+  const data = [
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
+      "@id": organizationId,
       name: SITE_NAME,
-      url: SITE_URL,
-      logo: DEFAULT_SOCIAL_IMAGE,
+      legalName: SITE_NAME,
+      alternateName: BRAND_ALTERNATE_NAMES,
+      url: `${SITE_URL}/`,
       description: SITE_DESCRIPTION,
+      logo: {
+        "@type": "ImageObject",
+        url: BRAND_LOGO_URL,
+        width: 1254,
+        height: 1254,
+      },
+      brand: {
+        "@type": "Brand",
+        name: SITE_NAME,
+      },
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      url: SITE_URL,
+      "@id": websiteId,
+      url: `${SITE_URL}/`,
       name: SITE_NAME,
+      alternateName: BRAND_ALTERNATE_NAMES,
       description: SITE_DESCRIPTION,
       publisher: {
-        "@id": `${SITE_URL}/#organization`,
+        "@id": organizationId,
       },
       potentialAction: {
         "@type": "SearchAction",
@@ -41,7 +57,7 @@ export default function SiteStructuredData() {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+        __html: JSON.stringify(data).replace(/</g, "\\u003c"),
       }}
     />
   );

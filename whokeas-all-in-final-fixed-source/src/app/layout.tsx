@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import SiteStructuredData from "../components/seo/SiteStructuredData";
 import {
   DEFAULT_SOCIAL_IMAGE,
+  FAVICON_URL,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
 } from "../lib/seo";
-
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,10 +20,11 @@ export const metadata: Metadata = {
   keywords: [
     "WHOKEAS ALL IN",
     "WHOKEAS",
+    "Whokeas Store",
     "online shopping Tanzania",
     "Tanzania online store",
     "technology products Tanzania",
-    "fashion Tanzania",
+    "fashion products Tanzania",
     "home products Tanzania",
     "study products Tanzania",
   ],
@@ -31,12 +32,23 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   alternates: {
-    canonical: "/",
+    canonical: `${SITE_URL}/`,
+  },
+  icons: {
+    icon: [
+      {
+        url: FAVICON_URL,
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+    shortcut: FAVICON_URL,
+    apple: FAVICON_URL,
   },
   openGraph: {
     type: "website",
     locale: "en_TZ",
-    url: SITE_URL,
+    url: `${SITE_URL}/`,
     siteName: SITE_NAME,
     title: "WHOKEAS ALL IN | Online Shopping in Tanzania",
     description: SITE_DESCRIPTION,
@@ -77,7 +89,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><SiteStructuredData />{children}</body>
+      <body>
+        <SiteStructuredData />{children}</body>
     </html>
   );
 }

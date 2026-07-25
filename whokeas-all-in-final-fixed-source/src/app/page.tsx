@@ -67,8 +67,9 @@ export default async function HomePage() {
                 <span className="block text-[#1c2434]">One local store.</span>
               </h1>
               <p className="mt-5 max-w-xl text-base leading-7 text-orange-50">
-                Discover technology, home, fashion and study products with local
-                TZS pricing and clear order support.
+                WHOKEAS ALL IN is an online marketplace for technology, fashion,
+                home, study and lifestyle products, with clear TZS pricing,
+                international delivery options and customer support.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -197,7 +198,7 @@ export default async function HomePage() {
           <div>
             <p className="font-black tracking-[0.14em]">WHOKEAS ALL IN</p>
             <p className="mt-3 text-sm leading-6 text-slate-400">
-              A modern Tanzania-focused digital marketplace.
+              WHOKEAS ALL IN — online shopping for technology, fashion, home, study and lifestyle products.
             </p>
           </div>
           <div>
