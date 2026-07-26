@@ -86,6 +86,15 @@ type CJFreightResponse =
       [key: string]: unknown;
     };
 
+type CJStockRow = {
+  vid?: string;
+  areaId?: string;
+  areaEn?: string;
+  countryCode?: string;
+  storageNum?: number | string;
+  totalInventoryNum?: number | string;
+};
+
 type CJCreateOrderData = {
   orderNumber?: string;
   orderId?: string;
@@ -175,6 +184,7 @@ export type CJFulfillmentRecord = {
   payId: string | null;
   cjOrderStatus: string | null;
   logisticsName: string | null;
+  originCountryCode: string | null;
   logisticsCostUsd: number | null;
   estimatedDelivery: string | null;
   payableAmountUsd: number | null;
@@ -418,6 +428,7 @@ export async function ensureCJFulfillmentSchema() {
           pay_id varchar(200),
           cj_order_status varchar(100),
           logistics_name varchar(200),
+          origin_country_code varchar(2),
           logistics_cost_usd numeric(14,2),
           estimated_delivery varchar(100),
           payable_amount_usd numeric(14,2),
@@ -437,6 +448,11 @@ export async function ensureCJFulfillmentSchema() {
           created_at timestamptz NOT NULL DEFAULT NOW(),
           updated_at timestamptz NOT NULL DEFAULT NOW()
         )
+      `;
+
+      await sql`
+        ALTER TABLE cj_order_fulfillments
+        ADD COLUMN IF NOT EXISTS origin_country_code varchar(2)
       `;
 
       await sql`
@@ -470,6 +486,7 @@ async function getFulfillmentByOrderId(orderId: string) {
       pay_id AS "payId",
       cj_order_status AS "cjOrderStatus",
       logistics_name AS "logisticsName",
+      origin_country_code AS "originCountryCode",
       logistics_cost_usd::text AS "logisticsCostUsd",
       estimated_delivery AS "estimatedDelivery",
       payable_amount_usd::text AS "payableAmountUsd",
@@ -632,6 +649,90 @@ function originCountry(items: LocalOrderItem[]) {
   return clean(process.env.CJ_DEFAULT_ORIGIN_COUNTRY_CODE || "CN", 2).toUpperCase();
 }
 
+function stockQuantity(row: CJStockRow) {
+  const storage = Number(row.storageNum);
+  const total = Number(row.totalInventoryNum);
+
+  return Math.max(
+    Number.isFinite(storage) ? storage : 0,
+    Number.isFinite(total) ? total : 0,
+  );
+}
+
+async function discoverCommonWarehouseOrigins(
+  items: LocalOrderItem[],
+  preferredOrigin: string,
+) {
+  const diagnostics: string[] = [];
+  const originSets: Set<string>[] = [];
+  const uniqueVids = [
+    ...new Set(
+      items
+        .map((item) => clean(item.cjVariantId, 200))
+        .filter(Boolean),
+    ),
+  ];
+
+  for (const vid of uniqueVids) {
+    try {
+      const stockRows = await cjRequest<CJStockRow[]>(
+        `/v1/product/stock/queryByVid?vid=${encodeURIComponent(vid)}`,
+      );
+
+      const origins = new Set(
+        stockRows
+          .filter((row) => stockQuantity(row) > 0)
+          .map((row) => clean(row.countryCode, 2).toUpperCase())
+          .filter((countryCode) => /^[A-Z]{2}$/.test(countryCode)),
+      );
+
+      if (origins.size === 0) {
+        diagnostics.push(
+          `CJ reports no available warehouse stock for variant ${vid}.`,
+        );
+      }
+
+      originSets.push(origins);
+    }
+    catch (error) {
+      diagnostics.push(errorText(error));
+    }
+  }
+
+  let commonOrigins: string[] = [];
+
+  if (originSets.length > 0) {
+    commonOrigins = [...originSets[0]].filter((origin) =>
+      originSets.every((set) => set.has(origin)),
+    );
+  }
+
+  if (commonOrigins.length === 0 && originSets.some((set) => set.size > 0)) {
+    throw new Error(
+      "The CJ items in this order are not stocked in one common warehouse. Place products from different warehouses in separate orders.",
+    );
+  }
+
+  const fallback = /^[A-Z]{2}$/.test(preferredOrigin)
+    ? preferredOrigin
+    : "CN";
+
+  if (commonOrigins.length === 0) {
+    commonOrigins = [fallback];
+  }
+
+  return {
+    origins: [...new Set(commonOrigins)].sort((left, right) => {
+      if (left === fallback) return -1;
+      if (right === fallback) return 1;
+      if (left === "CN") return -1;
+      if (right === "CN") return 1;
+      return left.localeCompare(right);
+    }),
+    diagnostics,
+  };
+}
+
 async function selectLogistics(input: {
   order: LocalOrder;
   items: LocalOrderItem[];
@@ -647,6 +748,8 @@ async function selectLogistics(input: {
   const countryCode = clean(address.countryCode || "TZ", 2).toUpperCase();
   const countryName = clean(address.countryName || countryCode, 50);
   const addressLine1 = clean(address.addressLine1, 200);
+  const houseNumber =
+    clean(addressLine1.match(/^\s*([A-Za-z0-9-]+)/)?.[1], 20) || "";
 
   if (countryCode === "TZ" && !/^\d{5}$/.test(postalCode)) {
     throw new Error(
@@ -665,81 +768,160 @@ async function selectLogistics(input: {
     quantity: item.quantity,
   }));
 
-  const diagnostics: string[] = [];
-  let options: CJFreightOption[] = [];
+  const warehouseResult = await discoverCommonWarehouseOrigins(
+    input.items,
+    input.fromCountryCode,
+  );
 
-  try {
-    const partnerResponse = await cjRequest<CJFreightResponse>(
-      "/v1/logistic/partnerFreightCalculate",
-      {
-        method: "POST",
-        headers: platformHeaders(),
-        body: JSON.stringify({
-          orderNumber: input.order.orderNumber,
-          shippingZip: postalCode,
-          shippingCountryCode: countryCode,
-          shippingCountry: countryName,
-          shippingProvince: province,
-          shippingCity: city,
-          shippingAddress: addressLine1,
-          shippingCustomerName: clean(
-            address.recipientName || input.order.customerName,
-            50,
-          ),
-          shippingPhone: phoneForCJ(
-            clean(address.phone || input.order.customerPhone, 40),
-          ),
-          remark: clean(input.order.customerNotes, 500),
-          fromCountryCode: input.fromCountryCode,
-          email: clean(input.order.customerEmail, 50),
-          iossType: 1,
-          products,
-        }),
-      },
-    );
+  const diagnostics = [...warehouseResult.diagnostics];
+  const candidates: Array<{
+    option: CJFreightOption;
+    originCountryCode: string;
+  }> = [];
 
-    options = extractFreightOptions(partnerResponse);
-    diagnostics.push(...freightDiagnostics(partnerResponse));
-  }
-  catch (error) {
-    diagnostics.push(errorText(error));
-  }
+  for (const originCountryCode of warehouseResult.origins) {
+    let options: CJFreightOption[] = [];
 
-  if (options.length === 0) {
     try {
-      const simpleResponse = await cjRequest<CJFreightResponse>(
-        "/v1/logistic/freightCalculate",
+      const partnerResponse = await cjRequest<CJFreightResponse>(
+        "/v1/logistic/partnerFreightCalculate",
         {
           method: "POST",
           headers: platformHeaders(),
           body: JSON.stringify({
-            startCountryCode: input.fromCountryCode,
-            endCountryCode: countryCode,
-            zip: postalCode,
+            orderNumber: input.order.orderNumber,
+            shippingZip: postalCode,
+            shippingCountryCode: countryCode,
+            shippingCountry: countryName,
+            shippingProvince: province,
+            shippingCity: city,
+            shippingAddress: addressLine1,
+            shippingCustomerName: clean(
+              address.recipientName || input.order.customerName,
+              50,
+            ),
+            shippingPhone: phoneForCJ(
+              clean(address.phone || input.order.customerPhone, 40),
+            ),
+            houseNumber,
+            remark: clean(input.order.customerNotes, 500),
+            fromCountryCode: originCountryCode,
+            email: clean(input.order.customerEmail, 50),
+            iossType: 1,
             products,
           }),
         },
       );
 
-      options = extractFreightOptions(simpleResponse);
-      diagnostics.push(...freightDiagnostics(simpleResponse));
+      options = extractFreightOptions(partnerResponse);
+      diagnostics.push(...freightDiagnostics(partnerResponse));
     }
     catch (error) {
-      diagnostics.push(errorText(error));
+      diagnostics.push(
+        `${originCountryCode}: ${errorText(error)}`,
+      );
+    }
+
+    if (options.length === 0) {
+      try {
+        const simpleResponse = await cjRequest<CJFreightResponse>(
+          "/v1/logistic/freightCalculate",
+          {
+            method: "POST",
+            headers: platformHeaders(),
+            body: JSON.stringify({
+              startCountryCode: originCountryCode,
+              endCountryCode: countryCode,
+              zip: postalCode,
+              houseNumber,
+              products,
+            }),
+          },
+        );
+
+        options = extractFreightOptions(simpleResponse);
+        diagnostics.push(...freightDiagnostics(simpleResponse));
+      }
+      catch (error) {
+        diagnostics.push(
+          `${originCountryCode}: ${errorText(error)}`,
+        );
+      }
+    }
+
+    for (const option of options) {
+      const name = logisticsName(option);
+      const amount = logisticsAmount(option);
+      const optionError = clean(option.errorEn || option.error, 500);
+
+      if (
+        name &&
+        Number.isFinite(amount) &&
+        amount >= 0 &&
+        !optionError
+      ) {
+        candidates.push({
+          option,
+          originCountryCode,
+        });
+      }
+      else if (optionError) {
+        diagnostics.push(`${originCountryCode}: ${optionError}`);
+      }
     }
   }
 
-  const selected = chooseFreightOption(
-    options,
-    preferredLogisticsNames(input.items),
-    diagnostics,
+  if (candidates.length === 0) {
+    const tried = warehouseResult.origins.join(", ");
+    const detail = [...new Set(diagnostics)]
+      .filter(Boolean)
+      .slice(0, 5)
+      .join(" ");
+
+    throw new Error(
+      detail
+        ? `No CJ shipping route to ${countryCode} was found from warehouses ${tried}. ${detail}`
+        : `No CJ shipping route to ${countryCode} was found from warehouses ${tried}. This variant is not currently deliverable to the destination.`,
+    );
+  }
+
+  const preferences = preferredLogisticsNames(input.items);
+  const normalizedPreferences = preferences.map((name) =>
+    name.toLowerCase(),
   );
 
+  candidates.sort((left, right) => {
+    const leftName = logisticsName(left.option).toLowerCase();
+    const rightName = logisticsName(right.option).toLowerCase();
+    const leftPreferred = normalizedPreferences.findIndex((preference) =>
+      leftName.includes(preference) || preference.includes(leftName),
+    );
+    const rightPreferred = normalizedPreferences.findIndex((preference) =>
+      rightName.includes(preference) || preference.includes(rightName),
+    );
+
+    if (leftPreferred >= 0 || rightPreferred >= 0) {
+      if (leftPreferred < 0) return 1;
+      if (rightPreferred < 0) return -1;
+      if (leftPreferred !== rightPreferred) {
+        return leftPreferred - rightPreferred;
+      }
+    }
+
+    return (
+      logisticsAmount(left.option) -
+      logisticsAmount(right.option)
+    );
+  });
+
+  const selected = candidates[0];
+
   return {
-    name: logisticsName(selected),
-    amountUsd: logisticsAmount(selected),
-    delivery: deliveryWindow(selected),
-    options,
+    name: logisticsName(selected.option),
+    amountUsd: logisticsAmount(selected.option),
+    delivery: deliveryWindow(selected.option),
+    options: candidates.map((candidate) => candidate.option),
+    originCountryCode: selected.originCountryCode,
   };
 }
 
@@ -839,12 +1021,16 @@ export async function prepareCJOrder(
     let current = await getFulfillmentByOrderId(order.id);
     if (!current) throw new Error("Could not initialize the CJ fulfillment record.");
 
-    const fromCountryCode = originCountry(items);
+    let fromCountryCode =
+      clean(current.originCountryCode, 2).toUpperCase() ||
+      originCountry(items);
+
     let selectedLogistics = {
       name: current.logisticsName || "",
       amountUsd: current.logisticsCostUsd || 0,
       delivery: current.estimatedDelivery,
       options: [] as CJFreightOption[],
+      originCountryCode: fromCountryCode,
     };
 
     if (!selectedLogistics.name) {
@@ -854,10 +1040,13 @@ export async function prepareCJOrder(
         fromCountryCode,
       });
 
+      fromCountryCode = selectedLogistics.originCountryCode;
+
       await sql`
         UPDATE cj_order_fulfillments
         SET
           logistics_name = ${selectedLogistics.name},
+          origin_country_code = ${fromCountryCode},
           logistics_cost_usd = ${selectedLogistics.amountUsd},
           estimated_delivery = ${selectedLogistics.delivery},
           updated_at = NOW()
