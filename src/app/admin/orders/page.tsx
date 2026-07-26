@@ -3,8 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import AdminShell from "@/components/admin/AdminShell";
+import CJFulfillmentActions from "@/components/admin/CJFulfillmentActions";
 import OrderActions from "@/components/admin/OrderActions";
 import { isAdmin } from "@/lib/admin-auth";
+import { ensureCJFulfillmentSchema } from "@/lib/cj-fulfillment";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -68,6 +70,8 @@ export default async function AdminOrdersPage() {
     throw new Error("DATABASE_URL is missing");
   }
 
+  await ensureCJFulfillmentSchema();
+
   const sql = neon(process.env.DATABASE_URL);
 
   const orders = await sql`
@@ -84,7 +88,19 @@ export default async function AdminOrdersPage() {
 
       payment.provider AS "paymentProvider",
       payment.provider_reference AS "paymentReference",
-      payment.status::text AS "paymentStatus"
+      payment.status::text AS "paymentStatus",
+
+      cj.status AS "cjStatus",
+      cj.stage AS "cjStage",
+      cj.is_sandbox AS "cjIsSandbox",
+      cj.cj_order_id AS "cjOrderId",
+      cj.shipment_order_id AS "cjShipmentOrderId",
+      cj.pay_id AS "cjPayId",
+      cj.cj_pay_url AS "cjPayUrl",
+      cj.logistics_name AS "cjLogisticsName",
+      cj.payable_amount_usd::text AS "cjPayableAmountUsd",
+      cj.tracking_number AS "cjTrackingNumber",
+      cj.last_error AS "cjLastError"
 
     FROM orders order_record
 
@@ -98,6 +114,9 @@ export default async function AdminOrdersPage() {
       ORDER BY created_at DESC
       LIMIT 1
     ) payment ON TRUE
+
+    LEFT JOIN cj_order_fulfillments cj
+      ON cj.order_id = order_record.id
 
     ORDER BY order_record.created_at DESC
     LIMIT 200
@@ -377,6 +396,66 @@ export default async function AdminOrdersPage() {
                       <OrderActions
                         orderNumber={String(
                           order.orderNumber,
+                        )}
+                      />
+
+                      <CJFulfillmentActions
+                        orderNumber={String(
+                          order.orderNumber,
+                        )}
+                        orderStatus={orderStatus}
+                        cjStatus={
+                          order.cjStatus
+                            ? String(order.cjStatus)
+                            : null
+                        }
+                        cjStage={
+                          order.cjStage
+                            ? String(order.cjStage)
+                            : null
+                        }
+                        cjOrderId={
+                          order.cjOrderId
+                            ? String(order.cjOrderId)
+                            : null
+                        }
+                        cjShipmentOrderId={
+                          order.cjShipmentOrderId
+                            ? String(order.cjShipmentOrderId)
+                            : null
+                        }
+                        cjPayId={
+                          order.cjPayId
+                            ? String(order.cjPayId)
+                            : null
+                        }
+                        cjPayUrl={
+                          order.cjPayUrl
+                            ? String(order.cjPayUrl)
+                            : null
+                        }
+                        cjLogisticsName={
+                          order.cjLogisticsName
+                            ? String(order.cjLogisticsName)
+                            : null
+                        }
+                        cjPayableAmountUsd={
+                          order.cjPayableAmountUsd
+                            ? String(order.cjPayableAmountUsd)
+                            : null
+                        }
+                        cjTrackingNumber={
+                          order.cjTrackingNumber
+                            ? String(order.cjTrackingNumber)
+                            : null
+                        }
+                        cjLastError={
+                          order.cjLastError
+                            ? String(order.cjLastError)
+                            : null
+                        }
+                        cjIsSandbox={Boolean(
+                          order.cjIsSandbox,
                         )}
                       />
                     </div>
