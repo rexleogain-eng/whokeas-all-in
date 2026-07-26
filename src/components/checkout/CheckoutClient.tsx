@@ -438,6 +438,17 @@ export default function CheckoutClient() {
     }
 
     if (
+      form.countryCode === "TZ" &&
+      !/^\d{5}$/.test(form.postalCode.trim())
+    ) {
+      setError(
+        "Enter the exact five-digit Tanzania postcode for the delivery ward.",
+      );
+
+      return;
+    }
+
+    if (
       form.createAccount &&
       form.password.length < 8
     ) {
@@ -727,19 +738,38 @@ export default function CheckoutClient() {
             <label>
               <span className="mb-2 block text-sm font-bold">
                 Postal or ZIP code
+                {isTanzania ? " *" : ""}
               </span>
 
               <input
+                required={isTanzania}
                 autoComplete="postal-code"
+                inputMode={isTanzania ? "numeric" : undefined}
+                pattern={isTanzania ? "[0-9]{5}" : undefined}
+                maxLength={isTanzania ? 5 : 20}
+                placeholder={
+                  isTanzania
+                    ? "Exact five-digit ward postcode"
+                    : "Postal or ZIP code"
+                }
                 value={form.postalCode}
                 onChange={(event) =>
                   updateField(
                     "postalCode",
-                    event.target.value,
+                    isTanzania
+                      ? event.target.value.replace(/\D/g, "").slice(0, 5)
+                      : event.target.value,
                   )
                 }
                 className="w-full border border-[#cfc4b1] bg-white px-4 py-3 outline-none focus:border-[#9b762c]"
               />
+
+              {isTanzania ? (
+                <span className="mt-2 block text-xs text-[#6f6557]">
+                  Tanzania uses a five-digit postcode. Use the code for the
+                  customer&apos;s ward or delivery area.
+                </span>
+              ) : null}
             </label>
 
             <label className="sm:col-span-2">

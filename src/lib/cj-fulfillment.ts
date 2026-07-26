@@ -55,6 +55,7 @@ type LocalOrderItem = {
 type CJFreightOption = {
   logisticName?: string;
   logisticsName?: string;
+  enName?: string;
   option?: {
     enName?: string;
   };
@@ -66,9 +67,24 @@ type CJFreightOption = {
   logisticPrice?: number | string;
   totalPostageFee?: number | string;
   postageAmount?: number | string;
+  shippingCost?: number | string;
+  freightAmount?: number | string;
+  logisticsCost?: number | string;
+  selected?: boolean;
   error?: string;
   errorEn?: string;
 };
+
+type CJFreightResponse =
+  | CJFreightOption[]
+  | {
+      freightTrialList?: CJFreightOption[];
+      logisticsInfoList?: CJFreightOption[];
+      availableLogisticList?: CJFreightOption[];
+      errorEnList?: unknown[];
+      errorSuggestionList?: unknown[];
+      [key: string]: unknown;
+    };
 
 type CJCreateOrderData = {
   orderNumber?: string;
@@ -231,17 +247,31 @@ function fulfillmentStatusFromCJ(status: string) {
 }
 
 function logisticsAmount(option: CJFreightOption) {
-  return cjNumber(
-    option.totalPostageFee ??
-      option.postageAmount ??
-      option.logisticPrice,
-  );
+  const candidates = [
+    option.shippingCost,
+    option.freightAmount,
+    option.logisticsCost,
+    option.totalPostageFee,
+    option.postageAmount,
+    option.logisticPrice,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = Number(candidate);
+
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return Number.NaN;
 }
 
 function logisticsName(option: CJFreightOption) {
   return clean(
     option.logisticsName ||
       option.logisticName ||
+      option.enName ||
       option.option?.enName ||
       option.channel?.enName,
     200,
@@ -250,6 +280,54 @@ function logisticsName(option: CJFreightOption) {
 
 function deliveryWindow(option: CJFreightOption) {
   return clean(option.arrivalTime || option.logisticAging, 100) || null;
+}
+
+function extractFreightOptions(
+  response: CJFreightResponse | null | undefined,
+) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+
+  return (
+    response.freightTrialList ||
+    response.logisticsInfoList ||
+    response.availableLogisticList ||
+    []
+  );
+}
+
+function readableFreightDiagnostic(value: unknown) {
+  if (typeof value === "string") {
+    return clean(value, 500);
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return clean(
+    record.msgEn ||
+      record.message ||
+      record.errorEn ||
+      record.error ||
+      JSON.stringify(record),
+    500,
+  );
+}
+
+function freightDiagnostics(
+  response: CJFreightResponse | null | undefined,
+) {
+  if (!response || Array.isArray(response)) return [];
+
+  return [
+    ...(response.errorEnList || []),
+    ...(response.errorSuggestionList || []),
+  ]
+    .map(readableFreightDiagnostic)
+    .filter(Boolean);
 }
 
 function preferredLogisticsNames(items: LocalOrderItem[] = []) {
@@ -267,15 +345,34 @@ function preferredLogisticsNames(items: LocalOrderItem[] = []) {
 function chooseFreightOption(
   options: CJFreightOption[],
   preferences: string[] = [],
+  diagnostics: string[] = [],
 ) {
   const valid = options.filter((option) => {
     const name = logisticsName(option);
     const amount = logisticsAmount(option);
-    return name && amount > 0 && !clean(option.error || option.errorEn, 300);
+
+    return (
+      name &&
+      Number.isFinite(amount) &&
+      amount >= 0 &&
+      !clean(option.error || option.errorEn, 300)
+    );
   });
 
   if (valid.length === 0) {
-    throw new Error("CJ returned no usable logistics method for this address.");
+    const optionErrors = options
+      .map((option) => clean(option.errorEn || option.error, 500))
+      .filter(Boolean);
+
+    const detail = [...new Set([...diagnostics, ...optionErrors])]
+      .slice(0, 5)
+      .join(" ");
+
+    throw new Error(
+      detail
+        ? `CJ returned no usable logistics method. ${detail}`
+        : "CJ returned no usable logistics method for this product and destination.",
+    );
   }
 
   for (const preference of preferences) {
@@ -549,15 +646,30 @@ async function selectLogistics(input: {
   const city = clean(address.city || province, 50);
   const countryCode = clean(address.countryCode || "TZ", 2).toUpperCase();
   const countryName = clean(address.countryName || countryCode, 50);
+  const addressLine1 = clean(address.addressLine1, 200);
+
+  if (countryCode === "TZ" && !/^\d{5}$/.test(postalCode)) {
+    throw new Error(
+      "Tanzania delivery requires the exact five-digit TCRA postcode. Create a new test order with the correct ward postcode.",
+    );
+  }
+
+  if (addressLine1.length < 5) {
+    throw new Error(
+      "Enter a complete delivery address with house/building and street, ward or delivery point.",
+    );
+  }
+
   const products = input.items.map((item) => ({
     vid: clean(item.cjVariantId, 200),
     quantity: item.quantity,
   }));
 
+  const diagnostics: string[] = [];
   let options: CJFreightOption[] = [];
 
   try {
-    options = await cjRequest<CJFreightOption[]>(
+    const partnerResponse = await cjRequest<CJFreightResponse>(
       "/v1/logistic/partnerFreightCalculate",
       {
         method: "POST",
@@ -569,8 +681,11 @@ async function selectLogistics(input: {
           shippingCountry: countryName,
           shippingProvince: province,
           shippingCity: city,
-          shippingAddress: clean(address.addressLine1, 200),
-          shippingCustomerName: clean(address.recipientName || input.order.customerName, 50),
+          shippingAddress: addressLine1,
+          shippingCustomerName: clean(
+            address.recipientName || input.order.customerName,
+            50,
+          ),
           shippingPhone: phoneForCJ(
             clean(address.phone || input.order.customerPhone, 40),
           ),
@@ -582,26 +697,44 @@ async function selectLogistics(input: {
         }),
       },
     );
-  } catch {
-    options = await cjRequest<CJFreightOption[]>(
-      "/v1/logistic/freightCalculate",
-      {
-        method: "POST",
-        headers: platformHeaders(),
-        body: JSON.stringify({
-          startCountryCode: input.fromCountryCode,
-          endCountryCode: countryCode,
-          zip: postalCode,
-          products,
-        }),
-      },
-    );
+
+    options = extractFreightOptions(partnerResponse);
+    diagnostics.push(...freightDiagnostics(partnerResponse));
+  }
+  catch (error) {
+    diagnostics.push(errorText(error));
+  }
+
+  if (options.length === 0) {
+    try {
+      const simpleResponse = await cjRequest<CJFreightResponse>(
+        "/v1/logistic/freightCalculate",
+        {
+          method: "POST",
+          headers: platformHeaders(),
+          body: JSON.stringify({
+            startCountryCode: input.fromCountryCode,
+            endCountryCode: countryCode,
+            zip: postalCode,
+            products,
+          }),
+        },
+      );
+
+      options = extractFreightOptions(simpleResponse);
+      diagnostics.push(...freightDiagnostics(simpleResponse));
+    }
+    catch (error) {
+      diagnostics.push(errorText(error));
+    }
   }
 
   const selected = chooseFreightOption(
-    Array.isArray(options) ? options : [],
+    options,
     preferredLogisticsNames(input.items),
+    diagnostics,
   );
+
   return {
     name: logisticsName(selected),
     amountUsd: logisticsAmount(selected),

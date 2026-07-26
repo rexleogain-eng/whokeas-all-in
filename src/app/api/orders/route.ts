@@ -209,6 +209,20 @@ export async function POST(request: Request) {
       );
     }
 
+    if (
+      countryCode === "TZ" &&
+      !/^\d{5}$/.test(postalCode)
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Enter the exact five-digit Tanzania postcode for the delivery ward.",
+        },
+        { status: 400 },
+      );
+    }
+
     const allowedLocalMethods: PaymentMethod[] = [
       "cash_on_delivery",
       "manual_mobile_money",
