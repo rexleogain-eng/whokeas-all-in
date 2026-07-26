@@ -8,6 +8,7 @@ const STAGE_ORDER = [
   "cart_added",
   "cart_confirmed",
   "awaiting_cj_payment",
+  "sandbox_paid",
 ] as const;
 
 type Stage = (typeof STAGE_ORDER)[number];
@@ -1248,49 +1249,95 @@ export async function prepareCJOrder(
     }
 
     if (!stageAtLeast(current.stage, "awaiting_cj_payment")) {
-      const parent = await cjRequest<CJParentOrderData>(
-        "/v1/shopping/order/saveGenerateParentOrder",
-        {
-          method: "POST",
-          headers: platformHeaders(),
-          body: JSON.stringify({ shipmentOrderId: current.shipmentOrderId }),
-        },
-      );
+      if (isSandbox) {
+        const simulated = await cjRequest<boolean>(
+          "/v1/shopping/sandbox/simulatePay",
+          {
+            method: "POST",
+            headers: platformHeaders(),
+            body: JSON.stringify({
+              shipmentOrderId: current.shipmentOrderId,
+            }),
+          },
+        );
 
-      if (parent.submitSuccess === false) {
-        throw new Error("CJ could not generate the payment order.");
+        if (simulated !== true) {
+          throw new Error("CJ could not simulate the sandbox payment.");
+        }
+
+        await sql`
+          UPDATE cj_order_fulfillments
+          SET
+            status = 'sandbox_paid',
+            stage = 'sandbox_paid',
+            pay_id = 'SANDBOX-SIMULATED',
+            cj_order_status = 'SANDBOX_PAID',
+            payable_amount_usd = NULL,
+            parent_response = ${JSON.stringify({
+              simulated: true,
+              shipmentOrderId: current.shipmentOrderId,
+              cjOrderId: current.cjOrderId,
+            })}::jsonb,
+            last_error = NULL,
+            last_synced_at = NOW(),
+            updated_at = NOW()
+          WHERE order_id = ${order.id}
+        `;
       }
+      else {
+        const parent = await cjRequest<CJParentOrderData>(
+          "/v1/shopping/order/saveGenerateParentOrder",
+          {
+            method: "POST",
+            headers: platformHeaders(),
+            body: JSON.stringify({
+              shipmentOrderId: current.shipmentOrderId,
+            }),
+          },
+        );
 
-      const unmatched = [
-        ...(Array.isArray(parent.unMatchOrderCodes)
-          ? parent.unMatchOrderCodes
-          : []),
-        ...(Array.isArray(parent.unMatchProductCodes)
-          ? parent.unMatchProductCodes
-          : []),
-      ];
-      if (unmatched.length > 0) {
-        throw new Error(`CJ could not match: ${unmatched.join(", ")}`);
+        if (parent.submitSuccess === false) {
+          const responseDetail = JSON.stringify(parent).slice(0, 1200);
+
+          throw new Error(
+            responseDetail
+              ? `CJ could not generate the payment order: ${responseDetail}`
+              : "CJ could not generate the payment order.",
+          );
+        }
+
+        const unmatched = [
+          ...(Array.isArray(parent.unMatchOrderCodes)
+            ? parent.unMatchOrderCodes
+            : []),
+          ...(Array.isArray(parent.unMatchProductCodes)
+            ? parent.unMatchProductCodes
+            : []),
+        ];
+
+        if (unmatched.length > 0) {
+          throw new Error(`CJ could not match: ${unmatched.join(", ")}`);
+        }
+
+        const payable = cjNumber(
+          parent.paymentInformation?.payableAmount ??
+            parent.paymentInformation?.actualPayment ??
+            parent.orderMoney,
+        );
+
+        await sql`
+          UPDATE cj_order_fulfillments
+          SET
+            status = 'awaiting_cj_payment',
+            stage = 'awaiting_cj_payment',
+            pay_id = ${clean(parent.payId, 200) || null},
+            payable_amount_usd = ${payable > 0 ? payable : null},
+            parent_response = ${JSON.stringify(parent)}::jsonb,
+            last_error = NULL,
+            updated_at = NOW()
+          WHERE order_id = ${order.id}
+        `;
       }
-
-      const payable = cjNumber(
-        parent.paymentInformation?.payableAmount ??
-          parent.paymentInformation?.actualPayment ??
-          parent.orderMoney,
-      );
-
-      await sql`
-        UPDATE cj_order_fulfillments
-        SET
-          status = 'awaiting_cj_payment',
-          stage = 'awaiting_cj_payment',
-          pay_id = ${clean(parent.payId, 200) || null},
-          payable_amount_usd = ${payable > 0 ? payable : null},
-          parent_response = ${JSON.stringify(parent)}::jsonb,
-          last_error = NULL,
-          updated_at = NOW()
-        WHERE order_id = ${order.id}
-      `;
     }
 
     await unlock(order.id);
