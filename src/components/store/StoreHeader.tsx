@@ -105,6 +105,13 @@ export default function StoreHeader({
           >
             New arrivals
           </Link>
+
+          <Link
+            href="/returns-refunds"
+            className="shrink-0 hover:text-[#9b762c]"
+          >
+            Returns
+          </Link>
         </div>
       </nav>
     </header>

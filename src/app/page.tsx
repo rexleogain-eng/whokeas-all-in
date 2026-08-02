@@ -233,6 +233,12 @@ export default async function HomePage() {
             <p className="mt-4 text-sm text-white/60">Payment verification</p>
             <p className="mt-3 text-sm text-white/60">Delivery coordination</p>
             <p className="mt-3 text-sm text-white/60">Order assistance</p>
+            <Link
+              href="/returns-refunds"
+              className="mt-3 block text-sm text-white/60 hover:text-white"
+            >
+              Returns &amp; refunds
+            </Link>
           </div>
         </div>
         <div className="border-t border-white/10 px-5 py-5 text-center text-[10px] uppercase tracking-[0.16em] text-white/35">
