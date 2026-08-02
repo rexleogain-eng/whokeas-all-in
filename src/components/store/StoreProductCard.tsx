@@ -1,18 +1,18 @@
 import Link from "next/link";
 
 import type { StoreProduct } from "@/lib/store-catalog";
-
-function formatPrice(value: string | number) {
-  return `TZS ${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
-}
+import {
+  formatStorePrice,
+  tzsToStoreUsd,
+} from "@/lib/store-currency";
 
 export default function StoreProductCard({
   product,
 }: {
   product: StoreProduct;
 }) {
-  const compareAt = Number(product.compareAtPrice || 0);
-  const current = Number(product.price || 0);
+  const compareAt = tzsToStoreUsd(product.compareAtPrice || 0);
+  const current = tzsToStoreUsd(product.price || 0);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -65,11 +65,11 @@ export default function StoreProductCard({
           <div className="flex items-end justify-between gap-2">
             <div>
               <p className="text-base font-bold text-[#171512]">
-                {formatPrice(product.price)}
+                {formatStorePrice(current)}
               </p>
               {compareAt > current && (
                 <p className="mt-1 text-xs text-[#9a9287] line-through">
-                  {formatPrice(compareAt)}
+                  {formatStorePrice(compareAt)}
                 </p>
               )}
             </div>

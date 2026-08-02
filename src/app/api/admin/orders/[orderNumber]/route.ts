@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/admin-auth";
 import { prepareCJOrder } from "@/lib/cj-fulfillment";
+import {
+  syncGrowthOrderStatus,
+} from "@/lib/growth-revenue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +60,7 @@ export async function PATCH(request: Request, context: Context) {
 
     let cjFulfillment: unknown = null;
     let cjWarning: string | null = null;
+    let growthWarning: string | null = null;
 
     if (action === "mark_paid") {
       await sql.transaction([
@@ -136,10 +140,30 @@ export async function PATCH(request: Request, context: Context) {
       );
     }
 
+    try {
+      await syncGrowthOrderStatus({
+        orderId: String(order.id),
+        action:
+          action as
+            | "mark_paid"
+            | "mark_processing"
+            | "mark_shipped"
+            | "mark_delivered"
+            | "cancel",
+      });
+    }
+    catch (error) {
+      growthWarning =
+        error instanceof Error
+          ? error.message
+          : "Order updated, but Growth & Revenue synchronization failed.";
+    }
+
     return NextResponse.json({
       ok: true,
       cjFulfillment,
       cjWarning,
+      growthWarning,
     });
   } catch (error) {
     return NextResponse.json(

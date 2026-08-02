@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import GrowthAttributionTracker from "../components/growth/GrowthAttributionTracker";
 import SiteStructuredData from "../components/seo/SiteStructuredData";
 import {
   DEFAULT_SOCIAL_IMAGE,
@@ -99,6 +100,7 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body>
         <SiteStructuredData />
+        <GrowthAttributionTracker />
         {children}
       </body>
     </html>

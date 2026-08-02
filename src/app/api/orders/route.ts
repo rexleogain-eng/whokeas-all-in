@@ -31,6 +31,12 @@ import {
 
 import { catalogSql } from "@/lib/catalog-schema";
 
+import {
+  calculateGrowthAdjustments,
+  ensureGrowthSchema,
+  GrowthPricingError,
+} from "@/lib/growth-revenue";
+
 type PaymentMethod =
   | "cash_on_delivery"
   | "manual_mobile_money"
@@ -53,6 +59,10 @@ type RequestBody = {
   };
 
   paymentMethod?: PaymentMethod;
+  promotionCode?: string;
+  attributionCode?: string;
+  storeCreditRequested?: number;
+  abandonedToken?: string | null;
   createAccount?: boolean;
   password?: string;
 
@@ -90,6 +100,7 @@ function createOrderNumber() {
 export async function POST(request: Request) {
   try {
     await ensureCustomerSchema();
+    await ensureGrowthSchema();
 
     const body =
       (await request.json()) as RequestBody;
@@ -361,6 +372,28 @@ export async function POST(request: Request) {
       );
     }
 
+    const growth =
+      await calculateGrowthAdjustments({
+        subtotal: quote.subtotal,
+        totalBeforeGrowth: quote.total,
+        supplierCostTotal:
+          quote.supplierCostTotal,
+        currency: quote.currency,
+        promotionCode:
+          body.promotionCode,
+        attributionCode:
+          body.attributionCode,
+        customerId,
+        customerEmail: email,
+        storeCreditRequested:
+          customerId
+            ? Number(
+                body.storeCreditRequested ||
+                  0,
+              )
+            : 0,
+      });
+
     const orderId = randomUUID();
     const paymentId = randomUUID();
     const orderNumber =
@@ -401,6 +434,12 @@ export async function POST(request: Request) {
           discount_amount,
           total,
           supplier_cost_total,
+          coupon_code,
+          attribution_code,
+          affiliate_id,
+          referrer_customer_id,
+          store_credit_used,
+          growth_metadata,
           shipping_address,
           market_country_code,
           customer_locale,
@@ -421,9 +460,30 @@ export async function POST(request: Request) {
           ${quote.currency},
           ${quote.subtotal},
           ${quote.shippingFee},
-          0,
-          ${quote.total},
+          ${growth.discountAmount},
+          ${growth.total},
           ${quote.supplierCostTotal},
+          ${growth.couponCode},
+          ${
+            growth.affiliateCode ||
+            growth.referralCode ||
+            growth.promotionCode
+          },
+          ${growth.affiliateId},
+          ${growth.referrerCustomerId},
+          ${growth.storeCreditUsed},
+          ${JSON.stringify({
+            couponDiscount:
+              growth.couponDiscount,
+            referralDiscount:
+              growth.referralDiscount,
+            storeCreditUsed:
+              growth.storeCreditUsed,
+            affiliateCode:
+              growth.affiliateCode,
+            referralCode:
+              growth.referralCode,
+          })}::jsonb,
           ${JSON.stringify(shippingAddress)}::jsonb,
           ${quote.countryCode},
           ${quote.locale},
@@ -452,7 +512,7 @@ export async function POST(request: Request) {
           ${orderId},
           ${paymentMethod},
           'pending',
-          ${quote.total},
+          ${growth.total},
           0,
           ${quote.currency},
           ${JSON.stringify({
@@ -492,9 +552,170 @@ export async function POST(request: Request) {
           )
         `,
       ),
+
+      ...(growth.couponId
+        ? [
+            sql`
+              INSERT INTO growth_coupon_redemptions (
+                id,
+                coupon_id,
+                order_id,
+                customer_id,
+                customer_email,
+                amount,
+                currency,
+                status,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${randomUUID()},
+                ${growth.couponId},
+                ${orderId},
+                ${customerId},
+                ${email},
+                ${growth.couponDiscount},
+                ${quote.currency},
+                'reserved',
+                NOW(),
+                NOW()
+              )
+            `,
+          ]
+        : []),
+
+      ...(growth.affiliateId
+        ? [
+            sql`
+              INSERT INTO growth_affiliate_commissions (
+                id,
+                affiliate_id,
+                order_id,
+                order_number,
+                revenue_amount,
+                commission_rate,
+                commission_amount,
+                currency,
+                status,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${randomUUID()},
+                ${growth.affiliateId},
+                ${orderId},
+                ${orderNumber},
+                ${growth.total},
+                ${growth.affiliateRate},
+                ${
+                  Math.round(
+                    growth.total *
+                      (
+                        growth.affiliateRate /
+                        100
+                      ) *
+                      100,
+                  ) / 100
+                },
+                ${quote.currency},
+                'pending_payment',
+                NOW(),
+                NOW()
+              )
+            `,
+          ]
+        : []),
+
+      ...(growth.referrerCustomerId
+        ? [
+            sql`
+              INSERT INTO growth_referral_claims (
+                id,
+                referrer_customer_id,
+                referred_customer_id,
+                referred_email,
+                order_id,
+                order_number,
+                discount_amount,
+                reward_amount,
+                currency,
+                status,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${randomUUID()},
+                ${growth.referrerCustomerId},
+                ${customerId},
+                ${email},
+                ${orderId},
+                ${orderNumber},
+                ${growth.referralDiscount},
+                ${growth.referralReward},
+                ${quote.currency},
+                'pending_payment',
+                NOW(),
+                NOW()
+              )
+            `,
+          ]
+        : []),
+
+      ...(customerId &&
+      growth.storeCreditUsed > 0
+        ? [
+            sql`
+              INSERT INTO growth_store_credit_transactions (
+                id,
+                customer_id,
+                order_id,
+                amount,
+                currency,
+                kind,
+                status,
+                description,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${randomUUID()},
+                ${customerId},
+                ${orderId},
+                ${-growth.storeCreditUsed},
+                ${quote.currency},
+                'order_redemption',
+                'pending',
+                'WHOKEAS store credit reserved for ' ||
+                  ${orderNumber},
+                NOW(),
+                NOW()
+              )
+            `,
+          ]
+        : []),
     ];
 
     await sql.transaction(queries);
+
+    const abandonedToken =
+      clean(body.abandonedToken, 64);
+
+    if (abandonedToken) {
+      await sql`
+        UPDATE growth_abandoned_checkouts
+        SET
+          status = 'recovered',
+          order_id = ${orderId},
+          recovered_at = NOW(),
+          last_seen_at = NOW()
+        WHERE recovery_token =
+          ${abandonedToken}
+          AND status IN (
+            'open',
+            'contacted'
+          )
+      `;
+    }
 
     if (customerId) {
       await Promise.all([
@@ -534,7 +755,11 @@ export async function POST(request: Request) {
         accessKey,
         paymentMethod,
         currency: quote.currency,
-        total: quote.total,
+        total: growth.total,
+        discountAmount:
+          growth.discountAmount,
+        storeCreditUsed:
+          growth.storeCreditUsed,
         status: "pending_payment",
         accountCreated:
           Boolean(newSessionToken),
@@ -552,10 +777,29 @@ export async function POST(request: Request) {
     return response;
   }
   catch (error) {
+    const rawMessage =
+      error instanceof Error
+        ? error.message
+        : "Could not create the order.";
+
+    const referralConflict =
+      /growth_referral_(customer|email)_uidx|duplicate key/i.test(
+        rawMessage,
+      );
+
+    const protectedGrowthConflict =
+      /coupon usage limit|coupon customer usage|insufficient whokeas store credit/i.test(
+        rawMessage,
+      );
+
     const status =
-      error instanceof CheckoutQuoteError
+      error instanceof CheckoutQuoteError ||
+      error instanceof GrowthPricingError
         ? error.status
-        : 500;
+        : referralConflict ||
+            protectedGrowthConflict
+          ? 409
+          : 500;
 
     console.error(
       "Create international order failed:",
@@ -565,10 +809,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Could not create the order.",
+        error: referralConflict
+          ? "Referral discounts are available only on a customer's first order."
+          : protectedGrowthConflict
+            ? rawMessage
+            : status === 500
+              ? "Could not create the order. Please try again."
+              : rawMessage,
       },
       { status },
     );

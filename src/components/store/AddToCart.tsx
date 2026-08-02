@@ -27,6 +27,7 @@ type CartItem = {
   name: string;
   variantName: string | null;
   price: number;
+  currency: "USD";
   quantity: number;
 };
 
@@ -70,6 +71,7 @@ export default function AddToCart({ product, variants }: Props) {
         name: product.name,
         variantName: selectedVariant?.name ?? null,
         price: effectivePrice,
+        currency: "USD",
         quantity,
       });
     }

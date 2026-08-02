@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import AddToCart from "@/components/store/AddToCart";
 import StoreHeader from "@/components/store/StoreHeader";
 import { getStoreProductBySlug } from "@/lib/store-catalog";
+import {
+  formatStorePrice,
+  tzsToStoreUsd,
+} from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,10 +15,6 @@ export const revalidate = 0;
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
-
-function formatPrice(value: string | number) {
-  return `TZS ${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
-}
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
@@ -25,8 +25,8 @@ export default async function ProductPage({ params }: PageProps) {
 
   const { product, images, variants } = result;
   const mainImage = images[0]?.source ? String(images[0].source) : null;
-  const compareAt = Number(product.compareAtPrice || 0);
-  const current = Number(product.price || 0);
+  const compareAt = tzsToStoreUsd(product.compareAtPrice || 0);
+  const current = tzsToStoreUsd(product.price || 0);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -95,11 +95,11 @@ export default async function ProductPage({ params }: PageProps) {
             <div className="mt-7 border-y border-[#ddd4c6] py-6">
               <div className="flex flex-wrap items-end gap-3">
                 <p className="text-3xl font-bold text-[#171512]">
-                  {formatPrice(String(product.price))}
+                  {formatStorePrice(current)}
                 </p>
                 {compareAt > current && (
                   <>
-                    <p className="pb-1 text-sm text-[#9d958a] line-through">{formatPrice(compareAt)}</p>
+                    <p className="pb-1 text-sm text-[#9d958a] line-through">{formatStorePrice(compareAt)}</p>
                     <span className="mb-1 bg-[#171512] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
                       Save {discount}%
                     </span>
@@ -107,7 +107,7 @@ export default async function ProductPage({ params }: PageProps) {
                 )}
               </div>
               <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#81796e]">
-                Price displayed in Tanzanian shillings
+                Catalogue price displayed in US dollars
               </p>
             </div>
 
@@ -137,10 +137,10 @@ export default async function ProductPage({ params }: PageProps) {
 
           <aside className="h-fit bg-[#f7f2e9] p-6 lg:sticky lg:top-36 lg:p-7">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">Your selection</p>
-            <p className="mt-3 text-2xl font-bold">{formatPrice(String(product.price))}</p>
+            <p className="mt-3 text-2xl font-bold">{formatStorePrice(current)}</p>
             <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-[#5b745f]">Available to order</p>
             <p className="mt-4 text-xs leading-6 text-[#746d62]">
-              Payment and delivery details are verified before supplier fulfilment.
+              USD catalogue price is shown here. The final market quote follows the delivery country selected at checkout.
             </p>
 
             <div className="mt-6">
@@ -149,12 +149,12 @@ export default async function ProductPage({ params }: PageProps) {
                   id: String(product.id),
                   slug: String(product.slug),
                   name: String(product.name),
-                  price: String(product.price),
+                  price: String(current),
                 }}
                 variants={variants.map((variant) => ({
                   id: String(variant.id),
                   name: String(variant.name),
-                  price: String(variant.price),
+                  price: String(tzsToStoreUsd(variant.price)),
                   stockQuantity: Number(variant.stockQuantity),
                 }))}
               />

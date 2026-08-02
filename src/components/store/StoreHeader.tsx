@@ -20,8 +20,8 @@ export default function StoreHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-[#d8cfbf] bg-[#fffdf8]/95 shadow-[0_10px_35px_rgba(28,24,18,0.06)] backdrop-blur">
       <div className="bg-[#12110f] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d6bd7b] sm:text-xs">
-        International catalogue · Market-aware pricing ·
-        WHOKEAS order support
+        International catalogue · Prices displayed in USD ·
+        Market-aware checkout
       </div>
 
       <div className="mx-auto grid max-w-[1580px] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 lg:gap-7 lg:px-7">

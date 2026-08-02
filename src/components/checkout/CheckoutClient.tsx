@@ -42,6 +42,13 @@ type Quote = {
   subtotal: number;
   shippingFee: number;
   total: number;
+  couponDiscount: number;
+  referralDiscount: number;
+  storeCreditUsed: number;
+  discountAmount: number;
+  couponCode: string | null;
+  affiliateCode: string | null;
+  referralCode: string | null;
   items: Array<{
     productId: string;
     variantId: string | null;
@@ -68,6 +75,13 @@ type FormState = {
   createAccount: boolean;
   password: string;
 };
+
+const GROWTH_ATTRIBUTION_KEY =
+  "whokeas-growth-attribution";
+const GROWTH_PROMOTION_KEY =
+  "whokeas-growth-promotion";
+const ABANDONED_CHECKOUT_KEY =
+  "whokeas-abandoned-checkout-token";
 
 function formatMoney(
   value: number,
@@ -100,8 +114,11 @@ export default function CheckoutClient() {
   const [account, setAccount] =
     useState<{
       authenticated: boolean;
+      id?: string;
       fullName?: string;
       email?: string;
+      referralCode?: string | null;
+      storeCreditBalance?: number;
     }>({ authenticated: false });
 
   const [ready, setReady] =
@@ -117,6 +134,21 @@ export default function CheckoutClient() {
     useState("");
 
   const [quoteError, setQuoteError] =
+    useState("");
+
+  const [promotionInput, setPromotionInput] =
+    useState("");
+
+  const [promotionCode, setPromotionCode] =
+    useState("");
+
+  const [attributionCode, setAttributionCode] =
+    useState("");
+
+  const [useStoreCredit, setUseStoreCredit] =
+    useState(false);
+
+  const [abandonedToken, setAbandonedToken] =
     useState("");
 
   const [form, setForm] =
@@ -157,6 +189,54 @@ export default function CheckoutClient() {
       setItems(storedItems);
 
       try {
+        const storedPromotion =
+          localStorage.getItem(
+            GROWTH_PROMOTION_KEY,
+          ) || "";
+
+        setPromotionInput(storedPromotion);
+        setPromotionCode(storedPromotion);
+
+        const rawAttribution =
+          localStorage.getItem(
+            GROWTH_ATTRIBUTION_KEY,
+          );
+
+        if (rawAttribution) {
+          const parsed = JSON.parse(
+            rawAttribution,
+          ) as {
+            code?: string;
+            expiresAt?: number;
+          };
+
+          if (
+            parsed.code &&
+            Number(parsed.expiresAt || 0) >
+              Date.now()
+          ) {
+            setAttributionCode(
+              String(parsed.code),
+            );
+          }
+          else {
+            localStorage.removeItem(
+              GROWTH_ATTRIBUTION_KEY,
+            );
+          }
+        }
+
+        setAbandonedToken(
+          localStorage.getItem(
+            ABANDONED_CHECKOUT_KEY,
+          ) || "",
+        );
+      }
+      catch {
+        // Growth attribution must never block checkout.
+      }
+
+      try {
         const [marketsResponse, accountResponse] =
           await Promise.all([
             fetch("/api/checkout/markets", {
@@ -191,10 +271,20 @@ export default function CheckoutClient() {
         ) {
           setAccount({
             authenticated: true,
+            id:
+              accountResult.customer?.id,
             fullName:
               accountResult.customer?.fullName,
             email:
               accountResult.customer?.email,
+            referralCode:
+              accountResult.growth?.referralCode ||
+              null,
+            storeCreditBalance:
+              Number(
+                accountResult.growth
+                  ?.storeCreditBalance || 0,
+              ),
           });
 
           const address = accountResult.address;
@@ -294,6 +384,16 @@ export default function CheckoutClient() {
             signal: controller.signal,
             body: JSON.stringify({
               countryCode: form.countryCode,
+              customerEmail: form.email,
+              promotionCode,
+              attributionCode,
+              storeCreditRequested:
+                useStoreCredit
+                  ? Number(
+                      account.storeCreditBalance ||
+                        0,
+                    )
+                  : 0,
               items: items.map((item) => ({
                 productId: item.productId,
                 variantId: item.variantId,
@@ -343,6 +443,96 @@ export default function CheckoutClient() {
     ready,
     items,
     form.countryCode,
+    form.email,
+    promotionCode,
+    attributionCode,
+    useStoreCredit,
+    account.storeCreditBalance,
+  ]);
+
+  useEffect(() => {
+    if (
+      !ready ||
+      items.length === 0 ||
+      !quote ||
+      (
+        !form.email.trim() &&
+        !form.phone.trim()
+      )
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(
+      async () => {
+        try {
+          const response = await fetch(
+            "/api/growth/abandoned-checkout",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+              body: JSON.stringify({
+                token: abandonedToken || null,
+                customerName: form.fullName,
+                customerEmail: form.email,
+                customerPhone: form.phone,
+                countryCode:
+                  form.countryCode,
+                currency: quote.currency,
+                estimatedTotal: quote.total,
+                promotionCode,
+                cart: items.map((item) => ({
+                  productId: item.productId,
+                  variantId: item.variantId,
+                  name: item.name,
+                  variantName:
+                    item.variantName,
+                  quantity: item.quantity,
+                  price: item.price,
+                })),
+              }),
+            },
+          );
+
+          const result =
+            await response.json();
+
+          if (
+            response.ok &&
+            result.ok &&
+            result.token
+          ) {
+            setAbandonedToken(
+              String(result.token),
+            );
+
+            localStorage.setItem(
+              ABANDONED_CHECKOUT_KEY,
+              String(result.token),
+            );
+          }
+        }
+        catch {
+          // Recovery capture is optional and must not block checkout.
+        }
+      },
+      2200,
+    );
+
+    return () => window.clearTimeout(timer);
+  }, [
+    ready,
+    items,
+    quote,
+    form.fullName,
+    form.email,
+    form.phone,
+    form.countryCode,
+    promotionCode,
+    abandonedToken,
   ]);
 
   const selectedMarket = useMemo(
@@ -491,6 +681,18 @@ export default function CheckoutClient() {
             paymentMethod:
               form.paymentMethod,
 
+            promotionCode,
+            attributionCode,
+            storeCreditRequested:
+              useStoreCredit
+                ? Number(
+                    account.storeCreditBalance ||
+                      0,
+                  )
+                : 0,
+            abandonedToken:
+              abandonedToken || null,
+
             createAccount:
               !account.authenticated &&
               form.createAccount,
@@ -520,6 +722,12 @@ export default function CheckoutClient() {
       }
 
       localStorage.removeItem("whokeas-cart");
+      localStorage.removeItem(
+        GROWTH_PROMOTION_KEY,
+      );
+      localStorage.removeItem(
+        ABANDONED_CHECKOUT_KEY,
+      );
 
       window.dispatchEvent(
         new Event("whokeas-cart-updated"),
@@ -951,6 +1159,107 @@ export default function CheckoutClient() {
           Order summary
         </h2>
 
+        <div className="mt-5 border border-[#d8cfbf] bg-[#f7f2e9] p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#8e7650]">
+            Coupon or referral code
+          </p>
+
+          <div className="mt-3 flex gap-2">
+            <input
+              value={promotionInput}
+              onChange={(event) =>
+                setPromotionInput(
+                  event.target.value.toUpperCase(),
+                )
+              }
+              placeholder="Enter code"
+              className="min-w-0 flex-1 border border-[#cfc4b1] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#9b762c]"
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                const code =
+                  promotionInput.trim().toUpperCase();
+
+                setPromotionCode(code);
+
+                if (code) {
+                  localStorage.setItem(
+                    GROWTH_PROMOTION_KEY,
+                    code,
+                  );
+                }
+                else {
+                  localStorage.removeItem(
+                    GROWTH_PROMOTION_KEY,
+                  );
+                }
+              }}
+              className="border border-[#171512] bg-[#171512] px-4 py-2.5 text-[9px] font-black uppercase tracking-[0.12em] text-white"
+            >
+              Apply
+            </button>
+          </div>
+
+          {promotionCode && (
+            <button
+              type="button"
+              onClick={() => {
+                setPromotionInput("");
+                setPromotionCode("");
+                localStorage.removeItem(
+                  GROWTH_PROMOTION_KEY,
+                );
+              }}
+              className="mt-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#9b762c] underline"
+            >
+              Remove code
+            </button>
+          )}
+
+          {attributionCode && (
+            <p className="mt-3 text-xs text-[#746d62]">
+              Partner/referral attribution:{" "}
+              <strong>{attributionCode}</strong>
+            </p>
+          )}
+        </div>
+
+        {account.authenticated &&
+          Number(
+            account.storeCreditBalance || 0,
+          ) > 0 && (
+          <label className="mt-4 flex cursor-pointer items-start gap-3 border border-emerald-200 bg-emerald-50 p-4">
+            <input
+              type="checkbox"
+              checked={useStoreCredit}
+              onChange={(event) =>
+                setUseStoreCredit(
+                  event.target.checked,
+                )
+              }
+              className="mt-1 h-4 w-4 accent-emerald-700"
+            />
+            <span>
+              <span className="block text-sm font-bold text-emerald-900">
+                Use WHOKEAS store credit
+              </span>
+              <span className="mt-1 block text-xs text-emerald-800">
+                Available:{" "}
+                {formatMoney(
+                  Number(
+                    account.storeCreditBalance ||
+                      0,
+                  ),
+                  "TZS",
+                  "en-TZ",
+                )}. Up to 50% of this order can be covered.
+              </span>
+            </span>
+          </label>
+        )}
+
         {quoteBusy && (
           <div className="mt-5 border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-800">
             Calculating pricing for your delivery
@@ -1008,6 +1317,65 @@ export default function CheckoutClient() {
                   )}
                 </span>
               </div>
+
+              {quote.couponDiscount > 0 && (
+                <div className="flex justify-between text-emerald-800">
+                  <span>
+                    Coupon
+                    {quote.couponCode
+                      ? ` (${quote.couponCode})`
+                      : ""}
+                  </span>
+                  <span>
+                    −
+                    {formatMoney(
+                      quote.couponDiscount,
+                      quote.currency,
+                      quote.locale,
+                    )}
+                  </span>
+                </div>
+              )}
+
+              {quote.referralDiscount > 0 && (
+                <div className="flex justify-between text-emerald-800">
+                  <span>
+                    Referral discount
+                    {quote.referralCode
+                      ? ` (${quote.referralCode})`
+                      : ""}
+                  </span>
+                  <span>
+                    −
+                    {formatMoney(
+                      quote.referralDiscount,
+                      quote.currency,
+                      quote.locale,
+                    )}
+                  </span>
+                </div>
+              )}
+
+              {quote.storeCreditUsed > 0 && (
+                <div className="flex justify-between text-emerald-800">
+                  <span>WHOKEAS store credit</span>
+                  <span>
+                    −
+                    {formatMoney(
+                      quote.storeCreditUsed,
+                      quote.currency,
+                      quote.locale,
+                    )}
+                  </span>
+                </div>
+              )}
+
+              {quote.affiliateCode && (
+                <div className="flex justify-between text-[#746d62]">
+                  <span>Partner code</span>
+                  <span>{quote.affiliateCode}</span>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <span>Additional checkout fee</span>

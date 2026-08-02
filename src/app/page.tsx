@@ -51,7 +51,7 @@ export default async function HomePage() {
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-[#d8d1c7] sm:text-base">
               A considered collection of technology, home, fashion and study
-              essentials—priced in Tanzanian shillings and supported locally.
+              essentials—displayed in US dollars with market-aware checkout and direct support.
             </p>
 
             <div className="mt-9 flex flex-wrap gap-3">
@@ -64,7 +64,7 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-12 grid max-w-2xl grid-cols-3 gap-5 border-t border-white/15 pt-7 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bdb5aa]">
-              <span>Local TZS pricing</span>
+              <span>USD catalogue pricing</span>
               <span>Supplier reviewed</span>
               <span>Order support</span>
             </div>
@@ -113,7 +113,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-[1580px] divide-y divide-[#ded5c7] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           {[
             ["Curated catalogue", "Products are reviewed before publication."],
-            ["Transparent pricing", "Clear prices shown in Tanzanian shillings."],
+            ["Transparent pricing", "Clear catalogue prices shown in US dollars."],
             ["Secure verification", "Payments are confirmed before fulfilment."],
             ["Local assistance", "Order support tailored for Tanzania."],
           ].map(([title, text]) => (

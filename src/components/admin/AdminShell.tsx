@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 type AdminSection =
   | "overview"
   | "orders"
+  | "growth"
   | "products"
   | "cj"
   | "automation"
@@ -27,6 +28,7 @@ const navItems: Array<{
 }> = [
   { key: "overview", href: "/admin", label: "Overview", short: "OV" },
   { key: "orders", href: "/admin/orders", label: "Orders", short: "OR" },
+  { key: "growth", href: "/admin/growth", label: "Growth & Revenue", short: "GR" },
   { key: "products", href: "/admin/products", label: "Products", short: "PR" },
   { key: "cj", href: "/admin/cj", label: "CJ Sourcing", short: "CJ" },
   { key: "automation", href: "/admin/automation", label: "Automation", short: "AU" },

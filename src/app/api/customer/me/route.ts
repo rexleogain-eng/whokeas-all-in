@@ -9,10 +9,15 @@ import {
 } from "@/lib/customer-auth";
 
 import { catalogSql } from "@/lib/catalog-schema";
+import {
+  ensureGrowthSchema,
+  getCustomerGrowthBenefits,
+} from "@/lib/growth-revenue";
 
 export async function GET() {
   try {
     await ensureCustomerSchema();
+    await ensureGrowthSchema();
 
     const session = await getCustomerSession();
 
@@ -25,7 +30,8 @@ export async function GET() {
 
     const sql = catalogSql();
 
-    const addresses = await sql`
+    const [addresses, growth] = await Promise.all([
+      sql`
       SELECT
         id::text AS id,
         recipient_name AS "recipientName",
@@ -43,13 +49,18 @@ export async function GET() {
         is_default DESC,
         updated_at DESC
       LIMIT 1
-    `;
+      `,
+      getCustomerGrowthBenefits(
+        session.customer.id,
+      ),
+    ]);
 
     return NextResponse.json({
       ok: true,
       authenticated: true,
       customer: session.customer,
       address: addresses[0] || null,
+      growth,
     });
   }
   catch (error) {

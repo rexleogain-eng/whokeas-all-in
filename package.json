@@ -11,7 +11,8 @@
     "automation:repair": "tsx src/db/repair-catalog-automation.ts",
     "pricing:30": "tsx src/db/apply-fixed-30-margin.ts",
     "catalogue:expand:repair": "tsx src/db/repair-catalogue-expansion.ts",
-    "catalogue:trials:clean": "tsx src/db/cleanup-trial-products.ts"
+    "catalogue:trials:clean": "tsx src/db/cleanup-trial-products.ts",
+    "growth:repair": "tsx src/db/repair-growth-revenue.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import AccountLogoutButton from "@/components/account/AccountLogoutButton";
+import CustomerReferralCard from "@/components/growth/CustomerReferralCard";
 import StoreHeader from "@/components/store/StoreHeader";
 
 import {
@@ -10,6 +11,10 @@ import {
 } from "@/lib/customer-auth";
 
 import { catalogSql } from "@/lib/catalog-schema";
+import {
+  ensureGrowthSchema,
+  getCustomerGrowthBenefits,
+} from "@/lib/growth-revenue";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,6 +63,7 @@ function statusClass(status: string) {
 
 export default async function CustomerAccountPage() {
   await ensureCustomerSchema();
+  await ensureGrowthSchema();
 
   const session = await getCustomerSession();
 
@@ -67,7 +73,7 @@ export default async function CustomerAccountPage() {
 
   const sql = catalogSql();
 
-  const [orders, addresses] = await Promise.all([
+  const [orders, addresses, growth] = await Promise.all([
     sql`
       SELECT
         order_number AS "orderNumber",
@@ -99,6 +105,9 @@ export default async function CustomerAccountPage() {
         updated_at DESC
       LIMIT 1
     `,
+    getCustomerGrowthBenefits(
+      session.customer.id,
+    ),
   ]);
 
   const address = addresses[0];
@@ -125,6 +134,22 @@ export default async function CustomerAccountPage() {
 
           <AccountLogoutButton />
         </div>
+
+        {growth.referralCode && (
+          <div className="mt-8">
+            <CustomerReferralCard
+              referralCode={
+                growth.referralCode
+              }
+              referralLink={`https://www.whokeas.store/?ref=${encodeURIComponent(
+                growth.referralCode,
+              )}`}
+              storeCreditBalance={
+                growth.storeCreditBalance
+              }
+            />
+          </div>
+        )}
 
         <section className="mt-8 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
           <article className="h-fit border border-[#d8cfbf] bg-[#fffdf8] p-6">

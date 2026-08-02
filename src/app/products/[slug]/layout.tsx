@@ -6,6 +6,7 @@ import {
   SITE_NAME,
   SITE_URL,
 } from "../../../lib/seo";
+import { tzsToStoreUsd } from "../../../lib/store-currency";
 
 type ProductRouteProps = {
   params: Promise<{
@@ -149,8 +150,8 @@ export default async function ProductSeoLayout({
     offers: {
       "@type": "Offer",
       url: productUrl,
-      priceCurrency: "TZS",
-      price: Number(product.price || 0).toFixed(2),
+      priceCurrency: "USD",
+      price: tzsToStoreUsd(Number(product.price || 0)).toFixed(2),
       itemCondition: "https://schema.org/NewCondition",
       ...(hasVariants
         ? {

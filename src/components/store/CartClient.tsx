@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  formatStorePrice,
+  tzsToStoreUsd,
+} from "@/lib/store-currency";
+
 type CartItem = {
   key: string;
   productId: string;
@@ -11,11 +16,33 @@ type CartItem = {
   name: string;
   variantName: string | null;
   price: number;
+  currency?: string;
   quantity: number;
 };
 
-function formatPrice(value: number) {
-  return `TZS ${value.toLocaleString("en-US")}`;
+function normalizeCart(value: unknown): CartItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (item): item is CartItem =>
+        Boolean(item && typeof item === "object"),
+    )
+    .map((item) => {
+      const currency = String(
+        item.currency || "",
+      ).toUpperCase();
+
+      if (currency === "USD") {
+        return item;
+      }
+
+      return {
+        ...item,
+        price: tzsToStoreUsd(item.price),
+        currency: "USD",
+      };
+    });
 }
 
 export default function CartClient() {
@@ -26,7 +53,15 @@ export default function CartClient() {
     const frame = window.requestAnimationFrame(() => {
       try {
         const raw = localStorage.getItem("whokeas-cart");
-        setItems(raw ? JSON.parse(raw) : []);
+        const normalized = normalizeCart(
+          raw ? JSON.parse(raw) : [],
+        );
+
+        setItems(normalized);
+        localStorage.setItem(
+          "whokeas-cart",
+          JSON.stringify(normalized),
+        );
       } catch {
         setItems([]);
       } finally {
@@ -98,7 +133,7 @@ export default function CartClient() {
                   <button type="button" onClick={() => removeItem(item.key)} className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9b762c] hover:text-[#171512]">Remove</button>
                 </div>
               </div>
-              <p className="text-sm font-bold">{formatPrice(item.price)}</p>
+              <p className="text-sm font-bold">{formatStorePrice(item.price)}</p>
             </article>
           ))}
         </div>
@@ -108,9 +143,9 @@ export default function CartClient() {
         <p className="classic-kicker">Order summary</p>
         <div className="mt-5 flex items-end justify-between border-b border-[#d8cfbf] pb-5">
           <span className="text-sm">Subtotal ({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
-          <span className="text-xl font-bold">{formatPrice(subtotal)}</span>
+          <span className="text-xl font-bold">{formatStorePrice(subtotal)}</span>
         </div>
-        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Your final market currency and international delivery price are calculated securely at checkout.</div>
+        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Catalogue prices are shown in USD. Your final delivery-country currency and fulfilment price are calculated securely at checkout.</div>
         <Link href="/checkout" className="classic-button-dark mt-5 w-full">Proceed to checkout</Link>
         <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Guest checkout · International market quote · Secure verification</p>
       </aside>

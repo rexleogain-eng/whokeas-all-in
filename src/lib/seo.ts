@@ -2,7 +2,7 @@ export const SITE_NAME = "WHOKEAS ALL IN";
 export const SITE_URL = "https://www.whokeas.store";
 
 export const SITE_DESCRIPTION =
-  "Shop technology, home, fashion, study, beauty and lifestyle products online from WHOKEAS ALL IN, with clear TZS pricing and customer support.";
+  "Shop technology, home, fashion, study, beauty and lifestyle products online from WHOKEAS ALL IN, with clear USD catalogue pricing, market-aware checkout and customer support.";
 
 export const BRAND_ALTERNATE_NAMES = [
   "WHOKEAS",

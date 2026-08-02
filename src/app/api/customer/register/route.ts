@@ -16,10 +16,12 @@ import {
 } from "@/lib/customer-auth";
 
 import { catalogSql } from "@/lib/catalog-schema";
+import { ensureGrowthSchema } from "@/lib/growth-revenue";
 
 export async function POST(request: Request) {
   try {
     await ensureCustomerSchema();
+    await ensureGrowthSchema();
 
     const body = (await request.json()) as {
       fullName?: string;

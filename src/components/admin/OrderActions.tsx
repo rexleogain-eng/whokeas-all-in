@@ -38,6 +38,20 @@ export default function OrderActions({ orderNumber }: Props) {
         throw new Error(result.error ?? "Update failed.");
       }
 
+      if (
+        result.growthWarning ||
+        result.cjWarning
+      ) {
+        window.alert(
+          [
+            result.growthWarning,
+            result.cjWarning,
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+        );
+      }
+
       window.location.reload();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Update failed.");
