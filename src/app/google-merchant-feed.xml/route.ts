@@ -1,0 +1,272 @@
+import {
+  catalogSql,
+  ensureCatalogSchema,
+} from "@/lib/catalog-schema";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
+import { tzsToStoreUsd } from "@/lib/store-currency";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type MerchantProductRow = {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  description: string | null;
+  brand: string | null;
+  categoryName: string | null;
+  price: string;
+  supplierProductId: string | null;
+  supplierExternalProductId: string | null;
+  images: unknown;
+  hasVariants: boolean;
+  variantInStock: boolean;
+};
+
+function removeInvalidXmlCharacters(value: string) {
+  return value.replace(
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
+    " ",
+  );
+}
+
+function xml(value: unknown) {
+  return removeInvalidXmlCharacters(String(value ?? ""))
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function cleanText(value: unknown, maximumLength: number) {
+  return removeInvalidXmlCharacters(String(value ?? ""))
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maximumLength);
+}
+
+function absoluteHttpUrl(value: unknown) {
+  const text = String(value ?? "").trim();
+
+  if (!text) return null;
+
+  try {
+    const url = new URL(text, `${SITE_URL}/`);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    return url.toString();
+  }
+  catch {
+    return null;
+  }
+}
+
+function readImageUrls(value: unknown) {
+  const rawValues = Array.isArray(value)
+    ? value
+    : (() => {
+        if (typeof value !== "string") return [];
+
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        }
+        catch {
+          return [];
+        }
+      })();
+
+  return [...new Set(
+    rawValues
+      .map(absoluteHttpUrl)
+      .filter((item): item is string => Boolean(item)),
+  )].slice(0, 11);
+}
+
+function merchantIdentifier(value: unknown, maximumLength: number) {
+  return cleanText(value, maximumLength)
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function merchantItem(row: MerchantProductRow) {
+  const productId = merchantIdentifier(row.id, 50);
+  const title = cleanText(row.name, 150);
+  const description = cleanText(
+    row.description || row.shortDescription,
+    5000,
+  ) || `Buy ${title} online from ${SITE_NAME}.`;
+  const productUrl =
+    `${SITE_URL}/products/${encodeURIComponent(row.slug)}`;
+  const imageUrls = readImageUrls(row.images);
+  const mainImage = imageUrls[0];
+  const priceUsd = tzsToStoreUsd(row.price);
+  const availability = row.hasVariants && !row.variantInStock
+    ? "out_of_stock"
+    : "in_stock";
+  const brand = cleanText(row.brand || SITE_NAME, 70);
+  const mpn = merchantIdentifier(
+    row.supplierExternalProductId || row.supplierProductId,
+    70,
+  );
+
+  if (!productId || !title || !mainImage || priceUsd <= 0) {
+    return null;
+  }
+
+  const additionalImages = imageUrls
+    .slice(1, 11)
+    .map((image) => `    <g:additional_image_link>${xml(image)}</g:additional_image_link>`)
+    .join("\n");
+
+  const category = cleanText(row.categoryName, 750);
+
+  const optionalLines = [
+    category
+      ? `    <g:product_type>${xml(category)}</g:product_type>`
+      : "",
+    brand
+      ? `    <g:brand>${xml(brand)}</g:brand>`
+      : "",
+    mpn
+      ? `    <g:mpn>${xml(mpn)}</g:mpn>`
+      : "    <g:identifier_exists>false</g:identifier_exists>",
+    additionalImages,
+  ].filter(Boolean).join("\n");
+
+  return [
+    "  <item>",
+    `    <g:id>${xml(productId)}</g:id>`,
+    `    <g:title>${xml(title)}</g:title>`,
+    `    <g:description>${xml(description)}</g:description>`,
+    `    <g:link>${xml(productUrl)}</g:link>`,
+    `    <g:image_link>${xml(mainImage)}</g:image_link>`,
+    "    <g:condition>new</g:condition>",
+    `    <g:availability>${availability}</g:availability>`,
+    `    <g:price>${priceUsd.toFixed(2)} USD</g:price>`,
+    "    <g:adult>false</g:adult>",
+    optionalLines,
+    "  </item>",
+  ].filter(Boolean).join("\n");
+}
+
+async function readMerchantProducts() {
+  await ensureCatalogSchema();
+  const sql = catalogSql();
+
+  const rows = await sql`
+    SELECT
+      p.id::text AS id,
+      p.name,
+      p.slug,
+      p.short_description AS "shortDescription",
+      p.description,
+      p.brand,
+      c.name AS "categoryName",
+      p.price::text AS price,
+      p.supplier_product_id AS "supplierProductId",
+      p.supplier_external_product_id AS "supplierExternalProductId",
+      (
+        SELECT COALESCE(
+          json_agg(
+            pi.image_url
+            ORDER BY pi.sort_order ASC, pi.created_at ASC
+          ),
+          '[]'::json
+        )
+        FROM product_images pi
+        WHERE pi.product_id = p.id
+          AND NULLIF(TRIM(pi.image_url), '') IS NOT NULL
+      ) AS images,
+      EXISTS (
+        SELECT 1
+        FROM product_variants pv
+        WHERE pv.product_id = p.id
+          AND pv.is_active = true
+      ) AS "hasVariants",
+      EXISTS (
+        SELECT 1
+        FROM product_variants pv
+        WHERE pv.product_id = p.id
+          AND pv.is_active = true
+          AND pv.stock_quantity > 0
+      ) AS "variantInStock"
+    FROM products p
+    LEFT JOIN categories c ON c.id = p.category_id
+    WHERE p.status::text = 'active'
+      AND p.price > 0
+      AND EXISTS (
+        SELECT 1
+        FROM product_images pi
+        WHERE pi.product_id = p.id
+          AND NULLIF(TRIM(pi.image_url), '') IS NOT NULL
+      )
+    ORDER BY p.is_featured DESC, p.updated_at DESC, p.created_at DESC
+  `;
+
+  return rows as unknown as MerchantProductRow[];
+}
+
+function feedDocument(items: string[]) {
+  const generatedAt = new Date().toUTCString();
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">',
+    "<channel>",
+    `  <title>${xml(`${SITE_NAME} Product Feed`)}</title>`,
+    `  <link>${xml(SITE_URL)}</link>`,
+    `  <description>${xml(SITE_DESCRIPTION)}</description>`,
+    `  <lastBuildDate>${xml(generatedAt)}</lastBuildDate>`,
+    ...items,
+    "</channel>",
+    "</rss>",
+    "",
+  ].join("\n");
+}
+
+export async function GET() {
+  try {
+    const products = await readMerchantProducts();
+    const items = products
+      .map(merchantItem)
+      .filter((item): item is string => Boolean(item));
+
+    return new Response(feedDocument(items), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control":
+          "public, s-maxage=3600, stale-while-revalidate=86400",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  }
+  catch (error) {
+    console.error("Google Merchant feed generation failed:", error);
+
+    return new Response(
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<error>Product feed is temporarily unavailable.</error>\n',
+      {
+        status: 503,
+        headers: {
+          "Content-Type": "application/xml; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      },
+    );
+  }
+}
