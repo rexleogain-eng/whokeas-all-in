@@ -2,6 +2,11 @@
 
 import { FormEvent, useState } from "react";
 
+import {
+  formatStorePrice,
+  tzsToStoreUsd,
+} from "@/lib/store-currency";
+
 type GrowthDashboard = {
   siteUrl: string;
   profit: {
@@ -27,8 +32,46 @@ type Props = {
   initialData: GrowthDashboard;
 };
 
-function formatTzs(value: unknown) {
-  return `TZS ${Math.round(Number(value || 0)).toLocaleString("en-US")}`;
+function formatTzsAsUsd(value: unknown) {
+  return formatStorePrice(
+    tzsToStoreUsd(Number(value || 0)),
+  );
+}
+
+function formatCurrencyValue(
+  value: unknown,
+  currency: unknown,
+) {
+  const code = String(currency || "USD")
+    .trim()
+    .toUpperCase();
+  const numeric = Number(value || 0);
+
+  if (code === "TZS") {
+    return formatTzsAsUsd(numeric);
+  }
+
+  if (code === "USD") {
+    return formatStorePrice(numeric);
+  }
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(
+      Number.isFinite(numeric) ? numeric : 0,
+    );
+  }
+  catch {
+    return `${code} ${
+      Number.isFinite(numeric)
+        ? numeric.toFixed(2)
+        : "0.00"
+    }`;
+  }
 }
 
 function formatDate(value: unknown) {
@@ -83,7 +126,7 @@ export default function GrowthRevenueClient({
     discountValue: "10",
     maximumDiscount: "",
     minimumOrder: "0",
-    currency: "TZS",
+    currency: "USD",
     usageLimit: "",
     perCustomerLimit: "1",
     startsAt: "",
@@ -185,13 +228,13 @@ export default function GrowthRevenueClient({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["Recorded revenue", formatTzs(p.revenue), `${p.orders} paid or active orders`],
-          ["Supplier cost", formatTzs(p.supplierCost), "Recorded fulfilment cost"],
-          ["Growth costs", formatTzs(
+          ["Recorded revenue", formatTzsAsUsd(p.revenue), `${p.orders} paid or active orders · USD equivalent`],
+          ["Supplier cost", formatTzsAsUsd(p.supplierCost), "Recorded fulfilment cost · USD equivalent"],
+          ["Growth costs", formatTzsAsUsd(
             p.paymentFees +
               p.affiliateCommissions,
-          ), "Payment fees and partner commissions"],
-          ["Estimated cash profit", formatTzs(p.netProfit), "Discounts and redeemed credit are already reflected in revenue"],
+          ), "Payment fees and partner commissions · USD equivalent"],
+          ["Estimated cash profit", formatTzsAsUsd(p.netProfit), "USD equivalent; historical order records remain unchanged"],
         ].map(([label, value, note], index) => (
           <article
             key={String(label)}
@@ -225,6 +268,11 @@ export default function GrowthRevenueClient({
           </article>
         ))}
       </section>
+
+      <p className="border border-[#d9d0c1] bg-[#fffdf9] px-4 py-3 text-xs leading-5 text-[#746d63]">
+        Dashboard totals are displayed in USD. Existing orders and supplier records
+        remain stored in their original currency to protect accounting accuracy.
+      </p>
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <form
@@ -310,7 +358,7 @@ export default function GrowthRevenueClient({
             </label>
 
             <label>
-              <span className="mb-2 block text-xs font-bold">Minimum order</span>
+              <span className="mb-2 block text-xs font-bold">Minimum order (USD)</span>
               <input
                 type="number"
                 min="0"
@@ -326,7 +374,7 @@ export default function GrowthRevenueClient({
             </label>
 
             <label>
-              <span className="mb-2 block text-xs font-bold">Maximum discount</span>
+              <span className="mb-2 block text-xs font-bold">Maximum discount (USD)</span>
               <input
                 type="number"
                 min="0"
@@ -459,9 +507,10 @@ export default function GrowthRevenueClient({
                     <p className="mt-1 text-xs text-[#746d63]">
                       {String(couponRecord.discountType) === "percent"
                         ? `${Number(couponRecord.discountValue)}% off`
-                        : `${String(couponRecord.currency)} ${Number(
+                        : `${formatCurrencyValue(
                             couponRecord.discountValue,
-                          ).toLocaleString("en-US")} off`}
+                            couponRecord.currency,
+                          )} off`}
                       {" · "}
                       {Number(couponRecord.redemptions || 0)} redeemed
                     </p>
@@ -606,7 +655,7 @@ export default function GrowthRevenueClient({
                           {Number(record.commissionRate || 0)}% commission
                         </p>
                         <p className="mt-2 font-serif text-xl">
-                          {formatTzs(record.commissionTotal)}
+                          {formatTzsAsUsd(record.commissionTotal)}
                         </p>
                       </div>
 
@@ -674,8 +723,10 @@ export default function GrowthRevenueClient({
                       {Number(record.rate)}%
                     </p>
                     <p className="mt-2 font-serif text-xl">
-                      {String(record.currency)}{" "}
-                      {Number(record.amount || 0).toLocaleString("en-US")}
+                      {formatCurrencyValue(
+                        record.amount,
+                        record.currency,
+                      )}
                     </p>
                   </div>
 
@@ -729,8 +780,8 @@ export default function GrowthRevenueClient({
                   initialData.referrals.pending || 0,
                 ),
               ],
-              ["Referral rewards issued", formatTzs(initialData.referrals.rewardedTzs)],
-              ["Posted store credit", formatTzs(initialData.referrals.postedCreditTzs)],
+              ["Referral rewards issued", formatTzsAsUsd(initialData.referrals.rewardedTzs)],
+              ["Posted store credit", formatTzsAsUsd(initialData.referrals.postedCreditTzs)],
             ].map(([label, value]) => (
               <article
                 key={String(label)}
@@ -747,9 +798,10 @@ export default function GrowthRevenueClient({
           </div>
 
           <p className="border-t border-[#e4ddd2] p-6 text-sm leading-6 text-[#746d63]">
-            New customers receive a TZS 2,000 first-order referral discount.
-            Referrers receive TZS 2,000 store credit only after successful delivery.
-            Store credit can cover up to 50% of a later TZS checkout.
+            Eligible first-order referrals currently receive approximately{" "}
+            {formatTzsAsUsd(2000)} in value. Referrers receive the same USD-equivalent
+            store credit only after successful delivery. Store credit can cover up to
+            50% of a later eligible checkout.
           </p>
         </div>
       </section>
@@ -816,8 +868,10 @@ export default function GrowthRevenueClient({
                         {summary}
                       </td>
                       <td className="px-4 py-4 font-serif text-lg">
-                        {String(record.currency || "TZS")}{" "}
-                        {Number(record.estimatedTotal || 0).toLocaleString("en-US")}
+                        {formatCurrencyValue(
+                          record.estimatedTotal,
+                          record.currency,
+                        )}
                       </td>
                       <td className="px-4 py-4 text-xs text-[#746d63]">
                         {formatDate(record.lastSeenAt)}
@@ -907,12 +961,12 @@ export default function GrowthRevenueClient({
                         {String(record.customerName)}
                       </p>
                     </td>
-                    <td className="px-4 py-4">{formatTzs(record.revenue)}</td>
-                    <td className="px-4 py-4">{formatTzs(record.supplierCost)}</td>
-                    <td className="px-4 py-4">{formatTzs(record.paymentFee)}</td>
-                    <td className="px-4 py-4">{formatTzs(record.commission)}</td>
+                    <td className="px-4 py-4">{formatTzsAsUsd(record.revenue)}</td>
+                    <td className="px-4 py-4">{formatTzsAsUsd(record.supplierCost)}</td>
+                    <td className="px-4 py-4">{formatTzsAsUsd(record.paymentFee)}</td>
+                    <td className="px-4 py-4">{formatTzsAsUsd(record.commission)}</td>
                     <td className="px-4 py-4 font-serif text-lg font-semibold text-emerald-800">
-                      {formatTzs(record.profit)}
+                      {formatTzsAsUsd(record.profit)}
                     </td>
                   </tr>
                 ))

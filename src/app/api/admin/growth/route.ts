@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         minimumOrder: Number(
           body.minimumOrder || 0,
         ),
-        currency: String(body.currency || "TZS"),
+        currency: String(body.currency || "USD"),
         usageLimit:
           body.usageLimit === null ||
           body.usageLimit === undefined ||
