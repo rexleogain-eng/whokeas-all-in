@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 
 import GrowthAttributionTracker from "../components/growth/GrowthAttributionTracker";
 import SiteStructuredData from "../components/seo/SiteStructuredData";
@@ -99,6 +100,22 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
+        <Script
+          id="whokeas-google-tag-loader"
+          src="https://www.googletagmanager.com/gtag/js?id=GT-TBWLPPMJ"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="whokeas-google-tag-config"
+          strategy="afterInteractive"
+        >
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'GT-TBWLPPMJ');
+          `}
+        </Script>
         <SiteStructuredData />
         <GrowthAttributionTracker />
         {children}
