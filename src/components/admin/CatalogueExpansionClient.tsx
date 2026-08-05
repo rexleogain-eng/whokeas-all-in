@@ -215,7 +215,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
     {
       label: "Real supplier products",
       value: data.stats.realSupplierProducts,
-      note: `${data.stats.completionPercent}% of ${data.stats.targetTotal} target`,
+      note: `Rolling target ${data.stats.targetTotal.toLocaleString()} · auto-extends by 250`,
     },
     {
       label: "Safe queue",
@@ -283,10 +283,10 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[#746d63]">
             Requests are serialized, throttling is retried with backoff, exact
             freight checks are limited, duplicates are rejected and each
-            browser session stops after six short import cycles.
+            browser session stops after six short import cycles while the rolling target automatically expands in safe 250-product steps.
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <button
               type="button"
               onClick={runSafeFill}
@@ -467,12 +467,12 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
           <label>
             <span className="mb-2 block text-[9px] font-black uppercase tracking-[0.14em] text-[#8a8073]">
-              Total real-product target
+              Current rolling target
             </span>
             <input
               type="number"
               min={20}
-              max={3000}
+              max={10000}
               value={config.targetTotal}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 updateConfig("targetTotal", Number(event.target.value))
@@ -615,7 +615,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
                 <input
                   type="number"
                   min={0}
-                  max={500}
+                  max={5000}
                   value={target.target}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     updateTarget(index, { target: Number(event.target.value) })

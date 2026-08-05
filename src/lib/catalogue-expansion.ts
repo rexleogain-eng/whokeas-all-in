@@ -210,7 +210,7 @@ export const DEFAULT_CATALOGUE_EXPANSION_CONFIG: CatalogueExpansionConfig = {
   enabled: true,
   paused: false,
   autoPublish: true,
-  targetTotal: 170,
+  targetTotal: 1000,
   discoveryCategoriesPerRun: 4,
   searchResultsPerCategory: 20,
   processBatchSize: 1,
@@ -290,7 +290,7 @@ function sanitizeTargets(value: unknown) {
         key: targetKey(record.key, fallback?.key || `category-${index + 1}`),
         category,
         target: Math.floor(
-          numberWithin(record.target, fallback?.target || 20, 0, 500),
+          numberWithin(record.target, fallback?.target || 20, 0, 5000),
         ),
         enabled: record.enabled !== false,
       };
@@ -321,7 +321,7 @@ export function sanitizeCatalogueExpansionConfig(
         input.targetTotal,
         targetSum || DEFAULT_CATALOGUE_EXPANSION_CONFIG.targetTotal,
         1,
-        3000,
+        10000,
       ),
     ),
     discoveryCategoriesPerRun: Math.floor(
@@ -532,6 +532,87 @@ export async function ensureCatalogueExpansionSchema() {
   return schemaPromise;
 }
 
+const CONTINUOUS_CATALOGUE_CAP = 10000;
+const ROLLING_TARGET_STEP = 250;
+const ROLLING_TARGET_BUFFER = 40;
+
+function rollingTargetAbove(value: number) {
+  return (
+    Math.ceil(Math.max(1, value) / ROLLING_TARGET_STEP) *
+    ROLLING_TARGET_STEP
+  );
+}
+
+function extendCatalogueGrowthConfig(
+  config: CatalogueExpansionConfig,
+  realCount: number,
+  counts: Map<
+    string,
+    { current: number; active: number; drafts: number }
+  >,
+) {
+  const enabledTargets = config.targets.filter(
+    (target) => target.enabled,
+  );
+
+  if (
+    enabledTargets.length === 0 ||
+    config.targetTotal >= CONTINUOUS_CATALOGUE_CAP
+  ) {
+    return config;
+  }
+
+  const nextRollingTarget = Math.min(
+    CONTINUOUS_CATALOGUE_CAP,
+    Math.max(
+      1000,
+      config.targetTotal,
+      rollingTargetAbove(realCount + ROLLING_TARGET_STEP),
+    ),
+  );
+
+  const weightTotal = enabledTargets.reduce(
+    (sum, target) => sum + Math.max(1, target.target),
+    0,
+  );
+  const minimumCategoryGrowth = Math.max(
+    20,
+    Math.ceil(
+      ROLLING_TARGET_STEP / Math.max(1, enabledTargets.length),
+    ),
+  );
+
+  const targets = config.targets.map((target) => {
+    if (!target.enabled) return target;
+
+    const current =
+      counts.get(target.category.toLowerCase())?.current || 0;
+    const weightedTarget = Math.ceil(
+      nextRollingTarget *
+        (Math.max(1, target.target) / Math.max(1, weightTotal)),
+    );
+    const expandedTarget = Math.min(
+      5000,
+      Math.max(
+        target.target,
+        weightedTarget,
+        current + minimumCategoryGrowth,
+      ),
+    );
+
+    return {
+      ...target,
+      target: expandedTarget,
+    };
+  });
+
+  return {
+    ...config,
+    targetTotal: nextRollingTarget,
+    targets,
+  };
+}
+
 export async function getCatalogueExpansionSettings() {
   await ensureCatalogueExpansionSchema();
   const sql = catalogSql();
@@ -541,7 +622,71 @@ export async function getCatalogueExpansionSettings() {
     WHERE id = 'default'
     LIMIT 1
   `;
-  return sanitizeCatalogueExpansionConfig(rows[0]?.config);
+  const config = sanitizeCatalogueExpansionConfig(
+    rows[0]?.config,
+  );
+
+  if (
+    !config.enabled ||
+    config.paused ||
+    config.targetTotal >= CONTINUOUS_CATALOGUE_CAP
+  ) {
+    return config;
+  }
+
+  const [totalRows, counts] = await Promise.all([
+    sql`
+      SELECT COUNT(*)::int AS count
+      FROM products
+      WHERE supplier_platform IS NOT NULL
+        AND supplier_platform <> ''
+    `,
+    categoryCounts(),
+  ]);
+
+  const realCount = Number(totalRows[0]?.count || 0);
+  const enabledTargets = config.targets.filter(
+    (target) => target.enabled,
+  );
+  const everyCategoryTargetReached =
+    enabledTargets.length > 0 &&
+    enabledTargets.every((target) => {
+      const current =
+        counts.get(target.category.toLowerCase())?.current || 0;
+      return current >= target.target;
+    });
+
+  const shouldExtend =
+    config.targetTotal < 1000 ||
+    realCount + ROLLING_TARGET_BUFFER >= config.targetTotal ||
+    everyCategoryTargetReached;
+
+  if (!shouldExtend) {
+    return config;
+  }
+
+  const expanded = extendCatalogueGrowthConfig(
+    config,
+    realCount,
+    counts,
+  );
+
+  if (
+    expanded.targetTotal === config.targetTotal &&
+    JSON.stringify(expanded.targets) === JSON.stringify(config.targets)
+  ) {
+    return config;
+  }
+
+  await sql`
+    UPDATE catalogue_expansion_settings
+    SET
+      config = ${JSON.stringify(expanded)}::jsonb,
+      updated_at = NOW()
+    WHERE id = 'default'
+  `;
+
+  return expanded;
 }
 
 export async function saveCatalogueExpansionSettings(value: unknown) {

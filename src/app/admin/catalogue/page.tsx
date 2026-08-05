@@ -22,8 +22,8 @@ export default async function CatalogueExpansionPage() {
       eyebrow="Catalogue expansion"
       title="Fill the store safely—without flooding CJ"
       description="A controlled queue discovers real supplier products, removes design trials, prevents duplicates, imports one product at a time and keeps global selling prices near the fixed 30% gross-margin policy."
-      actions={
-        <>
+            actions={
+        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
           <Link
             href="/admin/automation"
             className="border border-[#cfc5b5] bg-[#fffdf9] px-4 py-2.5 text-xs font-black uppercase tracking-[0.14em] text-[#4e473e]"
@@ -36,7 +36,7 @@ export default async function CatalogueExpansionPage() {
           >
             Product control
           </Link>
-        </>
+        </div>
       }
     >
       <CatalogueExpansionClient initialData={data} />
