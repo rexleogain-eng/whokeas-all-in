@@ -15,6 +15,10 @@ import {
   type MarketOffer,
 } from "@/lib/global-markets";
 import {
+  GOOGLE_MERCHANT_MIN_IMAGE_SIDE,
+  selectMerchantPrimaryImage,
+} from "@/lib/merchant-image-quality";
+import {
   cjNumber,
   cjRequest,
   slugify,
@@ -375,7 +379,8 @@ export async function importCJProduct(
   ).length;
   const productSlug = `${slugify(name)}-${pid.slice(0, 6).toLowerCase()}`;
   const description = stripHtml(detail.description, 10000);
-  const imageUrls = imagesFrom(detail);
+  const imageSelection = await selectMerchantPrimaryImage(imagesFrom(detail));
+  const imageUrls = imageSelection.images;
   const categoryName =
     String(input.categoryName || "").trim().slice(0, 120) ||
     categoryLeaf(detail.categoryName);
@@ -388,6 +393,7 @@ export async function importCJProduct(
       primaryOffer.available &&
       availableMarkets >= config.minimumMarketsAvailable &&
       imageUrls.length >= minimumImages &&
+      Boolean(imageSelection.primary) &&
       productCostPrimary > 0 &&
       productStock >= minimumInventory &&
       productSellingPricePrimary <= primaryRule.maximumSellingPriceLocal,
@@ -412,6 +418,9 @@ export async function importCJProduct(
     imageUrls.length < minimumImages
       ? `Only ${imageUrls.length} usable image${imageUrls.length === 1 ? " was" : "s were"} returned; ${minimumImages} are required.`
       : "",
+    !imageSelection.primary
+      ? `No primary product image was verified at ${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} x ${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} pixels for Google Merchant Center.`
+      : "",
     productCostPrimary <= 0 ? "Supplier cost was invalid." : "",
     productStock < minimumInventory
       ? `Stock ${productStock} is below the ${minimumInventory} minimum.`
@@ -420,11 +429,12 @@ export async function importCJProduct(
       ? `Primary market price exceeds ${primaryRule.currency} ${primaryRule.maximumSellingPriceLocal}.`
       : "",
   ].filter(Boolean);
-  const warning =
-    marketWarning(offers) ||
-    (status === "draft" && input.source === "autopilot"
+  const warning = [
+    marketWarning(offers),
+    status === "draft" && input.source === "autopilot"
       ? publicationReasons.join(" ")
-      : null);
+      : "",
+  ].filter(Boolean).join(" ") || null;
 
   const fulfillmentNotes = [
     `CJ Product ID: ${pid}`,
@@ -435,6 +445,9 @@ export async function importCJProduct(
     primaryOffer.estimatedDeliveryDays
       ? `Primary estimated transit: ${primaryOffer.estimatedDeliveryDays} days`
       : "",
+    imageSelection.primary
+      ? `Google Merchant primary image verified at ${imageSelection.primary.width} x ${imageSelection.primary.height} pixels.`
+      : `Google Merchant primary image needs review (${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} x ${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} pixels minimum).`,
     warning,
     `Primary market: ${primaryOffer.marketName} (${primaryOffer.currency}).`,
     input.source === "autopilot"
@@ -444,32 +457,36 @@ export async function importCJProduct(
     .filter(Boolean)
     .join("\n");
 
-  const productId = await saveProduct({
-    name,
-    slug: productSlug,
-    categoryName,
-    shortDescription:
-      description.slice(0, 900) ||
-      `${name} supplied through CJdropshipping.`,
-    description,
-    status,
-    price: String(productSellingPricePrimary),
-    baseCost: String(productCostPrimary),
-    shippingCost: String(primaryOffer.shippingLocal),
-    featured: false,
-    imageUrls: imageUrls.join("\n"),
-    supplierName: "CJdropshipping",
-    supplierContact: detail.supplierName || "",
-    supplierWebsite: "https://cjdropshipping.com",
-    supplierCountry: "China",
-    supplierUrl: "",
-    deliveryDays: primaryOffer.estimatedDeliveryDays
-      ? String(primaryOffer.estimatedDeliveryDays)
-      : "",
-    supplierNotes: `CJ Supplier ID: ${detail.supplierId || "Not supplied"}`,
-    fulfillmentNotes,
-    variantsText,
-  });
+  const productId = await saveProduct(
+    {
+      name,
+      slug: productSlug,
+      categoryName,
+      shortDescription:
+        description.slice(0, 900) ||
+        `${name} supplied through CJdropshipping.`,
+      description,
+      status,
+      price: String(productSellingPricePrimary),
+      baseCost: String(productCostPrimary),
+      shippingCost: String(primaryOffer.shippingLocal),
+      featured: false,
+      imageUrls: imageUrls.join("\n"),
+      supplierName: "CJdropshipping",
+      supplierContact: detail.supplierName || "",
+      supplierWebsite: "https://cjdropshipping.com",
+      supplierCountry: "China",
+      supplierUrl: "",
+      deliveryDays: primaryOffer.estimatedDeliveryDays
+        ? String(primaryOffer.estimatedDeliveryDays)
+        : "",
+      supplierNotes: `CJ Supplier ID: ${detail.supplierId || "Not supplied"}`,
+      fulfillmentNotes,
+      variantsText,
+    },
+    undefined,
+    { merchantPrimaryVerified: Boolean(imageSelection.primary) },
+  );
 
   await persistProductMarketOffers(productId, offers);
 
@@ -496,6 +513,20 @@ export async function importCJProduct(
             supplierName: detail.supplierName || null,
             originCountryCode,
             primaryMarket: primaryOffer.marketKey,
+            merchantImage: imageSelection.primary
+              ? {
+                  verified: true,
+                  url: imageSelection.primary.url,
+                  width: imageSelection.primary.width,
+                  height: imageSelection.primary.height,
+                  minimumSide: GOOGLE_MERCHANT_MIN_IMAGE_SIDE,
+                }
+              : {
+                  verified: false,
+                  minimumSide: GOOGLE_MERCHANT_MIN_IMAGE_SIDE,
+                  rejectedSmall: imageSelection.rejectedSmall.length,
+                  unverified: imageSelection.unverified.length,
+                },
             marketAvailability: offers.map((offer) => ({
               key: offer.marketKey,
               currency: offer.currency,
