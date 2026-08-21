@@ -57,8 +57,9 @@ type StoreVariantRow = {
 function cleanSupplierCopy(value: string | null) {
   const cleaned = String(value || "")
     .replace(/<[^>]*>/g, " ")
+    .replace(/[*_`]{1,3}/g, " ")
     .replace(
-      /\b(?:Highlights?|Specifications?|Details?)\s*[:-]?\s*(?:undefined|null)\b/gi,
+      /\b(?:Highlights?|Specifications?|Details?|Product Description)\s*[:-]?\s*/gi,
       " ",
     )
     .replace(/\b(?:undefined|null)\b/gi, " ")
@@ -70,6 +71,20 @@ function cleanSupplierCopy(value: string | null) {
   return cleaned || null;
 }
 
+function compactSupplierSummary(value: string | null) {
+  if (!value || value.length <= 220) return value;
+
+  const preview = value.slice(0, 220);
+  const sentenceEnd = Math.max(
+    preview.lastIndexOf(". "),
+    preview.lastIndexOf("! "),
+    preview.lastIndexOf("? "),
+  );
+  const cutAt = sentenceEnd >= 90 ? sentenceEnd + 1 : 217;
+
+  return `${preview.slice(0, cutAt).trimEnd()}…`;
+}
+
 function cleanProductCopy<
   T extends {
     shortDescription: string | null;
@@ -77,10 +92,11 @@ function cleanProductCopy<
   },
 >(product: T): T {
   const description = cleanSupplierCopy(product.description);
-  const shortDescription =
+  const shortDescription = compactSupplierSummary(
     cleanSupplierCopy(product.shortDescription) ||
-    description ||
-    "Selected for WHOKEAS customers.";
+      description ||
+      "Selected for WHOKEAS customers.",
+  );
 
   return {
     ...product,
