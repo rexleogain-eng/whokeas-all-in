@@ -19,6 +19,14 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+function compactDisplayTitle(value: unknown) {
+  const title = String(value || "").replace(/\s+/g, " ").trim();
+
+  if (title.length <= 96) return title;
+
+  return `${title.slice(0, 93).trimEnd()}…`;
+}
+
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
@@ -27,6 +35,7 @@ export default async function ProductPage({ params }: PageProps) {
   if (!result) notFound();
 
   const { product, images, variants } = result;
+  const displayName = compactDisplayTitle(product.name);
   const mainImage = images[0]?.source ? String(images[0].source) : null;
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
@@ -59,7 +68,7 @@ export default async function ProductPage({ params }: PageProps) {
               {mainImage ? (
                 <img
                   src={mainImage}
-                  alt={String(product.name)}
+                  alt={displayName}
                   className="h-full w-full object-contain p-8"
                 />
               ) : (
@@ -88,13 +97,16 @@ export default async function ProductPage({ params }: PageProps) {
               </span>
               {product.supplierPlatform === "cj" && (
                 <span className="border-l border-[#d8cfbf] pl-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">
-                  Supplier verified
+                  Fulfilment partner
                 </span>
               )}
             </div>
 
-            <h1 className="mt-5 text-4xl font-normal leading-tight sm:text-5xl">
-              {String(product.name)}
+            <h1
+              title={String(product.name)}
+              className="mt-5 text-4xl font-normal leading-tight sm:text-5xl"
+            >
+              {displayName}
             </h1>
             <p className="mt-5 text-sm leading-7 text-[#6f675c]">
               {String(product.shortDescription || "")}
@@ -115,7 +127,7 @@ export default async function ProductPage({ params }: PageProps) {
                 )}
               </div>
               <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#81796e]">
-                Catalogue price displayed in US dollars
+                Price displayed in U.S. dollars
               </p>
             </div>
 
