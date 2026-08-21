@@ -4,6 +4,10 @@ import {
   catalogSql,
   ensureCatalogSchema,
 } from "@/lib/catalog-schema";
+import {
+  GOOGLE_MERCHANT_MIN_IMAGE_SIDE,
+  selectMerchantPrimaryImage,
+} from "@/lib/merchant-image-quality";
 
 export type ProductPayload = {
   name?: string;
@@ -173,6 +177,7 @@ export async function listProducts() {
 export async function saveProduct(
   payload: ProductPayload,
   productId?: string,
+  options?: { merchantPrimaryVerified?: boolean },
 ) {
   await ensureCatalogSchema();
   const sql = catalogSql();
@@ -243,7 +248,20 @@ export async function saveProduct(
   }
 
   const id = productId || randomUUID();
-  const images = parseImages(payload.imageUrls);
+  let images = parseImages(payload.imageUrls);
+
+  if (status === "active" && !options?.merchantPrimaryVerified) {
+    const imageSelection = await selectMerchantPrimaryImage(images);
+
+    if (!imageSelection.primary) {
+      throw new Error(
+        `Active products require a primary image of at least ${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} x ${GOOGLE_MERCHANT_MIN_IMAGE_SIDE} pixels for Google Merchant Center.`,
+      );
+    }
+
+    images = imageSelection.images;
+  }
+
   const variants = parseVariants(payload.variantsText, price);
   const supplierJson = JSON.stringify(manualSupplier(payload));
   const deliveryDays = payload.deliveryDays
