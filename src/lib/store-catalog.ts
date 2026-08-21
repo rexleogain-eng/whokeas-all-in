@@ -54,6 +54,41 @@ type StoreVariantRow = {
   stockQuantity: number;
 };
 
+function cleanSupplierCopy(value: string | null) {
+  const cleaned = String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(
+      /\b(?:Highlights?|Specifications?|Details?)\s*[:-]?\s*(?:undefined|null)\b/gi,
+      " ",
+    )
+    .replace(/\b(?:undefined|null)\b/gi, " ")
+    .replace(/\bsupplied through CJdropshipping\b\.?/gi, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleaned || null;
+}
+
+function cleanProductCopy<
+  T extends {
+    shortDescription: string | null;
+    description: string | null;
+  },
+>(product: T): T {
+  const description = cleanSupplierCopy(product.description);
+  const shortDescription =
+    cleanSupplierCopy(product.shortDescription) ||
+    description ||
+    "Selected for WHOKEAS customers.";
+
+  return {
+    ...product,
+    shortDescription,
+    description,
+  };
+}
+
 export async function getStoreProducts(options?: {
   query?: string;
   category?: string;
@@ -131,7 +166,7 @@ export async function getStoreProducts(options?: {
     LIMIT ${limit}
   `;
 
-  return rows as unknown as StoreProduct[];
+  return (rows as unknown as StoreProduct[]).map(cleanProductCopy);
 }
 
 export async function getStoreCategories() {
@@ -224,6 +259,7 @@ export async function getStoreProductBySlug(slug: string) {
     | undefined;
   if (!product) return null;
 
+  const cleanedProduct = cleanProductCopy(product);
   const usAvailable = Boolean(product.usAvailable);
   const baseCurrency = String(product.baseCurrency || "TZS");
   const basePrice = Number(product.basePrice || 0);
@@ -276,7 +312,7 @@ export async function getStoreProductBySlug(slug: string) {
 
   return {
     product: {
-      ...product,
+      ...cleanedProduct,
       price: String(priceUsd),
       compareAtPrice:
         compareAtPriceUsd > priceUsd
