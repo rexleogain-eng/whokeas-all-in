@@ -6,6 +6,8 @@ import {
   getStoreCategories,
   getStoreProducts,
 } from "@/lib/store-catalog";
+import type { StoreProduct } from "@/lib/store-catalog";
+import { formatStorePrice } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,14 +27,47 @@ function compactProductName(value: string) {
   return `${name.slice(0, 87).trimEnd()}…`;
 }
 
+function storefrontScore(product: StoreProduct) {
+  const name = product.name.toLowerCase();
+  const price = Number(product.price || 0);
+  const deliveryDays = Number(product.deliveryDays || 0);
+  let score = product.featured ? 3 : 0;
+
+  if (/translator|translation/.test(name)) score += 8;
+  if (/smart\s?watch|organizer|power bank|open ear/.test(name)) score += 3;
+  if (/v4[.-]?[12]|\b5w\b|undefined|null/.test(name)) score -= 10;
+  if (price >= 20 && price <= 60) score += 3;
+  if (price > 90) score -= 3;
+  if (deliveryDays > 0 && deliveryDays <= 14) score += 3;
+  else if (deliveryDays > 0 && deliveryDays <= 21) score += 1;
+  if (String(product.shortDescription || "").length >= 60) score += 1;
+
+  return score;
+}
+
+function rankStorefrontProducts(products: StoreProduct[]) {
+  const unique = new Map<string, StoreProduct>();
+
+  for (const product of products) {
+    if (!unique.has(product.id)) unique.set(product.id, product);
+  }
+
+  return [...unique.values()].sort(
+    (left, right) => storefrontScore(right) - storefrontScore(left),
+  );
+}
+
 export default async function HomePage() {
   const [featured, newest, categories] = await Promise.all([
-    getStoreProducts({ featured: true, limit: 8 }),
-    getStoreProducts({ limit: 12, sort: "newest" }),
+    getStoreProducts({ featured: true, limit: 24 }),
+    getStoreProducts({ limit: 24, sort: "newest" }),
     getStoreCategories(),
   ]);
 
-  const featuredProducts = featured.length > 0 ? featured : newest.slice(0, 8);
+  const featuredProducts = rankStorefrontProducts([
+    ...featured,
+    ...newest,
+  ]).slice(0, 8);
   const heroProduct = featuredProducts[0] || newest[0];
   const collections = categories.length > 0
     ? categories.slice(0, 4).map((category, index) => ({
@@ -63,11 +98,16 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/products" className="classic-button-gold">
+              {heroProduct && (
+                <Link
+                  href={`/products/${heroProduct.slug}`}
+                  className="classic-button-gold"
+                >
+                  Shop featured pick
+                </Link>
+              )}
+              <Link href="/products" className="classic-button-hero">
                 Explore the collection
-              </Link>
-              <Link href="/products?sort=newest" className="classic-button-hero">
-                New arrivals
               </Link>
             </div>
 
@@ -102,7 +142,9 @@ export default async function HomePage() {
                       : "The WHOKEAS Collection"}
                   </h2>
                   <p className="mt-1 text-xs text-white/60">
-                    Curated for practical, modern living.
+                    {heroProduct
+                      ? `${formatStorePrice(heroProduct.price)} · Free U.S. shipping`
+                      : "Curated for practical, modern living."}
                   </p>
                 </div>
                 {heroProduct && (
@@ -110,7 +152,7 @@ export default async function HomePage() {
                     href={`/products/${heroProduct.slug}`}
                     className="shrink-0 text-[10px] font-bold uppercase tracking-[0.15em] text-[#d6bd7b] hover:text-white"
                   >
-                    Discover →
+                    Shop now →
                   </Link>
                 )}
               </div>
@@ -122,7 +164,7 @@ export default async function HomePage() {
       <section className="border-b border-[#d8cfbf] bg-[#fffdf8]">
         <div className="mx-auto grid max-w-[1580px] divide-y divide-[#ded5c7] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           {[
-            ["Curated catalogue", "Products are reviewed before publication."],
+            ["Curated catalogue", "Products are checked for U.S. delivery before publication."],
             ["Transparent pricing", "Clear product prices shown in U.S. dollars."],
             ["Free U.S. shipping", "Standard delivery is estimated at 9–25 days."],
             ["Clear returns", "Eligible return requests are accepted within 14 days."],
