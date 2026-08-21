@@ -41,7 +41,11 @@ function readCart(): CartItem[] {
 }
 
 export default function AddToCart({ product, variants }: Props) {
-  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    variants.find((variant) => variant.stockQuantity > 0)?.id ??
+      variants[0]?.id ??
+      "",
+  );
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
 

@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
+
 import CartClient from "@/components/store/CartClient";
 import StoreHeader from "@/components/store/StoreHeader";
+import { SITE_URL } from "@/lib/seo";
 
-export const metadata = { title: "Shopping Cart" };
+export const metadata: Metadata = {
+  title: "Shopping Cart",
+  alternates: {
+    canonical: `${SITE_URL}/cart`,
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function CartPage() {
   return (

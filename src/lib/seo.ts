@@ -1,8 +1,16 @@
 export const SITE_NAME = "WHOKEAS ALL IN";
 export const SITE_URL = "https://www.whokeas.store";
+export const PRODUCTS_URL = `${SITE_URL}/products`;
+export const RETURN_POLICY_URL = `${SITE_URL}/returns-refunds`;
+export const SHIPPING_POLICY_URL = `${SITE_URL}/shipping-delivery`;
+
+export const US_TARGET_COUNTRY_CODE = "US";
+export const US_SHIPPING_MIN_DAYS = 9;
+export const US_SHIPPING_MAX_DAYS = 25;
+export const US_RETURN_DAYS = 14;
 
 export const SITE_DESCRIPTION =
-  "Shop technology, home, fashion, study, beauty and lifestyle products online from WHOKEAS ALL IN, with clear USD catalogue pricing, market-aware checkout and customer support.";
+  "Shop curated technology, home, fashion, beauty, study and lifestyle products online in the United States with USD pricing and free standard U.S. shipping.";
 
 export const BRAND_ALTERNATE_NAMES = [
   "WHOKEAS",

@@ -1,7 +1,15 @@
 import {
   catalogSql,
-  ensureCatalogSchema,
 } from "@/lib/catalog-schema";
+import { ensureGlobalMarketSchema } from "@/lib/global-markets";
+import {
+  US_SHIPPING_MAX_DAYS,
+  US_TARGET_COUNTRY_CODE,
+} from "@/lib/seo";
+import {
+  roundStoreUsd,
+  sourcePriceToStoreUsd,
+} from "@/lib/store-currency";
 
 export type StoreProduct = {
   id: string;
@@ -19,6 +27,33 @@ export type StoreProduct = {
   createdAt: string;
 };
 
+type StoreProductDetailRow = {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  description: string | null;
+  basePrice: string;
+  baseCompareAtPrice: string | null;
+  baseCurrency: string;
+  brand: string | null;
+  baseDeliveryDays: number | null;
+  shippingCost: string;
+  supplierPlatform: string | null;
+  categoryName: string | null;
+  usPrice: string | null;
+  usCompareAtPrice: string | null;
+  usDeliveryDays: number | null;
+  usAvailable: boolean;
+};
+
+type StoreVariantRow = {
+  id: string;
+  name: string;
+  price: string;
+  stockQuantity: number;
+};
+
 export async function getStoreProducts(options?: {
   query?: string;
   category?: string;
@@ -26,7 +61,7 @@ export async function getStoreProducts(options?: {
   limit?: number;
   sort?: string;
 }) {
-  await ensureCatalogSchema();
+  await ensureGlobalMarketSchema();
   const sql = catalogSql();
   const query = (options?.query || "").trim();
   const category = (options?.category || "").trim();
@@ -41,11 +76,11 @@ export async function getStoreProducts(options?: {
       p.slug,
       p.short_description AS "shortDescription",
       p.description,
-      p.price::text AS price,
-      p.compare_at_price::text AS "compareAtPrice",
+      us_market.selling_price_local::text AS price,
+      us_market.compare_at_price_local::text AS "compareAtPrice",
       c.name AS "categoryName",
       p.is_featured AS featured,
-      p.estimated_delivery_days AS "deliveryDays",
+      us_market.estimated_delivery_days AS "deliveryDays",
       p.supplier_platform AS "supplierPlatform",
       p.created_at::text AS "createdAt",
       (
@@ -57,6 +92,24 @@ export async function getStoreProducts(options?: {
       ) AS image
     FROM products p
     LEFT JOIN categories c ON c.id = p.category_id
+    JOIN LATERAL (
+      SELECT
+        market.selling_price_local,
+        market.compare_at_price_local,
+        market.estimated_delivery_days
+      FROM product_market_prices market
+      WHERE market.product_id = p.id
+        AND market.country_code = ${US_TARGET_COUNTRY_CODE}
+        AND market.currency = 'USD'
+        AND market.available = true
+        AND market.selling_price_local > 0
+        AND (
+          market.estimated_delivery_days IS NULL
+          OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+        )
+      ORDER BY market.is_primary DESC, market.updated_at DESC
+      LIMIT 1
+    ) us_market ON true
     WHERE p.status::text = 'active'
       AND (
         ${query} = ''
@@ -70,8 +123,8 @@ export async function getStoreProducts(options?: {
       )
       AND (${featuredOnly} = false OR p.is_featured = true)
     ORDER BY
-      CASE WHEN ${sort} = 'price-low' THEN p.price END ASC,
-      CASE WHEN ${sort} = 'price-high' THEN p.price END DESC,
+      CASE WHEN ${sort} = 'price-low' THEN us_market.selling_price_local END ASC,
+      CASE WHEN ${sort} = 'price-high' THEN us_market.selling_price_local END DESC,
       CASE WHEN ${sort} = 'newest' THEN p.created_at END DESC,
       p.is_featured DESC,
       p.created_at DESC
@@ -82,7 +135,7 @@ export async function getStoreProducts(options?: {
 }
 
 export async function getStoreCategories() {
-  await ensureCatalogSchema();
+  await ensureGlobalMarketSchema();
   const sql = catalogSql();
 
   const rows = await sql`
@@ -94,6 +147,19 @@ export async function getStoreCategories() {
     JOIN products p ON p.category_id = c.id
     WHERE c.is_active = true
       AND p.status::text = 'active'
+      AND EXISTS (
+        SELECT 1
+        FROM product_market_prices market
+        WHERE market.product_id = p.id
+          AND market.country_code = ${US_TARGET_COUNTRY_CODE}
+          AND market.currency = 'USD'
+          AND market.available = true
+          AND market.selling_price_local > 0
+          AND (
+            market.estimated_delivery_days IS NULL
+            OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+          )
+      )
     GROUP BY c.id, c.name, c.slug
     ORDER BY COUNT(p.id) DESC, c.name ASC
   `;
@@ -106,7 +172,7 @@ export async function getStoreCategories() {
 }
 
 export async function getStoreProductBySlug(slug: string) {
-  await ensureCatalogSchema();
+  await ensureGlobalMarketSchema();
   const sql = catalogSql();
 
   const rows = await sql`
@@ -116,22 +182,60 @@ export async function getStoreProductBySlug(slug: string) {
       p.slug,
       p.short_description AS "shortDescription",
       p.description,
-      p.price::text AS price,
-      p.compare_at_price::text AS "compareAtPrice",
+      p.price::text AS "basePrice",
+      p.compare_at_price::text AS "baseCompareAtPrice",
+      p.currency AS "baseCurrency",
       p.brand,
-      p.estimated_delivery_days AS "deliveryDays",
+      p.estimated_delivery_days AS "baseDeliveryDays",
       p.estimated_shipping_cost::text AS "shippingCost",
       p.supplier_platform AS "supplierPlatform",
-      c.name AS "categoryName"
+      c.name AS "categoryName",
+      us_market.selling_price_local::text AS "usPrice",
+      us_market.compare_at_price_local::text AS "usCompareAtPrice",
+      us_market.estimated_delivery_days AS "usDeliveryDays",
+      (us_market.selling_price_local IS NOT NULL) AS "usAvailable"
     FROM products p
     LEFT JOIN categories c ON c.id = p.category_id
+    LEFT JOIN LATERAL (
+      SELECT
+        market.selling_price_local,
+        market.compare_at_price_local,
+        market.estimated_delivery_days
+      FROM product_market_prices market
+      WHERE market.product_id = p.id
+        AND market.country_code = ${US_TARGET_COUNTRY_CODE}
+        AND market.currency = 'USD'
+        AND market.available = true
+        AND market.selling_price_local > 0
+        AND (
+          market.estimated_delivery_days IS NULL
+          OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+        )
+      ORDER BY market.is_primary DESC, market.updated_at DESC
+      LIMIT 1
+    ) us_market ON true
     WHERE LOWER(TRIM(p.slug)) = LOWER(TRIM(${slug}))
       AND p.status::text = 'active'
     LIMIT 1
   `;
 
-  const product = rows[0];
+  const product = rows[0] as unknown as
+    | StoreProductDetailRow
+    | undefined;
   if (!product) return null;
+
+  const usAvailable = Boolean(product.usAvailable);
+  const baseCurrency = String(product.baseCurrency || "TZS");
+  const basePrice = Number(product.basePrice || 0);
+  const priceUsd = usAvailable
+    ? roundStoreUsd(product.usPrice || 0)
+    : sourcePriceToStoreUsd(basePrice, baseCurrency);
+  const compareAtPriceUsd = usAvailable
+    ? roundStoreUsd(product.usCompareAtPrice || 0)
+    : sourcePriceToStoreUsd(
+        product.baseCompareAtPrice || 0,
+        baseCurrency,
+      );
 
   const images = await sql`
     SELECT image_url AS source
@@ -141,7 +245,7 @@ export async function getStoreProductBySlug(slug: string) {
     LIMIT 8
   `;
 
-  const variants = await sql`
+  const rawVariants = await sql`
     SELECT
       id,
       name,
@@ -153,8 +257,36 @@ export async function getStoreProductBySlug(slug: string) {
     ORDER BY name
   `;
 
+  const variants = (rawVariants as unknown as StoreVariantRow[]).map((variant) => {
+    const rawVariantPrice = Number(variant.price || 0);
+    const price = usAvailable && basePrice > 0
+      ? roundStoreUsd(
+          priceUsd * Math.min(
+            5,
+            Math.max(0.5, rawVariantPrice / basePrice),
+          ),
+        )
+      : sourcePriceToStoreUsd(rawVariantPrice, baseCurrency);
+
+    return {
+      ...variant,
+      price: String(price),
+    };
+  });
+
   return {
-    product,
+    product: {
+      ...product,
+      price: String(priceUsd),
+      compareAtPrice:
+        compareAtPriceUsd > priceUsd
+          ? String(compareAtPriceUsd)
+          : null,
+      deliveryDays: usAvailable
+        ? product.usDeliveryDays
+        : product.baseDeliveryDays,
+      usAvailable,
+    },
     images,
     variants,
   };

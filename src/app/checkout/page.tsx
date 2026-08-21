@@ -1,7 +1,19 @@
+import type { Metadata } from "next";
+
 import CheckoutClient from "@/components/checkout/CheckoutClient";
 import StoreHeader from "@/components/store/StoreHeader";
+import { SITE_URL } from "@/lib/seo";
 
-export const metadata = { title: "Checkout" };
+export const metadata: Metadata = {
+  title: "Checkout",
+  alternates: {
+    canonical: `${SITE_URL}/checkout`,
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function CheckoutPage() {
   return (

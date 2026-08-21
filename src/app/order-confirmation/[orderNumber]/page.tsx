@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,6 +16,14 @@ import { catalogSql } from "@/lib/catalog-schema";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Order Confirmation",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 type PageProps = {
   params: Promise<{

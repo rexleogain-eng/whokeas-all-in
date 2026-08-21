@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import StoreHeader from "@/components/store/StoreHeader";
@@ -6,25 +7,83 @@ import {
   getStoreCategories,
   getStoreProducts,
 } from "@/lib/store-catalog";
+import {
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type ProductsPageProps = {
   searchParams: Promise<{
-    q?: string;
-    category?: string;
-    sort?: string;
+    q?: string | string[];
+    category?: string | string[];
+    sort?: string | string[];
   }>;
 };
+
+function filterValue(value: string | string[] | undefined) {
+  const text = Array.isArray(value) ? value[0] : value;
+
+  return String(text || "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+export async function generateMetadata({
+  searchParams,
+}: ProductsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const query = filterValue(params.q);
+  const category = filterValue(params.category);
+  const sort = filterValue(params.sort);
+  const categoryQuery = new URLSearchParams();
+
+  if (category) categoryQuery.set("category", category);
+
+  const canonicalUrl = category
+    ? `${SITE_URL}/products?${categoryQuery.toString()}`
+    : `${SITE_URL}/products`;
+  const title = query
+    ? `Search results for “${query}”`
+    : category
+      ? `${category} Products Online`
+      : "Shop Products Online in the U.S.";
+  const description = category
+    ? `Shop ${category} products from ${SITE_NAME}, with USD pricing and free standard U.S. shipping.`
+    : `Browse curated products from ${SITE_NAME}, with USD pricing, free standard U.S. shipping and clear customer support.`;
+  const indexable = !query && !sort;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      type: "website",
+      url: canonicalUrl,
+      siteName: SITE_NAME,
+      title: `${title} | ${SITE_NAME}`,
+      description,
+    },
+    robots: {
+      index: indexable,
+      follow: true,
+    },
+  };
+}
 
 export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
   const params = await searchParams;
-  const query = (params.q || "").trim();
-  const category = (params.category || "").trim();
-  const sort = params.sort || "newest";
+  const query = filterValue(params.q);
+  const category = filterValue(params.category);
+  const sort = filterValue(params.sort) || "newest";
 
   const [products, categories] = await Promise.all([
     getStoreProducts({ query, category, sort, limit: 60 }),
@@ -112,7 +171,7 @@ export default async function ProductsPage({
         <section>
           <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b border-[#cfc4b1] pb-5">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#746d62]">
-              Selected for Tanzania
+              Selected for U.S. shoppers
             </p>
             <div className="flex flex-wrap gap-2">
               {[

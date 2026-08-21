@@ -156,14 +156,14 @@ export default function CheckoutClient() {
       fullName: "",
       phone: "",
       email: "",
-      countryCode: "TZ",
+      countryCode: "US",
       region: "",
       city: "",
       postalCode: "",
       addressLine1: "",
       addressLine2: "",
       notes: "",
-      paymentMethod: "manual_mobile_money",
+      paymentMethod: "international_payment_request",
       createAccount: false,
       password: "",
     });
@@ -261,7 +261,33 @@ export default function CheckoutClient() {
           marketsResult.ok &&
           Array.isArray(marketsResult.markets)
         ) {
-          setMarkets(marketsResult.markets);
+          const loadedMarkets = marketsResult.markets as Market[];
+          setMarkets(loadedMarkets);
+          setForm((current) => {
+            if (
+              loadedMarkets.some(
+                (market) => market.countryCode === current.countryCode,
+              )
+            ) {
+              return current;
+            }
+
+            const preferredMarket =
+              loadedMarkets.find((market) => market.countryCode === "US") ||
+              loadedMarkets.find((market) => market.primary) ||
+              loadedMarkets[0];
+
+            if (!preferredMarket) return current;
+
+            return {
+              ...current,
+              countryCode: preferredMarket.countryCode,
+              paymentMethod:
+                preferredMarket.countryCode === "TZ"
+                  ? "manual_mobile_money"
+                  : "international_payment_request",
+            };
+          });
         }
 
         if (
@@ -308,7 +334,7 @@ export default function CheckoutClient() {
             countryCode:
               address?.countryCode ||
               customer?.countryCode ||
-              "TZ",
+              "US",
 
             region:
               address?.region || "",
@@ -578,7 +604,7 @@ export default function CheckoutClient() {
           value:
             "international_payment_request",
           title:
-            "Secure International Payment Link",
+            "Secure Online Payment Link",
           description:
             "Place the order now. WHOKEAS will send a secure online payment link to your email before fulfilment.",
         },
@@ -869,7 +895,7 @@ export default function CheckoutClient() {
                 required
                 inputMode="tel"
                 autoComplete="tel"
-                placeholder="+255..., +1..., +44..."
+                placeholder="+1 555 123 4567"
                 value={form.phone}
                 onChange={(event) =>
                   updateField(

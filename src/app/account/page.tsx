@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -18,6 +19,14 @@ import {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Customer Account",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 function formatMoney(
   value: string | number,

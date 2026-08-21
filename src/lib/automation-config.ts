@@ -62,7 +62,7 @@ const DEFAULT_MARKETS: AutomationMarketRule[] = [
     currency: "TZS",
     locale: "en-TZ",
     enabled: true,
-    primary: true,
+    primary: false,
     exactFreight: true,
     markupPercent: 30,
     paymentFeePercent: 3,
@@ -78,7 +78,7 @@ const DEFAULT_MARKETS: AutomationMarketRule[] = [
     currency: "USD",
     locale: "en-US",
     enabled: true,
-    primary: false,
+    primary: true,
     exactFreight: true,
     markupPercent: 30,
     paymentFeePercent: 3.5,
@@ -546,8 +546,20 @@ function sanitizeMarkets(value: unknown) {
 
   if (enabled.length === 0) return DEFAULT_MARKETS;
 
+  const limited = unique.slice(0, 20);
+  const unitedStatesIndex = limited.findIndex(
+    (market) => market.enabled && market.countryCode === "US",
+  );
+
+  if (unitedStatesIndex >= 0) {
+    return limited.map((market, index) => ({
+      ...market,
+      primary: index === unitedStatesIndex,
+    }));
+  }
+
   let primaryAssigned = false;
-  return unique.slice(0, 20).map((market) => {
+  return limited.map((market) => {
     const primary = market.enabled && market.primary && !primaryAssigned;
     if (primary) primaryAssigned = true;
     return { ...market, primary };

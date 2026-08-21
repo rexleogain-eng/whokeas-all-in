@@ -7,9 +7,9 @@ import {
 } from "../../lib/seo";
 
 export const metadata: Metadata = {
-  title: "Shop Products Online",
+  title: "Shop Products Online in the U.S.",
   description:
-    `Browse technology, home, fashion, study, beauty and lifestyle products from ${SITE_NAME}.`,
+    `Browse technology, home, fashion, study, beauty and lifestyle products from ${SITE_NAME}, priced in USD for U.S. shoppers.`,
   alternates: {
     canonical: `${SITE_URL}/products`,
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     type: "website",
     url: `${SITE_URL}/products`,
     siteName: SITE_NAME,
-    title: `Shop Products Online | ${SITE_NAME}`,
+    title: `Shop Products Online in the U.S. | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
   },
   robots: {

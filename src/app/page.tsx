@@ -17,6 +17,14 @@ const fallbackCollections = [
   { name: "Study", number: "04", text: "Focused essentials for work and learning" },
 ];
 
+function compactProductName(value: string) {
+  const name = String(value || "").replace(/\s+/g, " ").trim();
+
+  if (name.length <= 90) return name;
+
+  return `${name.slice(0, 87).trimEnd()}…`;
+}
+
 export default async function HomePage() {
   const [featured, newest, categories] = await Promise.all([
     getStoreProducts({ featured: true, limit: 8 }),
@@ -43,15 +51,15 @@ export default async function HomePage() {
         <div className="relative mx-auto grid max-w-[1580px] items-stretch lg:grid-cols-[1.05fr_.95fr]">
           <div className="flex min-h-[520px] flex-col justify-center px-6 py-16 sm:px-10 lg:min-h-[650px] lg:px-16 xl:px-24">
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#d6bd7b]">
-              WHOKEAS ALL IN · Tanzania
+              WHOKEAS ALL IN · United States
             </p>
             <h1 className="mt-7 max-w-3xl text-5xl font-normal leading-[0.98] tracking-[-0.045em] sm:text-7xl xl:text-[88px]">
               Everything you need.
               <span className="mt-2 block italic text-[#d6bd7b]">One trusted brand.</span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-[#d8d1c7] sm:text-base">
-              A considered collection of technology, home, fashion and study
-              essentials—displayed in US dollars with market-aware checkout and direct support.
+              Curated technology, home, fashion, beauty and study products for
+              U.S. shoppers—priced in USD with free standard shipping and direct support.
             </p>
 
             <div className="mt-9 flex flex-wrap gap-3">
@@ -64,9 +72,9 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-12 grid max-w-2xl grid-cols-3 gap-5 border-t border-white/15 pt-7 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bdb5aa]">
-              <span>USD catalogue pricing</span>
-              <span>Supplier reviewed</span>
-              <span>Order support</span>
+              <span>USD pricing</span>
+              <span>Free U.S. shipping</span>
+              <span>14-day returns</span>
             </div>
           </div>
 
@@ -74,7 +82,7 @@ export default async function HomePage() {
             {heroProduct?.image ? (
               <img
                 src={heroProduct.image}
-                alt={heroProduct.name}
+                alt={compactProductName(heroProduct.name)}
                 className="absolute inset-0 h-full w-full object-contain p-12 sm:p-16 lg:p-20"
               />
             ) : (
@@ -89,7 +97,9 @@ export default async function HomePage() {
               <div className="mt-2 flex items-end justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-normal text-white">
-                    {heroProduct?.name || "The WHOKEAS Collection"}
+                    {heroProduct
+                      ? compactProductName(heroProduct.name)
+                      : "The WHOKEAS Collection"}
                   </h2>
                   <p className="mt-1 text-xs text-white/60">
                     Curated for practical, modern living.
@@ -113,9 +123,9 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-[1580px] divide-y divide-[#ded5c7] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           {[
             ["Curated catalogue", "Products are reviewed before publication."],
-            ["Transparent pricing", "Clear catalogue prices shown in US dollars."],
-            ["Secure verification", "Payments are confirmed before fulfilment."],
-            ["Local assistance", "Order support tailored for Tanzania."],
+            ["Transparent pricing", "Clear product prices shown in U.S. dollars."],
+            ["Free U.S. shipping", "Standard delivery is estimated at 9–25 days."],
+            ["Clear returns", "Eligible return requests are accepted within 14 days."],
           ].map(([title, text]) => (
             <div key={title} className="px-6 py-7 lg:px-8">
               <h3 className="text-lg font-normal">{title}</h3>
@@ -132,7 +142,7 @@ export default async function HomePage() {
             <h2 className="mt-3 text-4xl font-normal sm:text-5xl">Made for the way you live.</h2>
           </div>
           <p className="max-w-md text-sm leading-7 text-[#746d62]">
-            Practical products, restrained presentation and a clear local ordering experience.
+            Practical products, transparent USD pricing and a clear U.S. ordering experience.
           </p>
         </div>
 
@@ -197,7 +207,7 @@ export default async function HomePage() {
           </div>
           <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-20">
             <p className="max-w-xl text-sm leading-8 text-[#625b50] sm:text-base">
-              WHOKEAS ALL IN brings global product access into one dependable local experience.
+              WHOKEAS ALL IN brings useful products into one dependable U.S. shopping experience.
               We keep the catalogue selective, pricing understandable and order communication clear.
             </p>
             <div className="mt-8 grid gap-6 border-t border-[#c8bda9] pt-8 sm:grid-cols-2">
@@ -219,8 +229,8 @@ export default async function HomePage() {
           <div className="sm:col-span-2">
             <p className="text-sm font-black tracking-[0.17em]">WHOKEAS ALL IN</p>
             <p className="mt-4 max-w-md text-sm leading-7 text-white/55">
-              A refined Tanzania-first digital marketplace built around trust,
-              practical value and clear customer support.
+              A U.S.-focused online store built around useful products,
+              transparent USD pricing and clear customer support.
             </p>
           </div>
           <div>
@@ -239,10 +249,16 @@ export default async function HomePage() {
             >
               Returns &amp; refunds
             </Link>
+            <Link
+              href="/shipping-delivery"
+              className="mt-3 block text-sm text-white/60 hover:text-white"
+            >
+              Shipping &amp; delivery
+            </Link>
           </div>
         </div>
         <div className="border-t border-white/10 px-5 py-5 text-center text-[10px] uppercase tracking-[0.16em] text-white/35">
-          © 2026 WHOKEAS ALL IN · Tanzania
+          © 2026 WHOKEAS ALL IN · United States
         </div>
       </footer>
     </main>

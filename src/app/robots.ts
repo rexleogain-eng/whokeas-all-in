@@ -10,13 +10,9 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/admin/",
         "/api/",
-        "/cart",
-        "/checkout",
-        "/account/",
         "/order-confirmation/",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
   };
 }

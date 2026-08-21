@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
   title: {
-    default: "WHOKEAS ALL IN | Online Shopping in Tanzania",
+    default: "WHOKEAS ALL IN | U.S. Online Shopping",
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -25,13 +25,12 @@ export const metadata: Metadata = {
     "WHOKEAS ALL IN",
     "WHOKEAS",
     "Whokeas Store",
-    "online shopping Tanzania",
-    "Tanzania online store",
-    "technology products Tanzania",
-    "home products Tanzania",
-    "fashion products Tanzania",
-    "study products Tanzania",
-    "beauty products Tanzania",
+    "online shopping United States",
+    "U.S. online store",
+    "technology products online",
+    "home products online",
+    "fashion products online",
+    "beauty products online",
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -57,16 +56,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "en_TZ",
+    locale: "en_US",
     url: `${SITE_URL}/`,
     siteName: SITE_NAME,
-    title: "WHOKEAS ALL IN | Online Shopping in Tanzania",
+    title: "WHOKEAS ALL IN | U.S. Online Shopping",
     description: SITE_DESCRIPTION,
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "WHOKEAS ALL IN | Online Shopping in Tanzania",
+    title: "WHOKEAS ALL IN | U.S. Online Shopping",
     description: SITE_DESCRIPTION,
     images: [DEFAULT_SOCIAL_IMAGE],
   },
@@ -98,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en-US" data-scroll-behavior="smooth">
       <body>
         <Script
           id="whokeas-google-tag-loader"

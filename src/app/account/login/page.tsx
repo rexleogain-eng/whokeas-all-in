@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import AccountAuthForm from "@/components/account/AccountAuthForm";
@@ -6,8 +7,12 @@ import { getCustomerSession } from "@/lib/customer-auth";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Customer Sign In",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function CustomerLoginPage() {

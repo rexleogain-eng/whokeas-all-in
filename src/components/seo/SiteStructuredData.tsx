@@ -13,7 +13,7 @@ export default function SiteStructuredData() {
   const data = [
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
+      "@type": "OnlineStore",
       "@id": organizationId,
       name: SITE_NAME,
       legalName: SITE_NAME,
@@ -30,6 +30,11 @@ export default function SiteStructuredData() {
         "@type": "Brand",
         name: SITE_NAME,
       },
+      areaServed: {
+        "@type": "Country",
+        name: "United States",
+      },
+      currenciesAccepted: "USD",
     },
     {
       "@context": "https://schema.org",
@@ -39,6 +44,7 @@ export default function SiteStructuredData() {
       name: SITE_NAME,
       alternateName: BRAND_ALTERNATE_NAMES,
       description: SITE_DESCRIPTION,
+      inLanguage: "en-US",
       publisher: {
         "@id": organizationId,
       },

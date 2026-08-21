@@ -13,14 +13,32 @@ function configuredRate() {
 
 export const STORE_USD_TO_TZS_RATE = configuredRate();
 
+export function roundStoreUsd(value: string | number) {
+  const numeric = Number(value || 0);
+
+  if (!Number.isFinite(numeric)) return 0;
+
+  return Math.round((numeric + Number.EPSILON) * 100) / 100;
+}
+
 export function tzsToStoreUsd(value: string | number) {
   const numeric = Number(value || 0);
 
   if (!Number.isFinite(numeric)) return 0;
 
-  return Math.round(
-    ((numeric / STORE_USD_TO_TZS_RATE) + Number.EPSILON) * 100,
-  ) / 100;
+  return roundStoreUsd(numeric / STORE_USD_TO_TZS_RATE);
+}
+
+export function sourcePriceToStoreUsd(
+  value: string | number,
+  currency: string,
+) {
+  const code = String(currency || "").trim().toUpperCase();
+
+  if (code === "USD") return roundStoreUsd(value);
+  if (code === "TZS") return tzsToStoreUsd(value);
+
+  return 0;
 }
 
 export function formatStorePrice(value: string | number) {

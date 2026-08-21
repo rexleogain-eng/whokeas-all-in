@@ -2,20 +2,23 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import StoreHeader from "@/components/store/StoreHeader";
-import { SITE_NAME, SITE_URL } from "@/lib/seo";
-
-const POLICY_URL = `${SITE_URL}/returns-refunds`;
+import {
+  RETURN_POLICY_URL,
+  SITE_NAME,
+  SITE_URL,
+  US_RETURN_DAYS,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Returns and Refunds Policy",
   description:
     "Read the WHOKEAS ALL IN returns, refunds, exchanges and damaged-item policy for eligible purchases.",
   alternates: {
-    canonical: POLICY_URL,
+    canonical: RETURN_POLICY_URL,
   },
   openGraph: {
     type: "website",
-    url: POLICY_URL,
+    url: RETURN_POLICY_URL,
     siteName: SITE_NAME,
     title: "Returns and Refunds Policy | WHOKEAS ALL IN",
     description:
@@ -30,27 +33,49 @@ export const metadata: Metadata = {
 const effectiveDate = "August 2, 2026";
 
 export default function ReturnsRefundsPage() {
-  const policyStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: "Returns and Refunds Policy",
-    url: POLICY_URL,
-    isPartOf: {
-      "@type": "WebSite",
-      name: SITE_NAME,
-      url: SITE_URL,
+  const policyStructuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": RETURN_POLICY_URL,
+      name: "Returns and Refunds Policy",
+      url: RETURN_POLICY_URL,
+      isPartOf: {
+        "@id": `${SITE_URL}/#website`,
+      },
+      dateModified: "2026-08-21",
+      description:
+        "WHOKEAS ALL IN returns and refunds policy, including eligibility, return shipping and refund processing.",
     },
-    dateModified: "2026-08-02",
-    description:
-      "WHOKEAS ALL IN returns and refunds policy, including eligibility, return shipping and refund processing.",
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: `${SITE_URL}/`,
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        "@id": `${RETURN_POLICY_URL}#policy`,
+        applicableCountry: "US",
+        merchantReturnLink: RETURN_POLICY_URL,
+        returnPolicyCategory:
+          "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: US_RETURN_DAYS,
+        itemCondition: "https://schema.org/NewCondition",
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees:
+          "https://schema.org/ReturnFeesCustomerResponsibility",
+        refundType: "https://schema.org/FullRefund",
+      },
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(policyStructuredData),
+          __html: JSON.stringify(policyStructuredData).replace(/</g, "\\u003c"),
         }}
       />
 
@@ -316,6 +341,9 @@ export default function ReturnsRefundsPage() {
             </Link>
             <Link href="/returns-refunds" className="text-[#d6bd7b]">
               Returns &amp; refunds
+            </Link>
+            <Link href="/shipping-delivery" className="hover:text-white">
+              Shipping
             </Link>
           </div>
         </div>

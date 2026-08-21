@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import { getStoreProductBySlug } from "../../../lib/store-catalog";
 import {
   DEFAULT_SOCIAL_IMAGE,
+  RETURN_POLICY_URL,
+  SHIPPING_POLICY_URL,
   SITE_NAME,
   SITE_URL,
 } from "../../../lib/seo";
-import { tzsToStoreUsd } from "../../../lib/store-currency";
 
 type ProductRouteProps = {
   params: Promise<{
@@ -21,6 +22,17 @@ function cleanText(value: unknown, fallback: string) {
     .trim();
 
   return (text || fallback).slice(0, 160);
+}
+
+function cleanTitle(value: unknown) {
+  const title = String(value || SITE_NAME)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (title.length <= 70) return title;
+
+  return `${title.slice(0, 67).trimEnd()}…`;
 }
 
 async function readProduct(rawSlug: string) {
@@ -48,6 +60,7 @@ export async function generateMetadata({
   const images = result.images as Array<Record<string, unknown>>;
 
   const productName = String(product.name || SITE_NAME);
+  const metadataTitle = cleanTitle(productName);
   const productSlug = String(product.slug || slug);
   const canonicalUrl =
     `${SITE_URL}/products/${encodeURIComponent(productSlug)}`;
@@ -60,7 +73,7 @@ export async function generateMetadata({
     .filter(Boolean);
 
   return {
-    title: productName,
+    title: metadataTitle,
     description,
     alternates: {
       canonical: canonicalUrl,
@@ -69,7 +82,7 @@ export async function generateMetadata({
       type: "website",
       url: canonicalUrl,
       siteName: SITE_NAME,
-      title: productName,
+      title: metadataTitle,
       description,
       images: imageUrls.length > 0
         ? imageUrls
@@ -77,17 +90,17 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: productName,
+      title: metadataTitle,
       description,
       images: imageUrls.length > 0
         ? imageUrls
         : [DEFAULT_SOCIAL_IMAGE],
     },
     robots: {
-      index: true,
+      index: Boolean(product.usAvailable),
       follow: true,
       googleBot: {
-        index: true,
+        index: Boolean(product.usAvailable),
         follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,
@@ -117,6 +130,10 @@ export default async function ProductSeoLayout({
   const images = result.images as Array<Record<string, unknown>>;
   const variants = result.variants as Array<Record<string, unknown>>;
 
+  if (!product.usAvailable) {
+    return children;
+  }
+
   const productName = String(product.name || SITE_NAME);
   const productSlug = String(product.slug || slug);
   const productUrl =
@@ -129,7 +146,7 @@ export default async function ProductSeoLayout({
     `Buy ${productName} online from ${SITE_NAME}.`,
   );
   const hasVariants = variants.length > 0;
-  const isInStock = variants.some(
+  const isInStock = !hasVariants || variants.some(
     (variant) => Number(variant.stockQuantity || 0) > 0,
   );
 
@@ -149,17 +166,26 @@ export default async function ProductSeoLayout({
       : {}),
     offers: {
       "@type": "Offer",
+      "@id": `${productUrl}#offer`,
       url: productUrl,
       priceCurrency: "USD",
-      price: tzsToStoreUsd(Number(product.price || 0)).toFixed(2),
+      price: Number(product.price || 0).toFixed(2),
       itemCondition: "https://schema.org/NewCondition",
-      ...(hasVariants
-        ? {
-            availability: isInStock
-              ? "https://schema.org/InStock"
-              : "https://schema.org/OutOfStock",
-          }
-        : {}),
+      availability: isInStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: {
+        "@id": `${SITE_URL}/#organization`,
+      },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        hasShippingService: {
+          "@id": `${SHIPPING_POLICY_URL}#policy`,
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@id": `${RETURN_POLICY_URL}#policy`,
+      },
     },
   };
 

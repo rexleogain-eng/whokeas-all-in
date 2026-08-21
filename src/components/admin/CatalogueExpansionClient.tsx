@@ -14,6 +14,19 @@ type Props = {
   initialData: CatalogueExpansionDashboard;
 };
 
+type CatalogueApiResult = CatalogueExpansionDashboard & {
+  ok: boolean;
+  error?: string;
+  report: {
+    message: string;
+    queued: number;
+    processed: number;
+    deleted: number;
+    archived: number;
+    reset: number;
+  };
+};
+
 const fieldClass =
   "w-full border border-[#cfc5b5] bg-white px-3.5 py-3 text-sm outline-none transition focus:border-[#9a7534] focus:ring-2 focus:ring-[#b9944d]/15";
 
@@ -51,7 +64,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
       cache: "no-store",
       ...init,
     });
-    const result = await readApiResponse(response);
+    const result = await readApiResponse<CatalogueApiResult>(response);
     if (!response.ok || !result.ok) {
       throw new Error(
         result.report?.message || result.error || "The operation failed.",
@@ -96,7 +109,7 @@ export default function CatalogueExpansionClient({ initialData }: Props) {
   async function runAction(
     key: string,
     url: string,
-    successMessage: (result: any) => string,
+    successMessage: (result: CatalogueApiResult) => string,
     body?: unknown,
   ) {
     setBusy(key);

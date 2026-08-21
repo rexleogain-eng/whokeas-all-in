@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
 
 import { catalogSql } from "../lib/catalog-schema";
-import { SITE_URL } from "../lib/seo";
+import { ensureGlobalMarketSchema } from "../lib/global-markets";
+import {
+  SITE_URL,
+  US_SHIPPING_MAX_DAYS,
+  US_TARGET_COUNTRY_CODE,
+} from "../lib/seo";
 
 export const revalidate = 3600;
 
@@ -32,9 +37,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.7,
     },
+    {
+      url: `${SITE_URL}/shipping-delivery`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
   ];
 
   try {
+    await ensureGlobalMarketSchema();
     const sql = catalogSql();
 
     const rows = await sql`
@@ -44,6 +56,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       FROM products
       WHERE status::text = 'active'
         AND COALESCE(TRIM(slug), '') <> ''
+        AND EXISTS (
+          SELECT 1
+          FROM product_market_prices market
+          WHERE market.product_id = products.id
+            AND market.country_code = ${US_TARGET_COUNTRY_CODE}
+            AND market.currency = 'USD'
+            AND market.available = true
+            AND market.selling_price_local > 0
+            AND (
+              market.estimated_delivery_days IS NULL
+              OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+            )
+        )
       ORDER BY updated_at DESC
     `;
 

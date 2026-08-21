@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "WHOKEAS ALL IN",
     short_name: "WHOKEAS",
     description:
-      "A global marketplace for technology, home, fashion, study, beauty and lifestyle products.",
+      "A U.S.-focused online store for technology, home, fashion, study, beauty and lifestyle products.",
     start_url: "/",
     display: "standalone",
     background_color: "#181511",

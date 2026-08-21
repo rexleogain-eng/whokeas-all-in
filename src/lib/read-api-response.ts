@@ -1,8 +1,8 @@
-export async function readApiResponse<T = any>(
+export async function readApiResponse<T = unknown>(
   response: Response,
 ): Promise<T> {
   const rawText = await response.text();
-  let payload: any = {};
+  let payload: unknown = {};
 
   if (rawText.trim()) {
     try {
@@ -22,11 +22,16 @@ export async function readApiResponse<T = any>(
   }
 
   if (!response.ok) {
+    const errorPayload =
+      payload && typeof payload === "object"
+        ? payload as Record<string, unknown>
+        : {};
+
     throw new Error(
       String(
-        payload?.error ??
-          payload?.message ??
-          payload?.detail ??
+        errorPayload.error ??
+          errorPayload.message ??
+          errorPayload.detail ??
           `Request failed with HTTP ${response.status}.`,
       ),
     );

@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 
 import AddToCart from "@/components/store/AddToCart";
 import StoreHeader from "@/components/store/StoreHeader";
-import { getStoreProductBySlug } from "@/lib/store-catalog";
 import {
-  formatStorePrice,
-  tzsToStoreUsd,
-} from "@/lib/store-currency";
+  SHIPPING_POLICY_URL,
+  US_RETURN_DAYS,
+  US_SHIPPING_MAX_DAYS,
+  US_SHIPPING_MIN_DAYS,
+} from "@/lib/seo";
+import { getStoreProductBySlug } from "@/lib/store-catalog";
+import { formatStorePrice } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,8 +28,13 @@ export default async function ProductPage({ params }: PageProps) {
 
   const { product, images, variants } = result;
   const mainImage = images[0]?.source ? String(images[0].source) : null;
-  const compareAt = tzsToStoreUsd(product.compareAtPrice || 0);
-  const current = tzsToStoreUsd(product.price || 0);
+  const compareAt = Number(product.compareAtPrice || 0);
+  const current = Number(product.price || 0);
+  const usAvailable = Boolean(product.usAvailable);
+  const inStock = variants.length === 0 || variants.some(
+    (variant) => Number(variant.stockQuantity || 0) > 0,
+  );
+  const purchasable = usAvailable && inStock;
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -115,12 +123,12 @@ export default async function ProductPage({ params }: PageProps) {
               <div className="border-b border-r border-[#ddd4c6] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Delivery</p>
                 <p className="mt-2 text-sm font-semibold">
-                  {product.deliveryDays ? `Estimated ${product.deliveryDays} days` : "Confirmed before fulfilment"}
+                  Free U.S. shipping · {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days
                 </p>
               </div>
               <div className="border-b border-r border-[#ddd4c6] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Order support</p>
-                <p className="mt-2 text-sm font-semibold">Managed locally by WHOKEAS</p>
+                <p className="mt-2 text-sm font-semibold">Managed directly by WHOKEAS</p>
               </div>
             </div>
 
@@ -138,33 +146,53 @@ export default async function ProductPage({ params }: PageProps) {
           <aside className="h-fit bg-[#f7f2e9] p-6 lg:sticky lg:top-36 lg:p-7">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">Your selection</p>
             <p className="mt-3 text-2xl font-bold">{formatStorePrice(current)}</p>
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-[#5b745f]">Available to order</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.1em] text-[#5b745f]">
+              {purchasable
+                ? "Available for U.S. delivery"
+                : usAvailable
+                  ? "Currently out of stock"
+                  : "Not available for U.S. delivery"}
+            </p>
             <p className="mt-4 text-xs leading-6 text-[#746d62]">
-              USD catalogue price is shown here. The final market quote follows the delivery country selected at checkout.
+              Price shown in USD. Standard U.S. shipping is free and estimated
+              at {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days.
             </p>
 
-            <div className="mt-6">
-              <AddToCart
-                product={{
-                  id: String(product.id),
-                  slug: String(product.slug),
-                  name: String(product.name),
-                  price: String(current),
-                }}
-                variants={variants.map((variant) => ({
-                  id: String(variant.id),
-                  name: String(variant.name),
-                  price: String(tzsToStoreUsd(variant.price)),
-                  stockQuantity: Number(variant.stockQuantity),
-                }))}
-              />
-            </div>
+            {purchasable ? (
+              <div className="mt-6">
+                <AddToCart
+                  product={{
+                    id: String(product.id),
+                    slug: String(product.slug),
+                    name: String(product.name),
+                    price: String(current),
+                  }}
+                  variants={variants.map((variant) => ({
+                    id: String(variant.id),
+                    name: String(variant.name),
+                    price: String(variant.price),
+                    stockQuantity: Number(variant.stockQuantity),
+                  }))}
+                />
+              </div>
+            ) : (
+              <Link href="/products" className="classic-button-dark mt-6 w-full text-center">
+                Browse available products
+              </Link>
+            )}
 
             <div className="mt-6 space-y-3 border-t border-[#d8cfbf] pt-6 text-[10px] font-bold uppercase tracking-[0.1em] text-[#6e665b]">
-              <p>✓ Secure order recording</p>
-              <p>✓ Manual payment verification</p>
-              <p>✓ Controlled supplier fulfilment</p>
+              <p>✓ Free U.S. standard shipping</p>
+              <p>✓ {US_RETURN_DAYS}-day return-request window</p>
+              <p>✓ Direct order support</p>
             </div>
+
+            <Link
+              href={SHIPPING_POLICY_URL}
+              className="mt-5 block text-center text-[10px] font-bold uppercase tracking-[0.12em] text-[#9b762c] hover:text-[#171512]"
+            >
+              Shipping details →
+            </Link>
           </aside>
         </section>
       </div>

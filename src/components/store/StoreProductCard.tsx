@@ -1,18 +1,38 @@
 import Link from "next/link";
 
 import type { StoreProduct } from "@/lib/store-catalog";
-import {
-  formatStorePrice,
-  tzsToStoreUsd,
-} from "@/lib/store-currency";
+import { formatStorePrice } from "@/lib/store-currency";
+
+function compactSummary(value: string | null) {
+  const summary = String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!summary) return "Selected for WHOKEAS customers.";
+  if (summary.length <= 150) return summary;
+
+  return `${summary.slice(0, 147).trimEnd()}…`;
+}
+
+function compactTitle(value: string) {
+  const title = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (title.length <= 90) return title;
+
+  return `${title.slice(0, 87).trimEnd()}…`;
+}
 
 export default function StoreProductCard({
   product,
 }: {
   product: StoreProduct;
 }) {
-  const compareAt = tzsToStoreUsd(product.compareAtPrice || 0);
-  const current = tzsToStoreUsd(product.price || 0);
+  const compareAt = Number(product.compareAtPrice || 0);
+  const current = Number(product.price || 0);
+  const productTitle = compactTitle(product.name);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -27,7 +47,7 @@ export default function StoreProductCard({
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={productTitle}
             className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-[1.04]"
           />
         ) : (
@@ -55,10 +75,10 @@ export default function StoreProductCard({
           {product.categoryName || "General"}
         </p>
         <h3 className="mt-2 line-clamp-2 min-h-12 text-[17px] font-normal leading-6 text-[#1d1914] group-hover:text-[#8a6824]">
-          {product.name}
+          {productTitle}
         </h3>
         <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-[#746d62]">
-          {product.shortDescription || "Selected for WHOKEAS customers."}
+          {compactSummary(product.shortDescription)}
         </p>
 
         <div className="mt-5 border-t border-[#e3dbce] pt-4">

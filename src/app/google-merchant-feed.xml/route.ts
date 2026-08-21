@@ -1,13 +1,14 @@
 import {
   catalogSql,
-  ensureCatalogSchema,
 } from "@/lib/catalog-schema";
+import { ensureGlobalMarketSchema } from "@/lib/global-markets";
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
+  US_SHIPPING_MAX_DAYS,
+  US_TARGET_COUNTRY_CODE,
 } from "@/lib/seo";
-import { tzsToStoreUsd } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,7 +21,7 @@ type MerchantProductRow = {
   description: string | null;
   brand: string | null;
   categoryName: string | null;
-  price: string;
+  priceUsd: string;
   supplierProductId: string | null;
   supplierExternalProductId: string | null;
   images: unknown;
@@ -47,6 +48,8 @@ function xml(value: unknown) {
 function cleanText(value: unknown, maximumLength: number) {
   return removeInvalidXmlCharacters(String(value ?? ""))
     .replace(/<[^>]*>/g, " ")
+    .replace(/\b(?:Highlights|Specification|Details)\s+undefined\b/gi, " ")
+    .replace(/\bsupplied through CJdropshipping\.?\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, maximumLength);
@@ -104,14 +107,14 @@ function merchantItem(row: MerchantProductRow) {
   const productId = merchantIdentifier(row.id, 50);
   const title = cleanText(row.name, 150);
   const description = cleanText(
-    row.description || row.shortDescription,
-    5000,
+    row.shortDescription || row.description,
+    1500,
   ) || `Buy ${title} online from ${SITE_NAME}.`;
   const productUrl =
     `${SITE_URL}/products/${encodeURIComponent(row.slug)}`;
   const imageUrls = readImageUrls(row.images);
   const mainImage = imageUrls[0];
-  const priceUsd = tzsToStoreUsd(row.price);
+  const priceUsd = Number(row.priceUsd || 0);
   const availability = row.hasVariants && !row.variantInStock
     ? "out_of_stock"
     : "in_stock";
@@ -162,7 +165,7 @@ function merchantItem(row: MerchantProductRow) {
 }
 
 async function readMerchantProducts() {
-  await ensureCatalogSchema();
+  await ensureGlobalMarketSchema();
   const sql = catalogSql();
 
   const rows = await sql`
@@ -174,7 +177,7 @@ async function readMerchantProducts() {
       p.description,
       p.brand,
       c.name AS "categoryName",
-      p.price::text AS price,
+      us_market.selling_price_local::text AS "priceUsd",
       p.supplier_product_id AS "supplierProductId",
       p.supplier_external_product_id AS "supplierExternalProductId",
       (
@@ -204,8 +207,22 @@ async function readMerchantProducts() {
       ) AS "variantInStock"
     FROM products p
     LEFT JOIN categories c ON c.id = p.category_id
+    JOIN LATERAL (
+      SELECT market.selling_price_local
+      FROM product_market_prices market
+      WHERE market.product_id = p.id
+        AND market.country_code = ${US_TARGET_COUNTRY_CODE}
+        AND market.currency = 'USD'
+        AND market.available = true
+        AND market.selling_price_local > 0
+        AND (
+          market.estimated_delivery_days IS NULL
+          OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+        )
+      ORDER BY market.is_primary DESC, market.updated_at DESC
+      LIMIT 1
+    ) us_market ON true
     WHERE p.status::text = 'active'
-      AND p.price > 0
       AND EXISTS (
         SELECT 1
         FROM product_images pi

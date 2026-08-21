@@ -120,11 +120,21 @@ export async function getCheckoutMarkets():
       countryName: "Tanzania",
       currency: "TZS",
       locale: "en-TZ",
-      primary: true,
+      primary: false,
     });
   }
 
-  return markets.sort((left, right) => {
+  const hasUnitedStates = markets.some(
+    (market) => market.countryCode === "US",
+  );
+  const prioritizedMarkets = markets.map((market) => ({
+    ...market,
+    primary: hasUnitedStates
+      ? market.countryCode === "US"
+      : market.primary,
+  }));
+
+  return prioritizedMarkets.sort((left, right) => {
     if (left.primary !== right.primary) {
       return left.primary ? -1 : 1;
     }
