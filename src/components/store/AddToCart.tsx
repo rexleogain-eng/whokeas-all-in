@@ -57,7 +57,7 @@ export default function AddToCart({ product, variants }: Props) {
   const effectivePrice = Number(selectedVariant?.price ?? product.price);
   const unavailable = selectedVariant !== undefined && selectedVariant.stockQuantity < 1;
 
-  function addItem() {
+  function saveItem() {
     if (unavailable) return;
 
     const cart = readCart();
@@ -82,8 +82,19 @@ export default function AddToCart({ product, variants }: Props) {
 
     localStorage.setItem("whokeas-cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("whokeas-cart-updated"));
+  }
+
+  function addItem() {
+    saveItem();
     setMessage("Added to your cart");
     window.setTimeout(() => setMessage(""), 2200);
+  }
+
+  function buyNow() {
+    if (unavailable) return;
+
+    saveItem();
+    window.location.assign("/checkout");
   }
 
   return (
@@ -135,14 +146,24 @@ export default function AddToCart({ product, variants }: Props) {
         </select>
       </div>
 
-      <button
-        type="button"
-        disabled={unavailable}
-        onClick={addItem}
-        className="mt-5 w-full border border-[#171512] bg-[#171512] px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white hover:border-[#9b762c] hover:bg-[#9b762c] disabled:cursor-not-allowed disabled:border-[#aaa197] disabled:bg-[#aaa197]"
-      >
-        {unavailable ? "Currently unavailable" : "Add to cart"}
-      </button>
+      <div className="mt-5 grid gap-2">
+        <button
+          type="button"
+          disabled={unavailable}
+          onClick={buyNow}
+          className="w-full border border-[#171512] bg-[#171512] px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white hover:border-[#9b762c] hover:bg-[#9b762c] disabled:cursor-not-allowed disabled:border-[#aaa197] disabled:bg-[#aaa197]"
+        >
+          {unavailable ? "Currently unavailable" : "Buy now"}
+        </button>
+        <button
+          type="button"
+          disabled={unavailable}
+          onClick={addItem}
+          className="w-full border border-[#9b762c] bg-[#fffdf8] px-5 py-3.5 text-xs font-bold uppercase tracking-[0.16em] text-[#8a6824] hover:bg-[#f3ead9] disabled:cursor-not-allowed disabled:border-[#aaa197] disabled:text-[#aaa197]"
+        >
+          Add to cart
+        </button>
+      </div>
 
       <div aria-live="polite" className="mt-3 min-h-5 text-center text-xs font-bold uppercase tracking-[0.1em] text-[#5b745f]">
         {message}

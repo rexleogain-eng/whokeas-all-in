@@ -89,6 +89,15 @@ export default async function ProductsPage({
     getStoreProducts({ query, category, sort, limit: 60 }),
     getStoreCategories(),
   ]);
+  const categoryTotal = category
+    ? categories.find(
+        (item) => item.name.toLowerCase() === category.toLowerCase(),
+      )?.count || products.length
+    : categories.reduce((total, item) => total + item.count, 0);
+  const totalAvailable = query ? products.length : categoryTotal;
+  const productCountLabel = totalAvailable > products.length
+    ? `Showing ${products.length} of ${totalAvailable} products`
+    : `${products.length} product${products.length === 1 ? "" : "s"} available`;
 
   const buildSortHref = (value: string) => {
     const next = new URLSearchParams();
@@ -115,7 +124,7 @@ export default async function ProductsPage({
                 : "A considered catalogue for modern living."}
           </h1>
           <p className="mt-4 text-sm text-white/55">
-            {products.length} product{products.length === 1 ? "" : "s"} available
+            {productCountLabel}
           </p>
         </div>
       </section>
