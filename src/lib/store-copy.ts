@@ -74,8 +74,12 @@ export function storefrontTitle(value: unknown) {
 export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   const title = normalize(titleValue).toLowerCase();
 
-  if (/power\s*bank/.test(title)) {
+  if (/power\s*bank/.test(title) && /digital\s*display/.test(title)) {
     return "Portable backup power with a clear digital display, selected for everyday charging and travel.";
+  }
+
+  if (/power\s*bank/.test(title)) {
+    return "Portable backup power selected for everyday charging, travel and on-the-go convenience.";
   }
 
   if (/fm\s*transmitter/.test(title)) {
