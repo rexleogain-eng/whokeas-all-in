@@ -7,6 +7,11 @@ import {
   getStoreProducts,
 } from "@/lib/store-catalog";
 import type { StoreProduct } from "@/lib/store-catalog";
+import {
+  storefrontFocusFamily,
+  storefrontFocusScore,
+  storefrontTitle,
+} from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
@@ -19,32 +24,6 @@ const fallbackCollections = [
   { name: "Study", number: "04", text: "Focused essentials for work and learning" },
 ];
 
-function compactProductName(value: string) {
-  const name = String(value || "").replace(/\s+/g, " ").trim();
-
-  if (name.length <= 90) return name;
-
-  return `${name.slice(0, 87).trimEnd()}…`;
-}
-
-function storefrontScore(product: StoreProduct) {
-  const name = product.name.toLowerCase();
-  const price = Number(product.price || 0);
-  const deliveryDays = Number(product.deliveryDays || 0);
-  let score = product.featured ? 3 : 0;
-
-  if (/translator|translation/.test(name)) score += 8;
-  if (/smart\s?watch|organizer|power bank|open ear/.test(name)) score += 3;
-  if (/v4[.-]?[12]|\b5w\b|undefined|null/.test(name)) score -= 10;
-  if (price >= 20 && price <= 60) score += 3;
-  if (price > 90) score -= 3;
-  if (deliveryDays > 0 && deliveryDays <= 14) score += 3;
-  else if (deliveryDays > 0 && deliveryDays <= 21) score += 1;
-  if (String(product.shortDescription || "").length >= 60) score += 1;
-
-  return score;
-}
-
 function rankStorefrontProducts(products: StoreProduct[]) {
   const unique = new Map<string, StoreProduct>();
 
@@ -52,23 +31,47 @@ function rankStorefrontProducts(products: StoreProduct[]) {
     if (!unique.has(product.id)) unique.set(product.id, product);
   }
 
-  return [...unique.values()].sort(
-    (left, right) => storefrontScore(right) - storefrontScore(left),
+  const ranked = [...unique.values()].sort(
+    (left, right) => storefrontFocusScore(right) - storefrontFocusScore(left),
   );
+  const selected: StoreProduct[] = [];
+  const familyCounts = new Map<string, number>();
+
+  for (const product of ranked) {
+    const family = storefrontFocusFamily(product.name);
+    const currentCount = familyCounts.get(family) || 0;
+    const familyLimit = family === "other" ? 1 : 2;
+    if (currentCount >= familyLimit) continue;
+
+    selected.push(product);
+    familyCounts.set(family, currentCount + 1);
+    if (selected.length === 6) break;
+  }
+
+  if (selected.length < 6) {
+    for (const product of ranked) {
+      if (selected.some((item) => item.id === product.id)) continue;
+      selected.push(product);
+      if (selected.length === 6) break;
+    }
+  }
+
+  return selected;
 }
 
 export default async function HomePage() {
   const [featured, newest, categories] = await Promise.all([
     getStoreProducts({ featured: true, limit: 24 }),
-    getStoreProducts({ limit: 24, sort: "newest" }),
+    getStoreProducts({ limit: 36, sort: "newest" }),
     getStoreCategories(),
   ]);
 
   const featuredProducts = rankStorefrontProducts([
     ...featured,
     ...newest,
-  ]).slice(0, 8);
+  ]);
   const heroProduct = featuredProducts[0] || newest[0];
+  const heroTitle = heroProduct ? storefrontTitle(heroProduct.name) : null;
   const collections = categories.length > 0
     ? categories.slice(0, 4).map((category, index) => ({
         name: category.name,
@@ -122,7 +125,7 @@ export default async function HomePage() {
             {heroProduct?.image ? (
               <img
                 src={heroProduct.image}
-                alt={compactProductName(heroProduct.name)}
+                alt={heroTitle || "WHOKEAS featured product"}
                 className="absolute inset-0 h-full w-full object-contain p-12 sm:p-16 lg:p-20"
               />
             ) : (
@@ -137,9 +140,7 @@ export default async function HomePage() {
               <div className="mt-2 flex items-end justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-normal text-white">
-                    {heroProduct
-                      ? compactProductName(heroProduct.name)
-                      : "The WHOKEAS Collection"}
+                    {heroTitle || "The WHOKEAS Collection"}
                   </h2>
                   <p className="mt-1 text-xs text-white/60">
                     {heroProduct
@@ -214,8 +215,11 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[1580px] px-4 py-14 sm:px-6 lg:py-20">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="classic-kicker">The edit</p>
-              <h2 className="mt-3 text-4xl font-normal sm:text-5xl">Featured products</h2>
+              <p className="classic-kicker">The focused edit</p>
+              <h2 className="mt-3 text-4xl font-normal sm:text-5xl">Best current picks</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#746d62]">
+                A tighter selection prioritized for value, delivery speed and everyday usefulness.
+              </p>
             </div>
             <Link href="/products" className="classic-button-light">
               View all products
@@ -230,7 +234,7 @@ export default async function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
               {featuredProducts.map((product) => (
                 <StoreProductCard key={product.id} product={product} />
               ))}
@@ -278,7 +282,9 @@ export default async function HomePage() {
           <div>
             <h3 className="text-lg font-normal text-[#d6bd7b]">Shop</h3>
             <Link href="/products" className="mt-4 block text-sm text-white/60 hover:text-white">All products</Link>
-            <Link href="/products?sort=newest" className="mt-3 block text-sm text-white/60 hover:text-white">New arrivals</Link>
+            <Link href="/shop/portable-power-banks" className="mt-3 block text-sm text-white/60 hover:text-white">Power banks</Link>
+            <Link href="/shop/car-fm-transmitters" className="mt-3 block text-sm text-white/60 hover:text-white">Car audio</Link>
+            <Link href="/shop/beauty-grooming-essentials" className="mt-3 block text-sm text-white/60 hover:text-white">Beauty &amp; grooming</Link>
           </div>
           <div>
             <h3 className="text-lg font-normal text-[#d6bd7b]">Service</h3>
