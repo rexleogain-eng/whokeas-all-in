@@ -244,7 +244,7 @@ export async function createSelcomCheckout(input: {
 
   return {
     gatewayUrl,
-    reference: String(result.reference || ""),
+    reference: String(result?.reference || ""),
     gatewayBuyerUuid: String(first?.gateway_buyer_uuid || ""),
     paymentToken: String(first?.payment_token || ""),
     raw: result,
