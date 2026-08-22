@@ -20,6 +20,10 @@ function cleanInline(value: unknown) {
     .trim();
 }
 
+function formatCapacity(amount: string) {
+  return `${Number(amount).toLocaleString("en-US")}mAh`;
+}
+
 function titleCaseOption(value: string) {
   const keep: Record<string, string> = {
     usb: "USB",
@@ -63,9 +67,7 @@ export function storefrontVariantName(productValue: unknown, variantValue: unkno
   variant = variant
     .replace(/^[-–—,:;\s]+/, "")
     .replace(/\btype\s*c\b/gi, "USB-C")
-    .replace(/\b(\d{4,6})\s*m\s*ah\b/gi, (_, amount: string) =>
-      `${Number(amount).toLocaleString("en-US")}mAh`,
-    )
+    .replace(/\b(\d{4,6})\s*m\s*ah\b/gi, (_, amount: string) => formatCapacity(amount))
     .replace(/\b(\d+(?:\.\d+)?)\s*w\b/gi, "$1W")
     .replace(/\b(\d+(?:\.\d+)?)\s*v\b/gi, "$1V")
     .replace(/\s+(?=(?:\d{1,3}(?:,\d{3})?mAh|USB(?:-C)?|PD\b|Qi\b|US\s+Plug\b|UK\s+Plug\b|EU\s+Plug\b|AU\s+Plug\b))/gi, " · ")
@@ -94,10 +96,23 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bdropshipping\b/gi, "")
     .replace(/\bwholesale\b/gi, "")
     .replace(/^product\s+(?:information|description)\s*:\s*/i, "")
-    .replace(/\s+(?=(?:Power supply|Rated voltage|Voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Packing list|Package includes|Package content)\s*:)/gi, "\n")
+    .replace(
+      /\b(\d{4,6})mAh large capacity,\s*once fully charged,\s*can warm for\s*(\d+)\s*hours?\.\s*It also belongs to the power bank,\s*Type\s*c-USB\b/gi,
+      (_, amount: string, hours: string) =>
+        `\nBattery: ${formatCapacity(amount)}\nHeating time: Up to ${hours} hours per full charge\nInterface: USB-C / USB`,
+    )
+    .replace(/\bType\s*C\s*-\s*USB\b/gi, "USB-C / USB")
+    .replace(/\bPC\s*\+\s*ABS\b/gi, "PC + ABS")
+    .replace(/\bFlame\s+retardant\b/gi, "Flame-retardant")
+    .replace(/\b(\d{4,6})\s*m\s*ah\b/gi, (_, amount: string) => formatCapacity(amount))
+    .replace(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm\b/gi, "$1 × $2 × $3 cm")
+    .replace(/\s+(?=(?:Power supply|Rated voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Battery|Heating time|Packing list|Package includes|Package content)\s*:)/gi, "\n")
     .replace(/\bPacking list\s*:/gi, "Included:")
     .replace(/\bPackage includes\s*:/gi, "Included:")
     .replace(/\bPackage content\s*:/gi, "Included:")
+    .replace(/Included:\s*([^,.;\n]+?)\s+(\d+)(?=\n|$)/gi, (_, item: string, count: string) =>
+      `Included: ${count} × ${item.trim()}`,
+    )
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
@@ -105,7 +120,17 @@ export function storefrontProductDetails(value: unknown) {
   const lines = source
     .split("\n")
     .map((line) => line.trim().replace(/^[•\-–—]+\s*/, ""))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((line) => {
+      const colorMatch = line.match(/^(Color|Colour):\s*(.+)$/i);
+      if (!colorMatch) return line;
+
+      const colors = colorMatch[2]
+        .split(",")
+        .map((color) => titleCaseOption(color.trim()))
+        .join(", ");
+      return `Color: ${colors}`;
+    });
 
   return lines.join("\n");
 }
