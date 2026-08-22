@@ -11,6 +11,10 @@ import {
 } from "@/lib/seo";
 import { getStoreProductBySlug } from "@/lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
+import {
+  storefrontProductDetails,
+  storefrontVariantName,
+} from "@/lib/store-product-display";
 import { formatStorePrice } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +35,19 @@ export default async function ProductPage({ params }: PageProps) {
   const rawName = String(product.name || "");
   const displayName = storefrontTitle(rawName);
   const displaySummary = storefrontSummary(rawName, product.shortDescription);
+  const displayDetails = storefrontProductDetails(product.description);
+  const displayVariants = variants.map((variant) => ({
+    id: String(variant.id),
+    name: storefrontVariantName(rawName, variant.name),
+    price: String(variant.price),
+    stockQuantity: Number(variant.stockQuantity),
+  }));
   const mainImage = images[0]?.source ? String(images[0].source) : null;
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
   const usAvailable = Boolean(product.usAvailable);
-  const inStock = variants.length === 0 || variants.some(
-    (variant) => Number(variant.stockQuantity || 0) > 0,
+  const inStock = displayVariants.length === 0 || displayVariants.some(
+    (variant) => variant.stockQuantity > 0,
   );
   const purchasable = usAvailable && inStock;
   const discount =
@@ -113,10 +124,7 @@ export default async function ProductPage({ params }: PageProps) {
               )}
             </div>
 
-            <h1
-              title={rawName}
-              className="mt-5 text-4xl font-normal leading-tight sm:text-5xl"
-            >
+            <h1 className="mt-5 text-4xl font-normal leading-tight sm:text-5xl">
               {displayName}
             </h1>
             <p className="mt-5 text-sm leading-7 text-[#6f675c]">
@@ -171,12 +179,12 @@ export default async function ProductPage({ params }: PageProps) {
               </Link>
             )}
 
-            {product.description && (
+            {displayDetails && (
               <div className="mt-8">
                 <h2 className="text-2xl font-normal">Product details</h2>
                 <div className="classic-rule mt-4" />
                 <p className="mt-5 whitespace-pre-line text-sm leading-8 text-[#6f675c]">
-                  {String(product.description)}
+                  {displayDetails}
                 </p>
               </div>
             )}
@@ -206,12 +214,7 @@ export default async function ProductPage({ params }: PageProps) {
                     name: displayName,
                     price: String(current),
                   }}
-                  variants={variants.map((variant) => ({
-                    id: String(variant.id),
-                    name: String(variant.name),
-                    price: String(variant.price),
-                    stockQuantity: Number(variant.stockQuantity),
-                  }))}
+                  variants={displayVariants}
                 />
               </div>
             ) : (
