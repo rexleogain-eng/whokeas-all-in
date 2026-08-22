@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import ArticleStructuredData from "@/components/seo/ArticleStructuredData";
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
 import { getStoreProducts } from "@/lib/store-catalog";
@@ -10,17 +11,22 @@ import { SITE_URL } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const GUIDE_PATH = "/guides/bluetooth-fm-transmitter-car-charger";
+const GUIDE_TITLE = "Bluetooth FM Transmitter With Car Charger: What to Look For";
+const GUIDE_DESCRIPTION =
+  "A practical guide to choosing a Bluetooth FM transmitter with car charging, including signal setup, ports, hands-free use and everyday convenience.";
+const GUIDE_DATE = "2026-08-22T00:00:00.000Z";
+
 export const metadata: Metadata = {
   title: "Bluetooth FM Transmitter With Car Charger | WHOKEAS Buyer Guide",
-  description:
-    "A practical guide to choosing a Bluetooth FM transmitter with car charging, including signal setup, ports, hands-free use and everyday convenience.",
-  alternates: { canonical: `${SITE_URL}/guides/bluetooth-fm-transmitter-car-charger` },
+  description: GUIDE_DESCRIPTION,
+  alternates: { canonical: `${SITE_URL}${GUIDE_PATH}` },
   robots: { index: true, follow: true },
   openGraph: {
     title: "Bluetooth FM Transmitter With Car Charger | WHOKEAS Buyer Guide",
     description:
       "What to look for when adding Bluetooth audio and charging to an older car through an FM transmitter.",
-    url: `${SITE_URL}/guides/bluetooth-fm-transmitter-car-charger`,
+    url: `${SITE_URL}${GUIDE_PATH}`,
     type: "article",
   },
 };
@@ -35,13 +41,21 @@ export default async function BluetoothFmGuide() {
   return (
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
       <StoreHeader />
+      <ArticleStructuredData
+        title={GUIDE_TITLE}
+        description={GUIDE_DESCRIPTION}
+        path={GUIDE_PATH}
+        datePublished={GUIDE_DATE}
+        dateModified={GUIDE_DATE}
+        imageUrl={picks[0]?.image || null}
+      />
 
       <article>
         <header className="border-b border-[#d8cfbf] bg-[#171512] px-6 py-16 text-white sm:py-20">
           <div className="mx-auto max-w-4xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#d6bd7b]">WHOKEAS BUYER GUIDE · CAR AUDIO</p>
             <h1 className="mt-5 text-4xl font-normal leading-[1.05] tracking-[-0.03em] sm:text-6xl">
-              Bluetooth FM Transmitter With Car Charger: What to Look For
+              {GUIDE_TITLE}
             </h1>
             <p className="mt-6 max-w-3xl text-sm leading-8 text-white/70 sm:text-base">
               An FM transmitter can add wireless audio to an older car without replacing the stereo. The useful models also keep charging simple and put the controls where you can reach them easily.
