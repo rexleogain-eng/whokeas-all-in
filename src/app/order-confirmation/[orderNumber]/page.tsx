@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import OrderPaymentBanner from "@/components/payments/OrderPaymentBanner";
 import PaymentReferenceForm from "@/components/payments/PaymentReferenceForm";
 import StoreHeader from "@/components/store/StoreHeader";
 
@@ -226,9 +227,38 @@ export default async function OrderConfirmationPage({
     order.paymentProvider ===
       "manual_bank_transfer";
 
+  const paymentProvider = String(
+    order.paymentProvider || "",
+  ).toLowerCase();
+
+  const isOnlinePaymentOrder = [
+    "international_payment_request",
+    "pesapal",
+    "selcom",
+    "flutterwave",
+    "twocheckout",
+  ].includes(paymentProvider);
+
+  const onlinePaymentEligible =
+    isOnlinePaymentOrder &&
+    String(order.status) === "pending_payment" &&
+    String(order.paymentStatus || "pending") !== "successful";
+
+  const pesapalEnabled =
+    onlinePaymentEligible &&
+    process.env.PESAPAL_CHECKOUT_ENABLED?.trim().toLowerCase() === "true";
+
+  const selcomEnabled =
+    onlinePaymentEligible &&
+    process.env.SELCOM_CHECKOUT_ENABLED?.trim().toLowerCase() === "true";
+
   return (
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
       <StoreHeader />
+      <OrderPaymentBanner
+        pesapalEnabled={pesapalEnabled}
+        selcomEnabled={selcomEnabled}
+      />
 
       <div className="mx-auto max-w-[1100px] px-4 py-10 sm:px-6">
         <section className="border border-[#d8cfbf] bg-[#fffdf8] p-7 shadow-[0_18px_55px_rgba(39,31,21,.06)] sm:p-10">
@@ -244,8 +274,8 @@ export default async function OrderConfirmationPage({
 
           <p className="mt-4 max-w-2xl leading-7 text-[#6f675c]">
             Your order is protected by a private account
-            session or secure guest link. Supplier fulfilment
-            begins after payment verification.
+            session or secure guest link. Order preparation
+            begins after payment is confirmed.
           </p>
 
           <div className="mt-7 grid gap-4 border border-[#d8cfbf] bg-[#f7f2e9] p-5 sm:grid-cols-3">
@@ -322,7 +352,7 @@ export default async function OrderConfirmationPage({
 
               <div className="mt-7 border border-[#d8cfbf] p-5">
                 <h2 className="font-black">
-                  International delivery details
+                  Delivery details
                 </h2>
 
                 <p className="mt-3 text-sm leading-7 text-[#6f675c]">
@@ -456,22 +486,23 @@ export default async function OrderConfirmationPage({
                 </div>
               )}
 
-              {order.paymentProvider ===
-                "international_payment_request" && (
+              {isOnlinePaymentOrder && (
                 <div className="mt-4">
                   <h2 className="text-xl font-black">
-                    Secure International Payment
+                    Secure Online Payment
                   </h2>
 
                   <div className="mt-4 border border-blue-200 bg-blue-50 p-4">
                     <p className="text-sm leading-6 text-blue-900">
-                      A secure online payment link will be
-                      sent to{" "}
-                      <strong>
-                        {String(order.customerEmail)}
-                      </strong>{" "}
-                      after the delivery and supplier details
-                      are confirmed.
+                      {pesapalEnabled || selcomEnabled ? (
+                        <>
+                          Choose one of the secure payment options above to complete your order. Card details are entered only on the payment provider&apos;s secure page.
+                        </>
+                      ) : (
+                        <>
+                          Your order has been received. WHOKEAS will email you when a secure online payment option is available. Never send card details by email, WhatsApp, text message or chat.
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
