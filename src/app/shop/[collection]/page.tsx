@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
-import { storefrontTitle } from "@/lib/store-copy";
+import { storefrontFocusScore, storefrontTitle } from "@/lib/store-copy";
 import { getStoreProducts } from "@/lib/store-catalog";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -105,7 +105,8 @@ export default async function BuyerCollectionPage({ params }: PageProps) {
   });
   const products = candidates
     .filter((product) => config.namePattern.test(product.name))
-    .slice(0, 24);
+    .sort((left, right) => storefrontFocusScore(right) - storefrontFocusScore(left))
+    .slice(0, 10);
 
   const itemListJsonLd = {
     "@context": "https://schema.org",
@@ -115,7 +116,7 @@ export default async function BuyerCollectionPage({ params }: PageProps) {
     url: `${SITE_URL}/shop/${collection}`,
     mainEntity: {
       "@type": "ItemList",
-      itemListElement: products.slice(0, 12).map((product, index) => ({
+      itemListElement: products.map((product, index) => ({
         "@type": "ListItem",
         position: index + 1,
         url: `${SITE_URL}/products/${encodeURIComponent(product.slug)}`,
@@ -160,7 +161,7 @@ export default async function BuyerCollectionPage({ params }: PageProps) {
               Shop {config.searchIntent}
             </p>
             <h2 className="mt-3 text-3xl font-normal sm:text-4xl">
-              Current U.S.-available picks
+              Best current U.S.-available picks
             </h2>
           </div>
           <Link
