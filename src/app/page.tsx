@@ -60,13 +60,29 @@ function rankStorefrontProducts(products: StoreProduct[]) {
 }
 
 export default async function HomePage() {
-  const [featured, newest, categories] = await Promise.all([
+  const [
+    featured,
+    newest,
+    powerBanks,
+    carAudio,
+    beauty,
+    organizers,
+    categories,
+  ] = await Promise.all([
     getStoreProducts({ featured: true, limit: 24 }),
     getStoreProducts({ limit: 36, sort: "newest" }),
+    getStoreProducts({ query: "power bank", limit: 12, sort: "newest" }),
+    getStoreProducts({ query: "fm transmitter", limit: 12, sort: "newest" }),
+    getStoreProducts({ query: "hair", limit: 12, sort: "newest" }),
+    getStoreProducts({ query: "organizer", limit: 12, sort: "newest" }),
     getStoreCategories(),
   ]);
 
   const featuredProducts = rankStorefrontProducts([
+    ...powerBanks,
+    ...carAudio,
+    ...beauty,
+    ...organizers,
     ...featured,
     ...newest,
   ]);
