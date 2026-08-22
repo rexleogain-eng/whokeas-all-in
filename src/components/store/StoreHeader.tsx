@@ -21,7 +21,7 @@ export default function StoreHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-[#d8cfbf] bg-[#fffdf8]/95 shadow-[0_10px_35px_rgba(28,24,18,0.06)] backdrop-blur">
       <div className="bg-[#12110f] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d6bd7b] sm:text-xs">
-        U.S. delivery · Prices displayed in USD · Free standard shipping
+        Shop with confidence · Direct order support · Free U.S. shipping
       </div>
 
       <OrderPaymentBanner />
