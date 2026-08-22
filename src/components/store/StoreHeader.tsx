@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import OrderPaymentBanner from "@/components/payments/OrderPaymentBanner";
 import CartButton from "@/components/store/CartButton";
 
 const nav = [
@@ -22,6 +23,8 @@ export default function StoreHeader({
       <div className="bg-[#12110f] px-4 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d6bd7b] sm:text-xs">
         U.S. delivery · Prices displayed in USD · Free standard shipping
       </div>
+
+      <OrderPaymentBanner />
 
       <div className="mx-auto grid max-w-[1580px] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 lg:gap-7 lg:px-7">
         <Link
