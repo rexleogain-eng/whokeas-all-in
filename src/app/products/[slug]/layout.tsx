@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getStoreProductBySlug } from "../../../lib/store-catalog";
+import { storefrontSummary, storefrontTitle } from "../../../lib/store-copy";
 import {
   DEFAULT_SOCIAL_IMAGE,
   RETURN_POLICY_URL,
@@ -15,24 +16,8 @@ type ProductRouteProps = {
   }>;
 };
 
-function cleanText(value: unknown, fallback: string) {
-  const text = String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return (text || fallback).slice(0, 160);
-}
-
-function cleanTitle(value: unknown) {
-  const title = String(value || SITE_NAME)
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (title.length <= 70) return title;
-
-  return `${title.slice(0, 67).trimEnd()}…`;
+function metadataDescription(title: unknown, summary: unknown) {
+  return storefrontSummary(title, summary).slice(0, 160);
 }
 
 async function readProduct(rawSlug: string) {
@@ -59,14 +44,16 @@ export async function generateMetadata({
   const product = result.product as Record<string, unknown>;
   const images = result.images as Array<Record<string, unknown>>;
 
-  const productName = String(product.name || SITE_NAME);
-  const metadataTitle = cleanTitle(productName);
+  const productName = storefrontTitle(product.name || SITE_NAME);
+  const metadataTitle = productName.length <= 70
+    ? productName
+    : `${productName.slice(0, 67).trimEnd()}…`;
   const productSlug = String(product.slug || slug);
   const canonicalUrl =
     `${SITE_URL}/products/${encodeURIComponent(productSlug)}`;
-  const description = cleanText(
+  const description = metadataDescription(
+    product.name,
     product.shortDescription || product.description,
-    `Buy ${productName} online from ${SITE_NAME}.`,
   );
   const imageUrls = images
     .map((image) => String(image.source || "").trim())
@@ -134,16 +121,16 @@ export default async function ProductSeoLayout({
     return children;
   }
 
-  const productName = String(product.name || SITE_NAME);
+  const productName = storefrontTitle(product.name || SITE_NAME);
   const productSlug = String(product.slug || slug);
   const productUrl =
     `${SITE_URL}/products/${encodeURIComponent(productSlug)}`;
   const imageUrls = images
     .map((image) => String(image.source || "").trim())
     .filter(Boolean);
-  const description = cleanText(
+  const description = metadataDescription(
+    product.name,
     product.shortDescription || product.description,
-    `Buy ${productName} online from ${SITE_NAME}.`,
   );
   const hasVariants = variants.length > 0;
   const isInStock = !hasVariants || variants.some(
