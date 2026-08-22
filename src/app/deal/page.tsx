@@ -6,9 +6,12 @@ import StoreHeader from "@/components/store/StoreHeader";
 import {
   getStoreProductBySlug,
   getStoreProducts,
-  type StoreProduct,
 } from "@/lib/store-catalog";
-import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
+import {
+  storefrontFocusScore,
+  storefrontSummary,
+  storefrontTitle,
+} from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
 import {
   SITE_NAME,
@@ -42,32 +45,6 @@ export const metadata: Metadata = {
   },
 };
 
-function dealScore(product: StoreProduct) {
-  const price = Number(product.price || 0);
-  const deliveryDays = Number(product.deliveryDays || 0);
-  const name = String(product.name || "").toLowerCase();
-  let score = 0;
-
-  if (price >= 15 && price <= 35) score += 10;
-  else if (price > 35 && price <= 55) score += 6;
-  else if (price > 55 && price <= 75) score += 2;
-  else if (price > 100) score -= 6;
-
-  if (deliveryDays > 0 && deliveryDays <= 12) score += 9;
-  else if (deliveryDays <= 16) score += 6;
-  else if (deliveryDays <= 21) score += 2;
-
-  if (product.image) score += 5;
-  if (product.featured) score += 4;
-  if (/wireless|portable|smart|organizer|charger|earbud|home|travel/.test(name)) {
-    score += 3;
-  }
-  if (name.length > 95) score -= 5;
-  if (/undefined|null|v4[.-]?[12]/.test(name)) score -= 8;
-
-  return score;
-}
-
 export default async function DealPage() {
   const candidates = await getStoreProducts({
     limit: 100,
@@ -75,7 +52,7 @@ export default async function DealPage() {
   });
 
   const selected = [...candidates].sort(
-    (left, right) => dealScore(right) - dealScore(left),
+    (left, right) => storefrontFocusScore(right) - storefrontFocusScore(left),
   )[0];
 
   if (!selected) {
