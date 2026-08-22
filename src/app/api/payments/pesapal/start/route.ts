@@ -112,13 +112,6 @@ export async function GET(request: Request) {
     );
   }
 
-  if (String(order.countryCode || "").toUpperCase() === "TZ") {
-    return NextResponse.redirect(
-      confirmationUrl(String(order.orderNumber), accessKey, "local"),
-      303,
-    );
-  }
-
   if (!pesapalConfigured()) {
     return NextResponse.redirect(
       confirmationUrl(String(order.orderNumber), accessKey, "setup"),
@@ -164,6 +157,15 @@ export async function GET(request: Request) {
     addressLine1?: string;
     city?: string;
   };
+
+  // Pesapal is the primary online payment provider for both TZS and USD.
+  // Mark the attempt before the remote call so legacy manual-payment UI does
+  // not remain authoritative if Pesapal returns an onboarding/test restriction.
+  await sql`
+    UPDATE payments
+    SET provider = 'pesapal'
+    WHERE id = ${String(order.paymentId)}
+  `;
 
   try {
     const checkout = await createPesapalCheckout({
