@@ -119,6 +119,13 @@ export default function StoreHeader({
             Beauty &amp; grooming
           </Link>
 
+          <Link
+            href="/guides"
+            className="shrink-0 hover:text-[#9b762c]"
+          >
+            Buyer guides
+          </Link>
+
           {nav.map((item) => (
             <Link
               key={item}
