@@ -10,6 +10,7 @@ import {
   US_SHIPPING_MIN_DAYS,
 } from "@/lib/seo";
 import { getStoreProductBySlug } from "@/lib/store-catalog";
+import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +20,6 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function compactDisplayTitle(value: unknown) {
-  const title = String(value || "").replace(/\s+/g, " ").trim();
-
-  if (title.length <= 96) return title;
-
-  return `${title.slice(0, 93).trimEnd()}…`;
-}
-
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
@@ -35,7 +28,8 @@ export default async function ProductPage({ params }: PageProps) {
   if (!result) notFound();
 
   const { product, images, variants } = result;
-  const displayName = compactDisplayTitle(product.name);
+  const displayName = storefrontTitle(product.name);
+  const displaySummary = storefrontSummary(product.name, product.shortDescription);
   const mainImage = images[0]?.source ? String(images[0].source) : null;
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
@@ -109,7 +103,7 @@ export default async function ProductPage({ params }: PageProps) {
               {displayName}
             </h1>
             <p className="mt-5 text-sm leading-7 text-[#6f675c]">
-              {String(product.shortDescription || "")}
+              {displaySummary}
             </p>
 
             <div className="mt-7 border-y border-[#ddd4c6] py-6">
@@ -176,7 +170,7 @@ export default async function ProductPage({ params }: PageProps) {
                   product={{
                     id: String(product.id),
                     slug: String(product.slug),
-                    name: String(product.name),
+                    name: displayName,
                     price: String(current),
                   }}
                   variants={variants.map((variant) => ({
