@@ -117,11 +117,9 @@ export default async function ProductPage({ params }: PageProps) {
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">
                 {String(product.categoryName || "General")}
               </span>
-              {product.supplierPlatform === "cj" && (
-                <span className="border-l border-[#d8cfbf] pl-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">
-                  Fulfilment partner
-                </span>
-              )}
+              <span className="border-l border-[#d8cfbf] pl-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">
+                WHOKEAS selection
+              </span>
             </div>
 
             <h1 className="mt-5 text-4xl font-normal leading-tight sm:text-5xl">
@@ -150,7 +148,7 @@ export default async function ProductPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="mt-7 grid border-l border-t border-[#ddd4c6] sm:grid-cols-2">
+            <div className="mt-7 grid border-l border-t border-[#ddd4c6] sm:grid-cols-3">
               <div className="border-b border-r border-[#ddd4c6] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Delivery</p>
                 <p className="mt-2 text-sm font-semibold">
@@ -158,8 +156,12 @@ export default async function ProductPage({ params }: PageProps) {
                 </p>
               </div>
               <div className="border-b border-r border-[#ddd4c6] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Returns</p>
+                <p className="mt-2 text-sm font-semibold">{US_RETURN_DAYS}-day return-request window</p>
+              </div>
+              <div className="border-b border-r border-[#ddd4c6] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Order support</p>
-                <p className="mt-2 text-sm font-semibold">Managed directly by WHOKEAS</p>
+                <p className="mt-2 text-sm font-semibold">Direct help from WHOKEAS</p>
               </div>
             </div>
 
