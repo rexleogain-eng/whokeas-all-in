@@ -28,8 +28,9 @@ export default async function ProductPage({ params }: PageProps) {
   if (!result) notFound();
 
   const { product, images, variants } = result;
-  const displayName = storefrontTitle(product.name);
-  const displaySummary = storefrontSummary(product.name, product.shortDescription);
+  const rawName = String(product.name || "");
+  const displayName = storefrontTitle(rawName);
+  const displaySummary = storefrontSummary(rawName, product.shortDescription);
   const mainImage = images[0]?.source ? String(images[0].source) : null;
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
@@ -42,6 +43,22 @@ export default async function ProductPage({ params }: PageProps) {
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
       : 0;
+
+  const buyerGuide = /power\s*bank/i.test(rawName)
+    ? {
+        href: "/guides/digital-display-power-bank-under-30",
+        kicker: "Portable power buyer guide",
+        title: "What to check before choosing a power bank",
+        text: "Compare capacity, charging ports, size and battery-level visibility before deciding which portable charger fits your routine.",
+      }
+    : /fm\s*transmitter/i.test(rawName)
+      ? {
+          href: "/guides/bluetooth-fm-transmitter-car-charger",
+          kicker: "Car audio buyer guide",
+          title: "What to look for in an FM transmitter",
+          text: "See how frequency controls, Bluetooth pairing, charging ports and fit affect everyday use in an older car stereo setup.",
+        }
+      : null;
 
   return (
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
@@ -97,7 +114,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
 
             <h1
-              title={String(product.name)}
+              title={rawName}
               className="mt-5 text-4xl font-normal leading-tight sm:text-5xl"
             >
               {displayName}
@@ -137,6 +154,22 @@ export default async function ProductPage({ params }: PageProps) {
                 <p className="mt-2 text-sm font-semibold">Managed directly by WHOKEAS</p>
               </div>
             </div>
+
+            {buyerGuide && (
+              <Link
+                href={buyerGuide.href}
+                className="mt-8 block border border-[#c9b98f] bg-[#f7f2e9] p-5 transition hover:border-[#9b762c] hover:bg-[#f1e8d8]"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9b762c]">
+                  {buyerGuide.kicker}
+                </p>
+                <h2 className="mt-2 text-xl font-normal text-[#1d1914]">{buyerGuide.title}</h2>
+                <p className="mt-2 text-sm leading-7 text-[#746d62]">{buyerGuide.text}</p>
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8a6824]">
+                  Read the guide →
+                </p>
+              </Link>
+            )}
 
             {product.description && (
               <div className="mt-8">
