@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function OrderPaymentBanner() {
-  const [paymentHref, setPaymentHref] = useState("");
+  const [pesapalHref, setPesapalHref] = useState("");
+  const [selcomHref, setSelcomHref] = useState("");
 
   useEffect(() => {
     const prefix = "/order-confirmation/";
@@ -31,24 +32,40 @@ export default function OrderPaymentBanner() {
     const key = searchParams.get("key");
     if (key) next.set("key", key);
 
-    setPaymentHref(`/api/payments/pesapal/start?${next.toString()}`);
+    const query = next.toString();
+    setPesapalHref(`/api/payments/pesapal/start?${query}`);
+    setSelcomHref(`/api/payments/selcom/start?${query}`);
   }, []);
 
-  if (!paymentHref) return null;
+  if (!pesapalHref) return null;
 
   return (
     <div className="border-b border-emerald-800 bg-emerald-700 px-4 py-3 text-white">
       <div className="mx-auto flex max-w-[1580px] flex-wrap items-center justify-center gap-3 sm:justify-between">
-        <p className="text-center text-xs font-bold sm:text-left">
-          Finish your order online with secure Pesapal checkout.
-        </p>
+        <div className="text-center sm:text-left">
+          <p className="text-xs font-bold">
+            Finish your order with secure online payment.
+          </p>
+          <p className="mt-1 text-[10px] text-emerald-100">
+            Pesapal is primary · Selcom is available as backup.
+          </p>
+        </div>
 
-        <Link
-          href={paymentHref}
-          className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
-        >
-          Pay securely with Pesapal
-        </Link>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link
+            href={pesapalHref}
+            className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
+          >
+            Pay with Pesapal
+          </Link>
+
+          <Link
+            href={selcomHref}
+            className="border border-white/60 bg-emerald-900/30 px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white hover:bg-emerald-900/50"
+          >
+            Try Selcom backup
+          </Link>
+        </div>
       </div>
     </div>
   );
