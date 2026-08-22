@@ -6,7 +6,7 @@ import StoreHeader from "@/components/store/StoreHeader";
 import { SITE_URL, US_RETURN_DAYS } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Secure Checkout | WHOKEAS ALL IN",
+  title: "Secure Checkout",
   alternates: {
     canonical: `${SITE_URL}/checkout`,
   },
