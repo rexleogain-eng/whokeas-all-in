@@ -14,6 +14,7 @@ type CollectionConfig = {
   description: string;
   query: string;
   searchIntent: string;
+  namePattern: RegExp;
 };
 
 const collections: Record<string, CollectionConfig> = {
@@ -24,6 +25,7 @@ const collections: Record<string, CollectionConfig> = {
       "Shop portable power banks and backup chargers selected for everyday carry, travel and convenient charging, with USD pricing and free standard U.S. shipping.",
     query: "power bank",
     searchIntent: "portable power banks and backup chargers",
+    namePattern: /(?:power\s*bank|battery\s*pack|portable\s+(?:phone\s+)?charger)/i,
   },
   "car-fm-transmitters": {
     title: "Wireless Car FM Transmitters",
@@ -32,6 +34,7 @@ const collections: Record<string, CollectionConfig> = {
       "Browse wireless car FM transmitters and practical in-car audio accessories for everyday driving, with clear USD pricing and free standard U.S. shipping.",
     query: "fm transmitter",
     searchIntent: "wireless car FM transmitters",
+    namePattern: /(?:fm\s*(?:transmitter|radio)|(?:transmitter|radio).*\bfm\b)/i,
   },
   "beauty-grooming-essentials": {
     title: "Beauty & Grooming Essentials",
@@ -40,6 +43,7 @@ const collections: Record<string, CollectionConfig> = {
       "Explore practical beauty and grooming essentials for simple at-home routines, with transparent USD pricing and free standard U.S. shipping.",
     query: "hair",
     searchIntent: "beauty and grooming essentials",
+    namePattern: /\b(?:hair|groom|beauty|skin|shav\w*|removal|moisturi[sz]\w*|cosmetic|straighten\w*)\b/i,
   },
 };
 
@@ -94,11 +98,14 @@ export default async function BuyerCollectionPage({ params }: PageProps) {
   const config = collections[collection];
   if (!config) notFound();
 
-  const products = await getStoreProducts({
+  const candidates = await getStoreProducts({
     query: config.query,
-    limit: 24,
+    limit: 100,
     sort: "newest",
   });
+  const products = candidates
+    .filter((product) => config.namePattern.test(product.name))
+    .slice(0, 24);
 
   const itemListJsonLd = {
     "@context": "https://schema.org",
