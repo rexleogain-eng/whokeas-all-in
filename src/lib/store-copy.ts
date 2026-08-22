@@ -54,61 +54,22 @@ export function storefrontTitle(value: unknown) {
     return "Wireless Car FM Transmitter";
   }
 
-  if (/hair\s*removal/.test(lower) && /spray/.test(lower)) {
-    return "Gentle Hair Removal Spray";
-  }
-
-  if (/hair\s*removal/.test(lower) && /cream/.test(lower)) {
-    return "Hair Removal Cream";
-  }
-
-  if (/crystal/.test(lower) && /hair\s*(?:removal|eraser)/.test(lower)) {
-    return "Crystal Hair Eraser";
-  }
-
-  if (/neck/.test(lower) && /face\s*massager/.test(lower)) {
-    return "Face & Neck Massager";
-  }
-
-  if (/makeup\s*organizer/.test(lower) && /(rotat|spinn)/.test(lower)) {
-    return "Rotating Makeup Organizer";
-  }
-
-  if (/dish\s*drying\s*rack/.test(lower)) {
-    return "2-Tier Dish Drying Rack";
-  }
-
-  if (/rolling\s*(?:utility\s*)?cart/.test(lower) && /3[-\s]*tier/.test(lower)) {
-    return "3-Tier Rolling Utility Cart";
-  }
-
-  if (/shoe\s*rack/.test(lower) && /6[-\s]*tier/.test(lower)) {
-    return "6-Tier Foldable Shoe Rack";
-  }
-
-  if (/portable/.test(lower) && /thermal\s*printer/.test(lower)) {
-    return "Portable Wireless Thermal Printer";
-  }
-
-  if (/ceramic/.test(lower) && /hair\s*straightener/.test(lower)) {
-    return "Ceramic Hair Straightener";
-  }
-
-  if (/glitter/.test(lower) && /spray/.test(lower)) {
-    return "Long-Lasting Hair & Body Glitter Spray";
-  }
-
-  if (/vitamin\s*e/.test(lower) && /(oil|skin)/.test(lower)) {
-    return "Vitamin E Multi-Purpose Skin & Hair Oil";
-  }
-
-  if (/moisturi[sz]ing/.test(lower) && /spray/.test(lower)) {
-    return "Refreshing Body & Hair Moisturizing Spray";
-  }
-
-  if (/hair\s*identifier/.test(lower)) {
-    return "Facial Hair Identifier Spray & Razor Set";
-  }
+  if (/hair\s*removal/.test(lower) && /spray/.test(lower)) return "Gentle Hair Removal Spray";
+  if (/hair\s*removal/.test(lower) && /cream/.test(lower)) return "Hair Removal Cream";
+  if (/crystal/.test(lower) && /hair\s*(?:removal|eraser)/.test(lower)) return "Crystal Hair Eraser";
+  if (/neck/.test(lower) && /face\s*massager/.test(lower)) return "Face & Neck Massager";
+  if (/makeup\s*organizer/.test(lower) && /(rotat|spinn)/.test(lower)) return "Rotating Makeup Organizer";
+  if (/makeup\s*train\s*case|cosmetic\s*organizer.*mirror/.test(lower)) return "Aluminum Makeup & Jewelry Case";
+  if (/shoulder\s*bag/.test(lower) && /(women|women's|commute|leisure)/.test(lower)) return "Women's Everyday Shoulder Bag";
+  if (/dish\s*drying\s*rack/.test(lower)) return "2-Tier Dish Drying Rack";
+  if (/rolling\s*(?:utility\s*)?cart/.test(lower) && /3[-\s]*tier/.test(lower)) return "3-Tier Rolling Utility Cart";
+  if (/shoe\s*rack/.test(lower) && /6[-\s]*tier/.test(lower)) return "6-Tier Foldable Shoe Rack";
+  if (/portable/.test(lower) && /thermal\s*printer/.test(lower)) return "Portable Wireless Thermal Printer";
+  if (/ceramic/.test(lower) && /hair\s*straightener/.test(lower)) return "Ceramic Hair Straightener";
+  if (/glitter/.test(lower) && /spray/.test(lower)) return "Long-Lasting Hair & Body Glitter Spray";
+  if (/vitamin\s*e/.test(lower) && /(oil|skin)/.test(lower)) return "Vitamin E Multi-Purpose Skin & Hair Oil";
+  if (/moisturi[sz]ing/.test(lower) && /spray/.test(lower)) return "Refreshing Body & Hair Moisturizing Spray";
+  if (/hair\s*identifier/.test(lower)) return "Facial Hair Identifier Spray & Razor Set";
 
   const cleaned = trimRepeatedEdgePhrase(source)
     .replace(/^\d+\s*(?:pc|pcs|pack)\s+/i, "")
@@ -125,31 +86,24 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   if (/power\s*bank/.test(title) && /digital\s*display/.test(title)) {
     return "Portable backup power with a clear digital display, selected for everyday charging and travel.";
   }
-
   if (/power\s*bank/.test(title)) {
     return "Portable backup power selected for everyday charging, travel and on-the-go convenience.";
   }
-
   if (/fm\s*transmitter/.test(title)) {
     return "A compact in-car wireless audio accessory designed to make everyday driving more convenient.";
   }
-
   if (/hair\s*removal/.test(title)) {
     return "A convenient at-home grooming option. Follow the product directions and patch-test guidance before use.";
   }
-
   if (/glitter/.test(title) && /spray/.test(title)) {
     return "An easy-to-apply shimmer spray for adding a visible sparkle effect to hair or body for events and styling.";
   }
-
   if (/vitamin\s*e/.test(title) && /(oil|skin)/.test(title)) {
     return "A multi-purpose cosmetic oil for skin and hair care, selected for simple everyday moisturizing routines.";
   }
-
   if (/moisturi[sz]ing/.test(title) && /spray/.test(title)) {
     return "A lightweight body and hair mist designed for convenient everyday moisturizing and refreshment.";
   }
-
   if (/hair\s*identifier/.test(title)) {
     return "A facial-grooming set designed to make fine hairs easier to see before shaving or shaping.";
   }
@@ -157,6 +111,8 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   const source = removeSupplierNoise(normalize(summaryValue))
     .replace(/^our\s+/i, "")
     .replace(/\b(supplied|fulfilled)\s+(through|by)\s+[^.]+\.?/gi, "")
+    .replace(/^available\s+ship\s+to:\s*united\s+states\s*/i, "")
+    .replace(/^product\s+information:\s*/i, "")
     .trim();
 
   if (!source) return "A practical WHOKEAS selection chosen for value, availability and everyday use.";
@@ -183,6 +139,7 @@ export function storefrontFocusFamily(value: unknown) {
   if (/hair\s*removal|hair\s*straightener|face\s*massager|makeup|skin/.test(name)) return "beauty";
   if (/speaker|earbud|headphone|headset/.test(name)) return "audio";
   if (/wireless\s*charger|smart\s*plug|thermal\s*printer|translator/.test(name)) return "tech";
+  if (/shoulder\s*bag|tote\s*bag|crossbody/.test(name)) return "fashion";
   return "other";
 }
 
@@ -197,6 +154,7 @@ export function storefrontFocusScore(product: FocusProduct) {
   if (/portable\s*(?:wireless\s*)?thermal\s*printer|car\s*vacuum|wireless\s*charger/.test(name)) score += 5;
   if (/hair\s*removal|makeup\s*organizer|hair\s*straightener|face\s*massager/.test(name)) score += 5;
   if (/speaker|open\s*ear|translator|smart\s*plug/.test(name)) score += 3;
+  if (/shoulder\s*bag|tote\s*bag|crossbody/.test(name)) score += 2;
 
   if (price >= 18 && price <= 40) score += 7;
   else if (price > 40 && price <= 70) score += 4;
