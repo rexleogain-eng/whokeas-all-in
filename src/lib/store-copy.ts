@@ -60,7 +60,9 @@ export function storefrontTitle(value: unknown) {
   if (/neck/.test(lower) && /face\s*massager/.test(lower)) return "Face & Neck Massager";
   if (/makeup\s*organizer/.test(lower) && /(rotat|spinn)/.test(lower)) return "Rotating Makeup Organizer";
   if (/makeup\s*train\s*case|cosmetic\s*organizer.*mirror/.test(lower)) return "Aluminum Makeup & Jewelry Case";
-  if (/shoulder\s*bag/.test(lower) && /(women|women's|commute|leisure)/.test(lower)) return "Women's Everyday Shoulder Bag";
+  if (/shoulder\s*bag/.test(lower) && /shiny/.test(lower)) return "Shiny Everyday Shoulder Bag";
+  if (/shoulder\s*bag/.test(lower) && /(commute|leisure)/.test(lower)) return "Everyday Commuter Shoulder Bag";
+  if (/shoulder\s*bag/.test(lower) && /(women|women's)/.test(lower)) return "Women's Everyday Shoulder Bag";
   if (/dish\s*drying\s*rack/.test(lower)) return "2-Tier Dish Drying Rack";
   if (/rolling\s*(?:utility\s*)?cart/.test(lower) && /3[-\s]*tier/.test(lower)) return "3-Tier Rolling Utility Cart";
   if (/shoe\s*rack/.test(lower) && /6[-\s]*tier/.test(lower)) return "6-Tier Foldable Shoe Rack";
@@ -91,6 +93,9 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   }
   if (/fm\s*transmitter/.test(title)) {
     return "A compact in-car wireless audio accessory designed to make everyday driving more convenient.";
+  }
+  if (/shoulder\s*bag|crossbody|tote\s*bag/.test(title)) {
+    return "A practical everyday bag selected for commuting, errands and casual use, with an easy-to-carry profile.";
   }
   if (/hair\s*removal/.test(title)) {
     return "A convenient at-home grooming option. Follow the product directions and patch-test guidance before use.";
@@ -139,7 +144,7 @@ export function storefrontFocusFamily(value: unknown) {
   if (/hair\s*removal|hair\s*straightener|face\s*massager|makeup|skin/.test(name)) return "beauty";
   if (/speaker|earbud|headphone|headset/.test(name)) return "audio";
   if (/wireless\s*charger|smart\s*plug|thermal\s*printer|translator/.test(name)) return "tech";
-  if (/shoulder\s*bag|tote\s*bag|crossbody/.test(name)) return "fashion";
+  if (/shoulder\s*bag|tote\s*bag|crossbody/.test(name)) return "other";
   return "other";
 }
 
@@ -154,7 +159,6 @@ export function storefrontFocusScore(product: FocusProduct) {
   if (/portable\s*(?:wireless\s*)?thermal\s*printer|car\s*vacuum|wireless\s*charger/.test(name)) score += 5;
   if (/hair\s*removal|makeup\s*organizer|hair\s*straightener|face\s*massager/.test(name)) score += 5;
   if (/speaker|open\s*ear|translator|smart\s*plug/.test(name)) score += 3;
-  if (/shoulder\s*bag|tote\s*bag|crossbody/.test(name)) score += 2;
 
   if (price >= 18 && price <= 40) score += 7;
   else if (price > 40 && price <= 70) score += 4;
