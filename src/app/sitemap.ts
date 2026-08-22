@@ -11,6 +11,7 @@ import {
 export const revalidate = 3600;
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-21T00:00:00.000Z");
+const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-22T00:00:00.000Z");
 
 type SitemapProduct = {
   slug: string;
@@ -32,6 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/deal`,
+      lastModified: DEAL_PAGE_LAST_MODIFIED,
+      changeFrequency: "daily",
+      priority: 0.95,
     },
     {
       url: `${SITE_URL}/returns-refunds`,
