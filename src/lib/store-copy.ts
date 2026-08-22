@@ -38,16 +38,60 @@ export function storefrontTitle(value: unknown) {
   const source = removeSupplierNoise(normalize(value));
   const lower = source.toLowerCase();
 
-  if (/power\s*bank/.test(lower) && /digital\s*display/.test(lower)) {
-    return "Portable Digital Display Power Bank";
+  if (/power\s*bank/.test(lower)) {
+    if (/digital\s*display/.test(lower)) return "Portable Digital Display Power Bank";
+    if (/hand\s*warmer/.test(lower) && /5000\s*mah/.test(lower)) return "5,000mAh Hand Warmer Power Bank";
+    if (/solar/.test(lower) && /power\s*station/.test(lower)) return "Portable Solar Backup Power Station";
+    if (/20000\s*mah/.test(lower)) return "20,000mAh Portable Power Bank";
+    if (/10400\s*mah/.test(lower) && /(qi|wireless)/.test(lower)) return "10,400mAh Qi Wireless Power Bank";
+    if (/(magsafe|magnetic)/.test(lower)) return "Magnetic Wireless Power Bank";
+    if (/ultra[-\s]*thin/.test(lower) && /fast\s*charg/.test(lower)) return "Slim Fast-Charging Power Bank";
+    return "Portable Power Bank";
   }
 
-  if (/car/.test(lower) && /wireless/.test(lower) && /fm\s*transmitter/.test(lower)) {
-    return "Car Wireless FM Transmitter";
+  if (/fm\s*transmitter/.test(lower)) {
+    if (/car\s*charger|usb\s*charger|fast\s*pd/.test(lower)) return "Bluetooth FM Transmitter & Car Charger";
+    return "Wireless Car FM Transmitter";
   }
 
   if (/hair\s*removal/.test(lower) && /spray/.test(lower)) {
     return "Gentle Hair Removal Spray";
+  }
+
+  if (/hair\s*removal/.test(lower) && /cream/.test(lower)) {
+    return "Hair Removal Cream";
+  }
+
+  if (/crystal/.test(lower) && /hair\s*(?:removal|eraser)/.test(lower)) {
+    return "Crystal Hair Eraser";
+  }
+
+  if (/neck/.test(lower) && /face\s*massager/.test(lower)) {
+    return "Face & Neck Massager";
+  }
+
+  if (/makeup\s*organizer/.test(lower) && /(rotat|spinn)/.test(lower)) {
+    return "Rotating Makeup Organizer";
+  }
+
+  if (/dish\s*drying\s*rack/.test(lower)) {
+    return "2-Tier Dish Drying Rack";
+  }
+
+  if (/rolling\s*(?:utility\s*)?cart/.test(lower) && /3[-\s]*tier/.test(lower)) {
+    return "3-Tier Rolling Utility Cart";
+  }
+
+  if (/shoe\s*rack/.test(lower) && /6[-\s]*tier/.test(lower)) {
+    return "6-Tier Foldable Shoe Rack";
+  }
+
+  if (/portable/.test(lower) && /thermal\s*printer/.test(lower)) {
+    return "Portable Wireless Thermal Printer";
+  }
+
+  if (/ceramic/.test(lower) && /hair\s*straightener/.test(lower)) {
+    return "Ceramic Hair Straightener";
   }
 
   if (/glitter/.test(lower) && /spray/.test(lower)) {
@@ -66,9 +110,13 @@ export function storefrontTitle(value: unknown) {
     return "Facial Hair Identifier Spray & Razor Set";
   }
 
-  const cleaned = trimRepeatedEdgePhrase(source);
-  if (cleaned.length <= 76) return cleaned || "WHOKEAS Selection";
-  return `${cleaned.slice(0, 73).trimEnd()}…`;
+  const cleaned = trimRepeatedEdgePhrase(source)
+    .replace(/^\d+\s*(?:pc|pcs|pack)\s+/i, "")
+    .replace(/\s+(?:for|fit for)\s+(?:ios|iphone|android|galaxy)\b.*$/i, "")
+    .trim();
+
+  if (cleaned.length <= 68) return cleaned || "WHOKEAS Selection";
+  return `${cleaned.slice(0, 65).trimEnd()}…`;
 }
 
 export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
@@ -87,7 +135,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   }
 
   if (/hair\s*removal/.test(title)) {
-    return "A convenient topical spray designed for straightforward at-home hair-removal routines. Follow the product directions before use.";
+    return "A convenient at-home grooming option. Follow the product directions and patch-test guidance before use.";
   }
 
   if (/glitter/.test(title) && /spray/.test(title)) {
@@ -116,4 +164,57 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   const firstSentence = source.match(/^(.{30,190}?[.!?])(?:\s|$)/)?.[1] || source;
   if (firstSentence.length <= 180) return firstSentence;
   return `${firstSentence.slice(0, 177).trimEnd()}…`;
+}
+
+type FocusProduct = {
+  name?: unknown;
+  price?: unknown;
+  deliveryDays?: unknown;
+  image?: unknown;
+  featured?: unknown;
+  shortDescription?: unknown;
+};
+
+export function storefrontFocusFamily(value: unknown) {
+  const name = normalize(value).toLowerCase();
+  if (/power\s*bank|battery\s*pack/.test(name)) return "power-bank";
+  if (/fm\s*(?:transmitter|radio)/.test(name)) return "car-audio";
+  if (/organizer|shoe\s*rack|dish\s*drying\s*rack|utility\s*cart/.test(name)) return "organization";
+  if (/hair\s*removal|hair\s*straightener|face\s*massager|makeup|skin/.test(name)) return "beauty";
+  if (/speaker|earbud|headphone|headset/.test(name)) return "audio";
+  if (/wireless\s*charger|smart\s*plug|thermal\s*printer|translator/.test(name)) return "tech";
+  return "other";
+}
+
+export function storefrontFocusScore(product: FocusProduct) {
+  const name = normalize(product.name).toLowerCase();
+  const price = Number(product.price || 0);
+  const deliveryDays = Number(product.deliveryDays || 0);
+  let score = 0;
+
+  if (/power\s*bank|fm\s*transmitter/.test(name)) score += 9;
+  if (/organizer|shoe\s*rack|dish\s*drying\s*rack|utility\s*cart/.test(name)) score += 6;
+  if (/portable\s*(?:wireless\s*)?thermal\s*printer|car\s*vacuum|wireless\s*charger/.test(name)) score += 5;
+  if (/hair\s*removal|makeup\s*organizer|hair\s*straightener|face\s*massager/.test(name)) score += 5;
+  if (/speaker|open\s*ear|translator|smart\s*plug/.test(name)) score += 3;
+
+  if (price >= 18 && price <= 40) score += 7;
+  else if (price > 40 && price <= 70) score += 4;
+  else if (price > 70 && price <= 100) score += 1;
+  else if (price > 100) score -= 4;
+
+  if (deliveryDays > 0 && deliveryDays <= 12) score += 8;
+  else if (deliveryDays <= 16 && deliveryDays > 0) score += 5;
+  else if (deliveryDays <= 21 && deliveryDays > 0) score += 2;
+  else if (deliveryDays > 25) score -= 4;
+
+  if (product.image) score += 3;
+  if (product.featured) score += 2;
+  if (normalize(product.shortDescription).length >= 60) score += 1;
+
+  if (name.length > 110) score -= 4;
+  if (/undefined|null|v4[.-]?[12]|\b5w\b/.test(name)) score -= 8;
+  if (/^\d+\s*(?:pc|pcs|pack)\b/.test(name)) score -= 1;
+
+  return score;
 }
