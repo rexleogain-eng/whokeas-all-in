@@ -31,7 +31,7 @@ export default function OrderPaymentBanner() {
     const key = searchParams.get("key");
     if (key) next.set("key", key);
 
-    setPaymentHref(`/api/payments/flutterwave/start?${next.toString()}`);
+    setPaymentHref(`/api/payments/pesapal/start?${next.toString()}`);
   }, []);
 
   if (!paymentHref) return null;
