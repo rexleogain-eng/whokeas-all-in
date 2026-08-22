@@ -31,6 +31,29 @@ type CartItem = {
   quantity: number;
 };
 
+type AnalyticsWindow = Window & {
+  gtag?: (...args: unknown[]) => void;
+  dataLayer?: Array<Record<string, unknown>>;
+};
+
+function trackEvent(
+  name: string,
+  parameters: Record<string, unknown>,
+) {
+  try {
+    const analyticsWindow = window as AnalyticsWindow;
+
+    analyticsWindow.gtag?.("event", name, parameters);
+    analyticsWindow.dataLayer?.push({
+      event: `whokeas_${name}`,
+      ...parameters,
+    });
+  }
+  catch {
+    // Analytics must never interrupt shopping.
+  }
+}
+
 function readCart(): CartItem[] {
   try {
     const raw = localStorage.getItem("whokeas-cart");
@@ -56,6 +79,22 @@ export default function AddToCart({ product, variants }: Props) {
 
   const effectivePrice = Number(selectedVariant?.price ?? product.price);
   const unavailable = selectedVariant !== undefined && selectedVariant.stockQuantity < 1;
+
+  function analyticsPayload() {
+    return {
+      currency: "USD",
+      value: Number((effectivePrice * quantity).toFixed(2)),
+      items: [
+        {
+          item_id: product.id,
+          item_name: product.name,
+          item_variant: selectedVariant?.name ?? undefined,
+          price: effectivePrice,
+          quantity,
+        },
+      ],
+    };
+  }
 
   function saveItem() {
     if (unavailable) return;
@@ -86,6 +125,7 @@ export default function AddToCart({ product, variants }: Props) {
 
   function addItem() {
     saveItem();
+    trackEvent("add_to_cart", analyticsPayload());
     setMessage("Added to your cart");
     window.setTimeout(() => setMessage(""), 2200);
   }
@@ -94,6 +134,7 @@ export default function AddToCart({ product, variants }: Props) {
     if (unavailable) return;
 
     saveItem();
+    trackEvent("begin_checkout", analyticsPayload());
     window.location.assign("/checkout");
   }
 
