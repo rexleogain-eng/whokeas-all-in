@@ -8,6 +8,7 @@ import {
   getStoreProducts,
   type StoreProduct,
 } from "@/lib/store-catalog";
+import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
 import {
   SITE_NAME,
@@ -67,12 +68,6 @@ function dealScore(product: StoreProduct) {
   return score;
 }
 
-function compactTitle(value: string) {
-  const title = String(value || "").replace(/\s+/g, " ").trim();
-  if (title.length <= 88) return title;
-  return `${title.slice(0, 85).trimEnd()}…`;
-}
-
 export default async function DealPage() {
   const candidates = await getStoreProducts({
     limit: 100,
@@ -120,7 +115,8 @@ export default async function DealPage() {
   }
 
   const { product, images, variants } = result;
-  const title = compactTitle(String(product.name));
+  const title = storefrontTitle(product.name);
+  const summary = storefrontSummary(product.name, product.shortDescription);
   const mainImage = images[0]?.source ? String(images[0].source) : null;
   const current = Number(product.price || 0);
   const compareAt = Number(product.compareAtPrice || 0);
@@ -161,10 +157,7 @@ export default async function DealPage() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-sm leading-7 text-[#6f675c] sm:text-base">
-            {String(
-              product.shortDescription ||
-                "A practical WHOKEAS selection chosen for value, availability and U.S. delivery.",
-            )}
+            {summary}
           </p>
 
           <div className="mt-7 flex flex-wrap items-end gap-3 border-y border-[#ddd4c6] py-6">
@@ -213,7 +206,7 @@ export default async function DealPage() {
               product={{
                 id: String(product.id),
                 slug: String(product.slug),
-                name: String(product.name),
+                name: title,
                 price: String(current),
               }}
               variants={variants.map((variant) => ({
