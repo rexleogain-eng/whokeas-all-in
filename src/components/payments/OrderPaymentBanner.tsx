@@ -21,7 +21,7 @@ export default function OrderPaymentBanner() {
     const searchParams = new URLSearchParams(window.location.search);
     const paymentState = String(searchParams.get("payment") || "").toLowerCase();
 
-    if (["success", "complete", "local"].includes(paymentState)) {
+    if (["success", "complete"].includes(paymentState)) {
       return;
     }
 
@@ -40,14 +40,14 @@ export default function OrderPaymentBanner() {
     <div className="border-b border-emerald-800 bg-emerald-700 px-4 py-3 text-white">
       <div className="mx-auto flex max-w-[1580px] flex-wrap items-center justify-center gap-3 sm:justify-between">
         <p className="text-center text-xs font-bold sm:text-left">
-          Finish your order with secure card payment.
+          Finish your order online with secure Pesapal checkout.
         </p>
 
         <Link
           href={paymentHref}
           className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
         >
-          Pay securely now
+          Pay securely with Pesapal
         </Link>
       </div>
     </div>
