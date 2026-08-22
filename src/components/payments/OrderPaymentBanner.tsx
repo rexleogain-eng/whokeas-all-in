@@ -1,33 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function OrderPaymentBanner() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [paymentHref, setPaymentHref] = useState("");
 
-  const prefix = "/order-confirmation/";
+  useEffect(() => {
+    const prefix = "/order-confirmation/";
+    const pathname = window.location.pathname;
 
-  if (!pathname.startsWith(prefix)) return null;
+    if (!pathname.startsWith(prefix)) return;
 
-  const orderNumber = decodeURIComponent(
-    pathname.slice(prefix.length).split("/")[0] || "",
-  ).trim();
+    const orderNumber = decodeURIComponent(
+      pathname.slice(prefix.length).split("/")[0] || "",
+    ).trim();
 
-  if (!orderNumber) return null;
+    if (!orderNumber) return;
 
-  const paymentState = String(searchParams.get("payment") || "").toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const paymentState = String(searchParams.get("payment") || "").toLowerCase();
 
-  if (["success", "complete", "local"].includes(paymentState)) {
-    return null;
-  }
+    if (["success", "complete", "local"].includes(paymentState)) {
+      return;
+    }
 
-  const next = new URLSearchParams();
-  next.set("order", orderNumber);
+    const next = new URLSearchParams();
+    next.set("order", orderNumber);
 
-  const key = searchParams.get("key");
-  if (key) next.set("key", key);
+    const key = searchParams.get("key");
+    if (key) next.set("key", key);
+
+    setPaymentHref(`/api/payments/flutterwave/start?${next.toString()}`);
+  }, []);
+
+  if (!paymentHref) return null;
 
   return (
     <div className="border-b border-emerald-800 bg-emerald-700 px-4 py-3 text-white">
@@ -37,7 +44,7 @@ export default function OrderPaymentBanner() {
         </p>
 
         <Link
-          href={`/api/payments/flutterwave/start?${next.toString()}`}
+          href={paymentHref}
           className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
         >
           Pay securely now
