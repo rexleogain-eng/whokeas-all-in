@@ -50,7 +50,9 @@ export function storefrontTitle(value: unknown) {
   }
 
   if (/fm\s*transmitter/.test(lower)) {
-    if (/car\s*charger|usb\s*charger|fast\s*pd/.test(lower)) return "Bluetooth FM Transmitter & Car Charger";
+    if (/fast\s*pd|pd\s*adapter/.test(lower)) return "Bluetooth FM Transmitter & Fast Car Charger";
+    if (/hands[-\s]*free|remote\s*control|phone\s*stand/.test(lower)) return "Hands-Free FM Transmitter & Car Charger";
+    if (/car\s*charger|usb\s*charger/.test(lower)) return "Bluetooth FM Transmitter & Car Charger";
     return "Wireless Car FM Transmitter";
   }
 
