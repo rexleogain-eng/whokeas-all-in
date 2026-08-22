@@ -98,6 +98,27 @@ export default function StoreHeader({
             Featured deal
           </Link>
 
+          <Link
+            href="/shop/portable-power-banks"
+            className="shrink-0 hover:text-[#9b762c]"
+          >
+            Power banks
+          </Link>
+
+          <Link
+            href="/shop/car-fm-transmitters"
+            className="shrink-0 hover:text-[#9b762c]"
+          >
+            Car audio
+          </Link>
+
+          <Link
+            href="/shop/beauty-grooming-essentials"
+            className="shrink-0 hover:text-[#9b762c]"
+          >
+            Beauty &amp; grooming
+          </Link>
+
           {nav.map((item) => (
             <Link
               key={item}
