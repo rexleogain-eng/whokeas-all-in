@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
+import { storefrontTitle } from "@/lib/store-copy";
 import { getStoreProducts } from "@/lib/store-catalog";
 import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -111,7 +112,7 @@ export default async function BuyerCollectionPage({ params }: PageProps) {
         "@type": "ListItem",
         position: index + 1,
         url: `${SITE_URL}/products/${encodeURIComponent(product.slug)}`,
-        name: product.name,
+        name: storefrontTitle(product.name),
       })),
     },
   };
