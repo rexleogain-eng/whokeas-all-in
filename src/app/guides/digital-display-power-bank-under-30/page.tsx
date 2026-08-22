@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import ArticleStructuredData from "@/components/seo/ArticleStructuredData";
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
 import { getStoreProducts } from "@/lib/store-catalog";
@@ -10,17 +11,22 @@ import { SITE_URL } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const GUIDE_PATH = "/guides/digital-display-power-bank-under-30";
+const GUIDE_TITLE = "Digital Display Power Bank Under $30: What to Check Before You Buy";
+const GUIDE_DESCRIPTION =
+  "A practical guide to choosing a digital display power bank under $30, including charging ports, capacity, size, display usefulness and value.";
+const GUIDE_DATE = "2026-08-22T00:00:00.000Z";
+
 export const metadata: Metadata = {
   title: "Digital Display Power Bank Under $30 | WHOKEAS Buyer Guide",
-  description:
-    "A practical guide to choosing a digital display power bank under $30, including charging ports, capacity, size, display usefulness and value.",
-  alternates: { canonical: `${SITE_URL}/guides/digital-display-power-bank-under-30` },
+  description: GUIDE_DESCRIPTION,
+  alternates: { canonical: `${SITE_URL}${GUIDE_PATH}` },
   robots: { index: true, follow: true },
   openGraph: {
     title: "Digital Display Power Bank Under $30 | WHOKEAS Buyer Guide",
     description:
       "What to check before choosing a budget digital display power bank for everyday charging and travel.",
-    url: `${SITE_URL}/guides/digital-display-power-bank-under-30`,
+    url: `${SITE_URL}${GUIDE_PATH}`,
     type: "article",
   },
 };
@@ -36,13 +42,21 @@ export default async function DigitalDisplayPowerBankGuide() {
   return (
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
       <StoreHeader />
+      <ArticleStructuredData
+        title={GUIDE_TITLE}
+        description={GUIDE_DESCRIPTION}
+        path={GUIDE_PATH}
+        datePublished={GUIDE_DATE}
+        dateModified={GUIDE_DATE}
+        imageUrl={picks[0]?.image || null}
+      />
 
       <article>
         <header className="border-b border-[#d8cfbf] bg-[#171512] px-6 py-16 text-white sm:py-20">
           <div className="mx-auto max-w-4xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#d6bd7b]">WHOKEAS BUYER GUIDE · PORTABLE POWER</p>
             <h1 className="mt-5 text-4xl font-normal leading-[1.05] tracking-[-0.03em] sm:text-6xl">
-              Digital Display Power Bank Under $30: What to Check Before You Buy
+              {GUIDE_TITLE}
             </h1>
             <p className="mt-6 max-w-3xl text-sm leading-8 text-white/70 sm:text-base">
               A low price is useful only when the charger also fits your routine. The best budget choice is the one that balances readable battery information, practical ports, useful capacity, size and delivery time.
