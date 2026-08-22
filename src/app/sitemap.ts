@@ -10,6 +10,8 @@ import {
 
 export const revalidate = 3600;
 
+const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-21T00:00:00.000Z");
+
 type SitemapProduct = {
   slug: string;
   updatedAt: string | null;
@@ -21,25 +23,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
-      lastModified: now,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${SITE_URL}/products`,
-      lastModified: now,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/returns-refunds`,
-      lastModified: now,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${SITE_URL}/shipping-delivery`,
-      lastModified: now,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.7,
     },
