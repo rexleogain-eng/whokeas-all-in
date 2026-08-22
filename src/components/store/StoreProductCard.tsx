@@ -1,29 +1,8 @@
 import Link from "next/link";
 
 import type { StoreProduct } from "@/lib/store-catalog";
+import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
-
-function compactSummary(value: string | null) {
-  const summary = String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!summary) return "Selected for WHOKEAS customers.";
-  if (summary.length <= 150) return summary;
-
-  return `${summary.slice(0, 147).trimEnd()}…`;
-}
-
-function compactTitle(value: string) {
-  const title = String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (title.length <= 90) return title;
-
-  return `${title.slice(0, 87).trimEnd()}…`;
-}
 
 export default function StoreProductCard({
   product,
@@ -32,7 +11,8 @@ export default function StoreProductCard({
 }) {
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
-  const productTitle = compactTitle(product.name);
+  const productTitle = storefrontTitle(product.name);
+  const productSummary = storefrontSummary(product.name, product.shortDescription);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -78,7 +58,7 @@ export default function StoreProductCard({
           {productTitle}
         </h3>
         <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-[#746d62]">
-          {compactSummary(product.shortDescription)}
+          {productSummary}
         </p>
 
         <div className="mt-5 border-t border-[#e3dbce] pt-4">
