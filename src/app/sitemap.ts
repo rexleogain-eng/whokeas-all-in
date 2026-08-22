@@ -59,6 +59,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.82,
     },
     {
+      url: `${SITE_URL}/guides`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      changeFrequency: "weekly",
+      priority: 0.78,
+    },
+    {
+      url: `${SITE_URL}/guides/digital-display-power-bank-under-30`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    },
+    {
+      url: `${SITE_URL}/guides/bluetooth-fm-transmitter-car-charger`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    },
+    {
       url: `${SITE_URL}/returns-refunds`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "monthly",
