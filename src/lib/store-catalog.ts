@@ -309,13 +309,28 @@ export async function getStoreProductBySlug(slug: string) {
     ORDER BY name
   `;
 
-  const variants = (rawVariants as unknown as StoreVariantRow[]).map((variant) => {
+  const storeVariants = rawVariants as unknown as StoreVariantRow[];
+  const inStockVariantPrices = storeVariants
+    .filter((variant) => Number(variant.stockQuantity || 0) > 0)
+    .map((variant) => Number(variant.price || 0))
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const activeVariantPrices = storeVariants
+    .map((variant) => Number(variant.price || 0))
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const anchorCandidates = inStockVariantPrices.length > 0
+    ? inStockVariantPrices
+    : activeVariantPrices;
+  const variantPriceAnchor = anchorCandidates.length > 0
+    ? Math.min(...anchorCandidates)
+    : basePrice;
+
+  const variants = storeVariants.map((variant) => {
     const rawVariantPrice = Number(variant.price || 0);
-    const price = usAvailable && basePrice > 0
+    const price = usAvailable && variantPriceAnchor > 0
       ? roundStoreUsd(
           priceUsd * Math.min(
             5,
-            Math.max(0.5, rawVariantPrice / basePrice),
+            Math.max(0.5, rawVariantPrice / variantPriceAnchor),
           ),
         )
       : sourcePriceToStoreUsd(rawVariantPrice, baseCurrency);
