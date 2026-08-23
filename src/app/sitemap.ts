@@ -10,17 +10,32 @@ import {
 
 export const revalidate = 3600;
 
-const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-22T00:00:00.000Z");
-const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-22T00:00:00.000Z");
+const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
+const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
+const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 
 type SitemapProduct = {
   slug: string;
   updatedAt: string | null;
 };
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
+function productLastModified(updatedAt: string | null) {
+  if (!updatedAt) {
+    return PRODUCT_TEMPLATE_LAST_MODIFIED;
+  }
 
+  const productUpdatedAt = new Date(updatedAt);
+
+  if (Number.isNaN(productUpdatedAt.getTime())) {
+    return PRODUCT_TEMPLATE_LAST_MODIFIED;
+  }
+
+  return productUpdatedAt > PRODUCT_TEMPLATE_LAST_MODIFIED
+    ? productUpdatedAt
+    : PRODUCT_TEMPLATE_LAST_MODIFIED;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
@@ -123,9 +138,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...staticPages,
       ...products.map((product) => ({
         url: `${SITE_URL}/products/${encodeURIComponent(product.slug)}`,
-        lastModified: product.updatedAt
-          ? new Date(product.updatedAt)
-          : now,
+        lastModified: productLastModified(product.updatedAt),
         changeFrequency: "weekly" as const,
         priority: 0.8,
       })),
