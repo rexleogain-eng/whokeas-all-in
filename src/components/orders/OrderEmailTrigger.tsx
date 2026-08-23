@@ -18,16 +18,6 @@ export default function OrderEmailTrigger() {
 
     if (!orderNumber || !key) return;
 
-    const storageKey = `whokeas-order-email-${orderNumber}`;
-
-    try {
-      if (sessionStorage.getItem(storageKey) === "requested") return;
-      sessionStorage.setItem(storageKey, "requested");
-    }
-    catch {
-      // Session storage is only a client-side duplicate guard.
-    }
-
     void fetch(
       `/api/orders/${encodeURIComponent(orderNumber)}/confirmation-email`,
       {
