@@ -140,6 +140,8 @@ export default async function ProductSeoLayout({
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${productUrl}#product`,
+    url: productUrl,
     name: productName,
     description,
     image: imageUrls,
@@ -166,12 +168,25 @@ export default async function ProductSeoLayout({
       },
       shippingDetails: {
         "@type": "OfferShippingDetails",
-        hasShippingService: {
-          "@id": `${SHIPPING_POLICY_URL}#policy`,
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "0.00",
+          currency: "USD",
         },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "US",
+        },
+        shippingSettingsLink: SHIPPING_POLICY_URL,
       },
       hasMerchantReturnPolicy: {
-        "@id": `${RETURN_POLICY_URL}#policy`,
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "US",
+        returnPolicyCategory:
+          "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 14,
+        returnMethod: "https://schema.org/ReturnByMail",
+        merchantReturnLink: RETURN_POLICY_URL,
       },
     },
   };
