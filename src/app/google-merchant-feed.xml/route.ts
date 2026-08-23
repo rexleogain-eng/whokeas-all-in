@@ -9,6 +9,7 @@ import {
   US_SHIPPING_MAX_DAYS,
   US_TARGET_COUNTRY_CODE,
 } from "@/lib/seo";
+import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -105,9 +106,12 @@ function merchantIdentifier(value: unknown, maximumLength: number) {
 
 function merchantItem(row: MerchantProductRow) {
   const productId = merchantIdentifier(row.id, 50);
-  const title = cleanText(row.name, 150);
+  const title = cleanText(storefrontTitle(row.name), 150);
   const description = cleanText(
-    row.shortDescription || row.description,
+    storefrontSummary(
+      row.name,
+      row.shortDescription || row.description,
+    ),
     1500,
   ) || `Buy ${title} online from ${SITE_NAME}.`;
   const productUrl =
