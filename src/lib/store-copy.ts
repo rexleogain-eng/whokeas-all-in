@@ -96,6 +96,15 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   if (/fm\s*transmitter/.test(title)) {
     return "A compact in-car wireless audio accessory designed to make everyday driving more convenient.";
   }
+  if (/phone\s*(?:case|cover)|mobile\s*phone\s*(?:case|shell)|protective\s*case/.test(title)) {
+    return "A practical phone case selected for everyday protection and an easy-to-carry profile.";
+  }
+  if (/organizer|storage\s*(?:rack|drawer|shelf)|shoe\s*rack|utility\s*cart|dish\s*drying\s*rack/.test(title)) {
+    return "A practical organization essential selected to make everyday storage and access simpler.";
+  }
+  if (/portable/.test(title) && /thermal\s*printer/.test(title)) {
+    return "A compact wireless thermal printer selected for convenient everyday printing at home, work or on the go.";
+  }
   if (/shoulder\s*bag|crossbody|tote\s*bag/.test(title)) {
     return "A practical everyday bag selected for commuting, errands and casual use, with an easy-to-carry profile.";
   }
@@ -121,6 +130,15 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     .replace(/^available\s+ship\s+to:\s*united\s+states\s*/i, "")
     .replace(/^product\s+information:\s*/i, "")
     .trim();
+
+  const specificationLabels = source.match(
+    /\b(?:style|material|color|colour|size|dimensions?|applicable models?|specifications?|packing list|package includes?)\s*:/gi,
+  ) || [];
+
+  if (specificationLabels.length >= 2) {
+    const productName = storefrontTitle(titleValue);
+    return `${productName} selected for everyday use, with clear USD pricing and U.S. delivery through WHOKEAS.`;
+  }
 
   if (!source) return "A practical WHOKEAS selection chosen for value, availability and everyday use.";
 
