@@ -7,7 +7,9 @@ import {
   safeEqualHex,
 } from "@/lib/customer-auth";
 import {
+  adminOrderEmailConfigured,
   orderEmailConfigured,
+  sendAdminOrderNotificationEmail,
   sendOrderConfirmationEmail,
 } from "@/lib/order-email";
 
@@ -53,6 +55,7 @@ export async function POST(request: Request, context: RouteContext) {
         order_record.customer_id::text AS "customerId",
         order_record.customer_name AS "customerName",
         order_record.customer_email AS "customerEmail",
+        order_record.customer_phone AS "customerPhone",
         order_record.currency,
         order_record.customer_locale AS locale,
         order_record.total::text AS total,
@@ -98,15 +101,19 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const rawResponse = (order.rawResponse || {}) as Record<string, unknown>;
-    if (rawResponse.orderConfirmationEmailSentAt) {
-      return NextResponse.json({ ok: true, alreadySent: true });
-    }
+    const customerAlreadySent = Boolean(rawResponse.orderConfirmationEmailSentAt);
+    const adminAlreadySent = Boolean(rawResponse.adminOrderEmailSentAt);
 
-    if (!orderEmailConfigured()) {
+    const shouldSendCustomer = orderEmailConfigured() && !customerAlreadySent;
+    const shouldSendAdmin = adminOrderEmailConfigured() && !adminAlreadySent;
+
+    if (!shouldSendCustomer && !shouldSendAdmin) {
       return NextResponse.json({
         ok: true,
-        sent: false,
-        reason: "email-not-configured",
+        customerAlreadySent,
+        adminAlreadySent,
+        customerConfigured: orderEmailConfigured(),
+        adminConfigured: adminOrderEmailConfigured(),
       });
     }
 
@@ -131,7 +138,14 @@ export async function POST(request: Request, context: RouteContext) {
       countryCode?: string | null;
     };
 
-    const result = await sendOrderConfirmationEmail({
+    const items = itemRows.map((item) => ({
+      productName: String(item.productName || "Item"),
+      variantName: item.variantName ? String(item.variantName) : null,
+      quantity: Number(item.quantity || 1),
+      lineTotal: Number(item.lineTotal || 0),
+    }));
+
+    const common = {
       customerEmail: String(order.customerEmail || ""),
       customerName: String(order.customerName || "Customer"),
       orderNumber: String(order.orderNumber),
@@ -139,41 +153,79 @@ export async function POST(request: Request, context: RouteContext) {
       currency: String(order.currency || "USD"),
       locale: String(order.locale || "en-US"),
       paymentStatus: String(order.paymentStatus || "pending"),
-      accessKey,
       delivery,
-      items: itemRows.map((item) => ({
-        productName: String(item.productName || "Item"),
-        variantName: item.variantName ? String(item.variantName) : null,
-        quantity: Number(item.quantity || 1),
-        lineTotal: Number(item.lineTotal || 0),
-      })),
-    });
+      items,
+    };
 
-    if (result.sent) {
-      const marker = JSON.stringify({
-        orderConfirmationEmailSentAt: new Date().toISOString(),
-        orderConfirmationEmailId: result.id || null,
-      });
+    let customerSent = customerAlreadySent;
+    let adminSent = adminAlreadySent;
 
-      await sql`
-        UPDATE payments
-        SET raw_response = COALESCE(raw_response, '{}'::jsonb) || ${marker}::jsonb
-        WHERE id = ${String(order.paymentId)}
-      `;
+    if (shouldSendCustomer) {
+      try {
+        const result = await sendOrderConfirmationEmail({
+          ...common,
+          accessKey,
+        });
+
+        if (result.sent) {
+          customerSent = true;
+          const marker = JSON.stringify({
+            orderConfirmationEmailSentAt: new Date().toISOString(),
+            orderConfirmationEmailId: result.id || null,
+          });
+
+          await sql`
+            UPDATE payments
+            SET raw_response = COALESCE(raw_response, '{}'::jsonb) || ${marker}::jsonb
+            WHERE id = ${String(order.paymentId)}
+          `;
+        }
+      }
+      catch (error) {
+        console.error("Customer order confirmation email failed:", error);
+      }
+    }
+
+    if (shouldSendAdmin) {
+      try {
+        const result = await sendAdminOrderNotificationEmail({
+          ...common,
+          customerPhone: order.customerPhone ? String(order.customerPhone) : null,
+        });
+
+        if (result.sent) {
+          adminSent = true;
+          const marker = JSON.stringify({
+            adminOrderEmailSentAt: new Date().toISOString(),
+            adminOrderEmailId: result.id || null,
+          });
+
+          await sql`
+            UPDATE payments
+            SET raw_response = COALESCE(raw_response, '{}'::jsonb) || ${marker}::jsonb
+            WHERE id = ${String(order.paymentId)}
+          `;
+        }
+      }
+      catch (error) {
+        console.error("Admin new-order email failed:", error);
+      }
     }
 
     return NextResponse.json({
       ok: true,
-      sent: result.sent,
+      customerSent,
+      adminSent,
+      customerConfigured: orderEmailConfigured(),
+      adminConfigured: adminOrderEmailConfigured(),
     });
   }
   catch (error) {
-    console.error("Order confirmation email failed:", error);
+    console.error("Order email workflow failed:", error);
 
     return NextResponse.json({
       ok: false,
-      sent: false,
-      reason: "email-send-failed",
+      reason: "email-workflow-failed",
     });
   }
 }
