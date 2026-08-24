@@ -23,12 +23,36 @@ type MerchantProductRow = {
   brand: string | null;
   categoryName: string | null;
   priceUsd: string;
-  supplierProductId: string | null;
-  supplierExternalProductId: string | null;
   images: unknown;
   hasVariants: boolean;
   variantInStock: boolean;
 };
+
+// Keep Google Shopping focused on low-policy-risk retail items while the
+// catalogue is broad. These products remain available on the storefront;
+// they are only held out of the Merchant Center feed until product-specific
+// compliance/certification data can be verified.
+const MERCHANT_RESTRICTED_PRODUCT_PATTERNS = [
+  /\bhearing\s+(?:aid|amplifier)\b/i,
+  /\bpersonal\s+sound\s+amplifier\b/i,
+  /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
+  /\b(?:moxibustion|acupuncture|acupoint)\b/i,
+  /\b(?:blood\s+pressure|blood\s+glucose|glucose\s+meter|oximeter|nebulizer|insulin)\b/i,
+  /\b(?:pregnan\w*|fertility|ovulation|breast\s+pump)\b/i,
+  /\b(?:pelvic|vaginal|erectile|prostate|penis|sex\s+toy|adult\s+toy)\b/i,
+  /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
+  /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
+  /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
+];
+
+const MERCHANT_RESTRICTED_CLAIM_PATTERNS = [
+  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping)\b/i,
+  /\blymphatic\s+drainage\b/i,
+  /\b(?:skin\s+)?whitening\b/i,
+  /\bskin\s+rejuvenation\b/i,
+  /\bbreast\s+enlargement\b/i,
+  /\b(?:prevent|cure|treat(?:ment)?|heal(?:ing)?)\s+(?:a|an|the\s+)?(?:disease|condition|ailment|pain)\b/i,
+];
 
 function removeInvalidXmlCharacters(value: string) {
   return value.replace(
@@ -104,6 +128,35 @@ function merchantIdentifier(value: unknown, maximumLength: number) {
     .replace(/^-|-$/g, "");
 }
 
+function merchantPolicyEligible(row: MerchantProductRow) {
+  const productIdentity = [
+    storefrontTitle(row.name),
+    row.categoryName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (
+    MERCHANT_RESTRICTED_PRODUCT_PATTERNS.some((pattern) =>
+      pattern.test(productIdentity)
+    )
+  ) {
+    return false;
+  }
+
+  const productClaims = [
+    productIdentity,
+    row.shortDescription,
+    row.description,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return !MERCHANT_RESTRICTED_CLAIM_PATTERNS.some((pattern) =>
+    pattern.test(productClaims)
+  );
+}
+
 function merchantItem(row: MerchantProductRow) {
   const productId = merchantIdentifier(row.id, 50);
   const title = cleanText(storefrontTitle(row.name), 150);
@@ -122,11 +175,10 @@ function merchantItem(row: MerchantProductRow) {
   const availability = row.hasVariants && !row.variantInStock
     ? "out_of_stock"
     : "in_stock";
-  const brand = cleanText(row.brand || SITE_NAME, 70);
-  const mpn = merchantIdentifier(
-    row.supplierExternalProductId || row.supplierProductId,
-    70,
-  );
+
+  // Never invent a brand or manufacturer part number. Product identifiers
+  // should only be submitted when they are genuinely assigned to the item.
+  const brand = cleanText(row.brand, 70);
 
   if (!productId || !title || !mainImage || priceUsd <= 0) {
     return null;
@@ -146,9 +198,7 @@ function merchantItem(row: MerchantProductRow) {
     brand
       ? `    <g:brand>${xml(brand)}</g:brand>`
       : "",
-    mpn
-      ? `    <g:mpn>${xml(mpn)}</g:mpn>`
-      : "    <g:identifier_exists>false</g:identifier_exists>",
+    "    <g:identifier_exists>false</g:identifier_exists>",
     additionalImages,
   ].filter(Boolean).join("\n");
 
@@ -182,8 +232,6 @@ async function readMerchantProducts() {
       p.brand,
       c.name AS "categoryName",
       us_market.selling_price_local::text AS "priceUsd",
-      p.supplier_product_id AS "supplierProductId",
-      p.supplier_external_product_id AS "supplierExternalProductId",
       (
         SELECT COALESCE(
           json_agg(
@@ -246,7 +294,7 @@ function feedDocument(items: string[]) {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">',
     "<channel>",
-    `  <title>${xml(`${SITE_NAME} Product Feed`)}</title>`,
+    `  <title>${xml(`${SITE_NAME} US Product Feed`)}</title>`,
     `  <link>${xml(SITE_URL)}</link>`,
     `  <description>${xml(SITE_DESCRIPTION)}</description>`,
     `  <lastBuildDate>${xml(generatedAt)}</lastBuildDate>`,
@@ -260,7 +308,8 @@ function feedDocument(items: string[]) {
 export async function GET() {
   try {
     const products = await readMerchantProducts();
-    const items = products
+    const eligibleProducts = products.filter(merchantPolicyEligible);
+    const items = eligibleProducts
       .map(merchantItem)
       .filter((item): item is string => Boolean(item));
 
@@ -271,6 +320,8 @@ export async function GET() {
         "Cache-Control":
           "public, s-maxage=3600, stale-while-revalidate=86400",
         "X-Content-Type-Options": "nosniff",
+        "X-WHOKEAS-Feed-Items": String(items.length),
+        "X-WHOKEAS-Feed-Excluded": String(products.length - eligibleProducts.length),
       },
     });
   }
