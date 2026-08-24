@@ -1,5 +1,6 @@
 import { catalogSql } from "@/lib/catalog-schema";
 import { syncGrowthOrderStatus } from "@/lib/growth-revenue";
+import { autoSubmitPaidOrderToCJ } from "@/lib/paid-order-automation";
 import { getSelcomOrderStatus } from "@/lib/selcom";
 
 function roundMoney(value: unknown) {
@@ -95,12 +96,17 @@ export async function reconcileSelcomPayment(orderNumber: string) {
       action: "mark_paid",
     });
 
+    const cjAutomation = await autoSubmitPaidOrderToCJ(
+      String(record.orderNumber),
+    );
+
     return {
       state: "success" as const,
       orderId: String(record.orderId),
       orderNumber: String(record.orderNumber),
       amount: paidAmount,
       currency: String(record.currency || ""),
+      cjAutomation,
     };
   }
 
