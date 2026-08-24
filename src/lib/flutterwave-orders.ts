@@ -1,5 +1,6 @@
 import { catalogSql } from "@/lib/catalog-schema";
 import { syncGrowthOrderStatus } from "@/lib/growth-revenue";
+import { autoSubmitPaidOrderToCJ } from "@/lib/paid-order-automation";
 import { verifyFlutterwaveTransaction } from "@/lib/flutterwave";
 
 function roundMoney(value: unknown) {
@@ -104,6 +105,10 @@ export async function settleFlutterwavePayment(input: {
     action: "mark_paid",
   });
 
+  const cjAutomation = await autoSubmitPaidOrderToCJ(
+    String(record.orderNumber),
+  );
+
   return {
     orderId: String(record.orderId),
     orderNumber: String(record.orderNumber),
@@ -111,5 +116,6 @@ export async function settleFlutterwavePayment(input: {
     providerReference,
     amount: paidAmount,
     currency: paidCurrency,
+    cjAutomation,
   };
 }
