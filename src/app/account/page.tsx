@@ -32,16 +32,18 @@ function formatMoney(
   value: string | number,
   currency: string,
 ) {
+  const normalizedCurrency = String(currency || "USD")
+    .trim()
+    .toUpperCase();
+
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency,
-      maximumFractionDigits:
-        currency === "TZS" ? 0 : 2,
+      currency: normalizedCurrency,
     }).format(Number(value || 0));
   }
   catch {
-    return `${currency} ${Number(value || 0).toLocaleString("en-US")}`;
+    return `${normalizedCurrency} ${Number(value || 0).toLocaleString("en-US")}`;
   }
 }
 
@@ -238,8 +240,10 @@ export default async function CustomerAccountPage() {
                 {orders.map((order) => {
                   const status = String(order.status);
                   const currency = String(
-                    order.currency || "TZS",
-                  );
+                    order.currency || "USD",
+                  )
+                    .trim()
+                    .toUpperCase();
 
                   const shippingAddress =
                     order.shippingAddress as {
