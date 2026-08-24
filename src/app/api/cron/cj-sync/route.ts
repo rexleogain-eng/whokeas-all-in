@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { syncCJProducts } from "@/lib/cj-sync";
-import { repairHiddenStorefrontProducts } from "@/lib/storefront-catalog-health";
+import { runEnhancedCJSynchronization } from "@/lib/cj-catalog-maintenance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,9 +18,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const sync = await syncCJProducts(10);
-    const storefrontRepair = await repairHiddenStorefrontProducts(5);
-    return NextResponse.json({ ok: true, sync, storefrontRepair });
+    const report = await runEnhancedCJSynchronization();
+    return NextResponse.json({ ok: true, ...report });
   } catch (error) {
     return NextResponse.json(
       {
