@@ -79,6 +79,7 @@ export async function recoverPaidOrdersMissingCJ(limit = 10) {
       order_record.order_number AS "orderNumber"
     FROM orders order_record
     WHERE order_record.status::text IN ('paid', 'processing')
+      AND order_record.updated_at >= NOW() - INTERVAL '7 days'
       AND NOT EXISTS (
         SELECT 1
         FROM cj_order_fulfillments fulfillment
