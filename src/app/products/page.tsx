@@ -3,10 +3,8 @@ import Link from "next/link";
 
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
-import {
-  getStoreCategories,
-  getStoreProducts,
-} from "@/lib/store-catalog";
+import { getStoreCategories } from "@/lib/store-catalog";
+import { getStoreProductPage } from "@/lib/store-catalog-page";
 import {
   SITE_NAME,
   SITE_URL,
@@ -15,11 +13,14 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const PRODUCTS_PER_PAGE = 60;
+
 type ProductsPageProps = {
   searchParams: Promise<{
     q?: string | string[];
     category?: string | string[];
     sort?: string | string[];
+    page?: string | string[];
   }>;
 };
 
@@ -33,6 +34,12 @@ function filterValue(value: string | string[] | undefined) {
     .slice(0, 80);
 }
 
+function positivePage(value: string | string[] | undefined) {
+  const text = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(String(text || "1"), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export async function generateMetadata({
   searchParams,
 }: ProductsPageProps): Promise<Metadata> {
@@ -40,18 +47,21 @@ export async function generateMetadata({
   const query = filterValue(params.q);
   const category = filterValue(params.category);
   const sort = filterValue(params.sort);
-  const categoryQuery = new URLSearchParams();
+  const page = positivePage(params.page);
+  const canonicalQuery = new URLSearchParams();
 
-  if (category) categoryQuery.set("category", category);
+  if (category) canonicalQuery.set("category", category);
+  if (page > 1) canonicalQuery.set("page", String(page));
 
-  const canonicalUrl = category
-    ? `${SITE_URL}/products?${categoryQuery.toString()}`
+  const canonicalUrl = canonicalQuery.size > 0
+    ? `${SITE_URL}/products?${canonicalQuery.toString()}`
     : `${SITE_URL}/products`;
-  const title = query
+  const baseTitle = query
     ? `Search results for “${query}”`
     : category
       ? `${category} Products Online`
       : "Shop Products Online in the U.S.";
+  const title = page > 1 ? `${baseTitle} – Page ${page}` : baseTitle;
   const description = category
     ? `Shop ${category} products from ${SITE_NAME}, with USD pricing and free standard U.S. shipping.`
     : `Browse curated products from ${SITE_NAME}, with USD pricing, free standard U.S. shipping and clear customer support.`;
@@ -84,20 +94,33 @@ export default async function ProductsPage({
   const query = filterValue(params.q);
   const category = filterValue(params.category);
   const sort = filterValue(params.sort) || "newest";
+  const requestedPage = positivePage(params.page);
 
-  const [products, categories] = await Promise.all([
-    getStoreProducts({ query, category, sort, limit: 60 }),
+  const [catalogPage, categories] = await Promise.all([
+    getStoreProductPage({
+      query,
+      category,
+      sort,
+      page: requestedPage,
+      pageSize: PRODUCTS_PER_PAGE,
+    }),
     getStoreCategories(),
   ]);
-  const categoryTotal = category
-    ? categories.find(
-        (item) => item.name.toLowerCase() === category.toLowerCase(),
-      )?.count || products.length
-    : categories.reduce((total, item) => total + item.count, 0);
-  const totalAvailable = query ? products.length : categoryTotal;
-  const productCountLabel = totalAvailable > products.length
-    ? `Showing ${products.length} of ${totalAvailable} products`
-    : `${products.length} product${products.length === 1 ? "" : "s"} available`;
+
+  const {
+    products,
+    total: totalAvailable,
+    page,
+    pageSize,
+    totalPages,
+  } = catalogPage;
+  const firstVisible = totalAvailable > 0 ? (page - 1) * pageSize + 1 : 0;
+  const lastVisible = totalAvailable > 0
+    ? Math.min(totalAvailable, firstVisible + products.length - 1)
+    : 0;
+  const productCountLabel = totalAvailable > products.length || page > 1
+    ? `Showing ${firstVisible}–${lastVisible} of ${totalAvailable} products`
+    : `${totalAvailable} product${totalAvailable === 1 ? "" : "s"} available`;
 
   const buildSortHref = (value: string) => {
     const next = new URLSearchParams();
@@ -105,6 +128,16 @@ export default async function ProductsPage({
     if (category) next.set("category", category);
     next.set("sort", value);
     return `/products?${next.toString()}`;
+  };
+
+  const buildPageHref = (nextPage: number) => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (category) next.set("category", category);
+    if (sort !== "newest") next.set("sort", sort);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    const suffix = next.toString();
+    return suffix ? `/products?${suffix}` : "/products";
   };
 
   return (
@@ -214,11 +247,50 @@ export default async function ProductsPage({
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              {products.map((product) => (
-                <StoreProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                {products.map((product) => (
+                  <StoreProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <nav
+                  className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[#cfc4b1] pt-6"
+                  aria-label="Product catalogue pages"
+                >
+                  {page > 1 ? (
+                    <Link
+                      href={buildPageHref(page - 1)}
+                      className="classic-button-light"
+                    >
+                      ← Previous
+                    </Link>
+                  ) : (
+                    <span className="border border-[#d8cfbf] px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-[#b2aa9f]">
+                      ← Previous
+                    </span>
+                  )}
+
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#746d62]">
+                    Page {page} of {totalPages}
+                  </p>
+
+                  {page < totalPages ? (
+                    <Link
+                      href={buildPageHref(page + 1)}
+                      className="classic-button-dark"
+                    >
+                      Next →
+                    </Link>
+                  ) : (
+                    <span className="border border-[#d8cfbf] px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] text-[#b2aa9f]">
+                      Next →
+                    </span>
+                  )}
+                </nav>
+              )}
+            </>
           )}
         </section>
       </div>
