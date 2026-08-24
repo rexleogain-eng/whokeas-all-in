@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { syncPendingCJFulfillments } from "@/lib/cj-fulfillment";
+import { recoverPaidOrdersMissingCJ } from "@/lib/paid-order-automation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +19,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const report = await syncPendingCJFulfillments(15);
-    return NextResponse.json({ ok: true, ...report });
+    const recovery = await recoverPaidOrdersMissingCJ(10);
+    const sync = await syncPendingCJFulfillments(15);
+    return NextResponse.json({ ok: true, recovery, sync });
   } catch (error) {
     return NextResponse.json(
       {
