@@ -1,9 +1,11 @@
 export const runtime = "nodejs";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 
-import { runDailyCatalogueExpansion } from "@/lib/catalogue-expansion";
+import { runEnhancedCJCatalogueCycle } from "@/lib/cj-catalog-maintenance";
+
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
@@ -19,7 +21,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const report = await runDailyCatalogueExpansion();
+    const report = await runEnhancedCJCatalogueCycle();
     return NextResponse.json({ ok: true, report });
   } catch (error) {
     return NextResponse.json(
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Catalogue expansion cron failed.",
+            : "Enhanced CJ catalogue cron failed.",
       },
       { status: 500 },
     );
