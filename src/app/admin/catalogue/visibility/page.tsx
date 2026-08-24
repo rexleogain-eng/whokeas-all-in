@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import AdminShell from "@/components/admin/AdminShell";
+import BlockedCleanupButton from "@/components/admin/BlockedCleanupButton";
 import StorefrontVisibilityClient from "@/components/admin/StorefrontVisibilityClient";
 import { isAdmin } from "@/lib/admin-auth";
 import { getStorefrontCatalogHealth } from "@/lib/storefront-catalog-health";
@@ -21,7 +22,7 @@ export default async function StorefrontVisibilityPage() {
       active="catalogue"
       eyebrow="Storefront visibility"
       title="Turn published supplier records into customer-visible products safely"
-      description="Audit the exact U.S. storefront gates, identify why active products are hidden and refresh eligible CJ products with fresh U.S. freight and pricing checks."
+      description="Audit the exact U.S. storefront gates, identify why active products are hidden, repair eligible CJ products and remove supplier records that cannot meet the U.S. shipping promise."
       actions={
         <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
           <Link
@@ -41,6 +42,7 @@ export default async function StorefrontVisibilityPage() {
       }
     >
       <StorefrontVisibilityClient initialHealth={health} />
+      <BlockedCleanupButton />
     </AdminShell>
   );
 }
