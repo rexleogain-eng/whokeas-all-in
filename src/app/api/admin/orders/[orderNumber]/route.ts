@@ -2,10 +2,10 @@ import { neon } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/admin-auth";
-import { prepareCJOrder } from "@/lib/cj-fulfillment";
 import {
   syncGrowthOrderStatus,
 } from "@/lib/growth-revenue";
+import { autoSubmitPaidOrderToCJ } from "@/lib/paid-order-automation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,11 +14,6 @@ export const maxDuration = 60;
 type Context = {
   params: Promise<{ orderNumber: string }>;
 };
-
-function autoOrderEnabled() {
-  const value = process.env.CJ_AUTO_ORDER_ENABLED?.trim().toLowerCase();
-  return ["1", "true", "yes", "on"].includes(String(value || ""));
-}
 
 export async function PATCH(request: Request, context: Context) {
   try {
@@ -76,16 +71,9 @@ export async function PATCH(request: Request, context: Context) {
         `,
       ]);
 
-      if (autoOrderEnabled()) {
-        try {
-          cjFulfillment = await prepareCJOrder(orderNumber);
-        } catch (error) {
-          cjWarning =
-            error instanceof Error
-              ? error.message
-              : "The customer payment was saved, but CJ order creation failed.";
-        }
-      }
+      const cjAutomation = await autoSubmitPaidOrderToCJ(orderNumber);
+      cjFulfillment = cjAutomation.fulfillment;
+      cjWarning = cjAutomation.warning;
     } else if (action === "mark_processing") {
       await sql`
         UPDATE orders
