@@ -88,10 +88,11 @@ export async function repairHiddenCJProductsSequential(
  * the store's published maximum. Missing offers and price errors are kept for
  * repair because they may be data problems rather than bad products.
  *
- * Products referenced by an order are archived instead of deleted so order
- * history remains intact. Product images/variants/market offers cascade when
- * a product is deleted. CJ image URLs are remote references, not uploaded
- * image bytes in Supabase Storage.
+ * Both active and draft CJ products are checked so rejected imports do not
+ * accumulate as hidden database records. Products referenced by an order are
+ * archived instead of deleted so order history remains intact. Product
+ * images/variants/market offers cascade when a product is deleted. CJ image
+ * URLs are remote references, not uploaded image bytes in Supabase Storage.
  */
 export async function cleanupBlockedCJProducts(
   requestedLimit = 100,
@@ -132,7 +133,7 @@ export async function cleanupBlockedCJProducts(
     FROM products p
     JOIN latest_us ON latest_us.product_id = p.id
     WHERE p.supplier_platform = 'cj'
-      AND p.status::text = 'active'
+      AND p.status::text IN ('active', 'draft')
       AND (
         latest_us.available IS NOT TRUE
         OR (
