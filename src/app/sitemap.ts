@@ -12,7 +12,7 @@ export const revalidate = 3600;
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
-const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
+const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
 type SitemapProduct = {
   slug: string;
