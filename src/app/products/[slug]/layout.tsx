@@ -20,6 +20,20 @@ function metadataDescription(title: unknown, summary: unknown) {
   return storefrontSummary(title, summary).slice(0, 160);
 }
 
+function verifiedProductBrand(value: unknown) {
+  const brand = String(value || "").trim();
+
+  if (!brand) return null;
+
+  // WHOKEAS is the retailer/seller for catalogue items, not automatically the
+  // manufacturer. Only expose a product brand when one is actually stored.
+  if (brand.toLowerCase() === SITE_NAME.toLowerCase()) {
+    return null;
+  }
+
+  return brand;
+}
+
 async function readProduct(rawSlug: string) {
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
   return getStoreProductBySlug(slug);
@@ -132,6 +146,7 @@ export default async function ProductSeoLayout({
     product.name,
     product.shortDescription || product.description,
   );
+  const productBrand = verifiedProductBrand(product.brand);
   const hasVariants = variants.length > 0;
   const isInStock = !hasVariants || variants.some(
     (variant) => Number(variant.stockQuantity || 0) > 0,
@@ -146,10 +161,14 @@ export default async function ProductSeoLayout({
     description,
     image: imageUrls,
     sku: String(product.id || productSlug),
-    brand: {
-      "@type": "Brand",
-      name: String(product.brand || SITE_NAME),
-    },
+    ...(productBrand
+      ? {
+          brand: {
+            "@type": "Brand",
+            name: productBrand,
+          },
+        }
+      : {}),
     ...(product.categoryName
       ? { category: String(product.categoryName) }
       : {}),
