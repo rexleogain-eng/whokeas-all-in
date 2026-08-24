@@ -1,5 +1,6 @@
 import { catalogSql } from "@/lib/catalog-schema";
 import { syncGrowthOrderStatus } from "@/lib/growth-revenue";
+import { autoSubmitPaidOrderToCJ } from "@/lib/paid-order-automation";
 import { getPesapalTransactionStatus } from "@/lib/pesapal";
 
 function roundMoney(value: unknown) {
@@ -101,6 +102,10 @@ export async function reconcilePesapalPayment(input: {
       action: "mark_paid",
     });
 
+    const cjAutomation = await autoSubmitPaidOrderToCJ(
+      String(record.orderNumber),
+    );
+
     return {
       state: "success" as const,
       orderId: String(record.orderId),
@@ -108,6 +113,7 @@ export async function reconcilePesapalPayment(input: {
       merchantReference,
       amount: paidAmount,
       currency: paidCurrency,
+      cjAutomation,
     };
   }
 
