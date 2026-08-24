@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/admin-auth";
 import {
-  getStorefrontCatalogHealth,
-  repairHiddenStorefrontProducts,
-} from "@/lib/storefront-catalog-health";
+  cleanupBlockedCJProducts,
+  repairHiddenCJProductsSequential,
+} from "@/lib/cj-catalog-maintenance";
+import { getStorefrontCatalogHealth } from "@/lib/storefront-catalog-health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,15 +45,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    let limit = 5;
+    let limit = 20;
+    let action: "repair" | "cleanup" = "repair";
+
     try {
-      const body = (await request.json()) as { limit?: number };
+      const body = (await request.json()) as {
+        limit?: number;
+        action?: "repair" | "cleanup";
+      };
       if (body?.limit !== undefined) limit = Number(body.limit);
+      if (body?.action === "cleanup") action = "cleanup";
     } catch {
-      // Default batch size is used when there is no JSON body.
+      // Defaults are used when there is no JSON body.
     }
 
-    const report = await repairHiddenStorefrontProducts(limit);
+    if (action === "cleanup") {
+      const cleanup = await cleanupBlockedCJProducts(limit || 100);
+      const health = await getStorefrontCatalogHealth();
+      return NextResponse.json({ ok: true, cleanup, health });
+    }
+
+    const report = await repairHiddenCJProductsSequential(limit || 20);
     const health = await getStorefrontCatalogHealth();
     return NextResponse.json({ ok: true, report, health });
   } catch (error) {
@@ -62,7 +75,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Storefront catalogue repair failed.",
+            : "Storefront catalogue maintenance failed.",
       },
       { status: 500 },
     );
