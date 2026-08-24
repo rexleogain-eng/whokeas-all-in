@@ -8,6 +8,7 @@ type AdminSection =
   | "growth"
   | "products"
   | "cj"
+  | "wholesale2b"
   | "automation"
   | "catalogue";
 
@@ -31,6 +32,7 @@ const navItems: Array<{
   { key: "growth", href: "/admin/growth", label: "Growth & Revenue", short: "GR" },
   { key: "products", href: "/admin/products", label: "Products", short: "PR" },
   { key: "cj", href: "/admin/cj", label: "CJ Sourcing", short: "CJ" },
+  { key: "wholesale2b", href: "/admin/wholesale2b", label: "Wholesale2B", short: "W2" },
   { key: "automation", href: "/admin/automation", label: "Automation", short: "AU" },
   { key: "catalogue", href: "/admin/catalogue", label: "Catalogue Fill", short: "CF" },
 ];
