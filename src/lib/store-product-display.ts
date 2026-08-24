@@ -29,6 +29,56 @@ function formatPieceCount(count: string) {
   return `${amount.toLocaleString("en-US")} ${amount === 1 ? "piece" : "pieces"}`;
 }
 
+function normalizeIPhoneModels(value: string) {
+  return value
+    .replace(/iphone/gi, "iPhone")
+    .replace(/\biPhone\s*XS\s*MAX\b/gi, "iPhone XS Max")
+    .replace(/\biPhone\s*X\s*\/\s*XS\b/gi, "iPhone X/XS")
+    .replace(/\biPhone\s*XR\b/gi, "iPhone XR")
+    .replace(
+      /\biPhone\s*(\d{1,2})\s*(pro\s*max|promax|pro|max|plus)?\b/gi,
+      (_, generation: string, suffix?: string) => {
+        const normalizedSuffix = String(suffix || "")
+          .replace(/\s+/g, "")
+          .toLowerCase();
+        const label =
+          normalizedSuffix === "promax"
+            ? " Pro Max"
+            : normalizedSuffix === "pro"
+              ? " Pro"
+              : normalizedSuffix === "max"
+                ? " Max"
+                : normalizedSuffix === "plus"
+                  ? " Plus"
+                  : "";
+        return `iPhone ${generation}${label}`;
+      },
+    );
+}
+
+function formatIncludedBlock(value: string) {
+  const source = cleanInline(value);
+  const items: string[] = [];
+  const pattern = /(.+?)\s*[x×*]\s*(\d+)\s*pcs?\b/gi;
+
+  for (const match of source.matchAll(pattern)) {
+    const item = cleanInline(match[1]);
+    const count = match[2];
+    if (item && count) {
+      items.push(`Included: ${formatPieceCount(count)} · ${item}`);
+    }
+  }
+
+  if (items.length > 0) return items.join("\n");
+
+  const countFirst = source.match(/^(\d+)\s*pcs?\s*[x×*]?\s*(.+)$/i);
+  if (countFirst) {
+    return `Included: ${formatPieceCount(countFirst[1])} · ${cleanInline(countFirst[2])}`;
+  }
+
+  return source ? `Included: ${source}` : "";
+}
+
 function titleCaseOption(value: string) {
   const keep: Record<string, string> = {
     usb: "USB",
@@ -43,16 +93,21 @@ function titleCaseOption(value: string) {
     pc: "PC",
     abs: "ABS",
     pu: "PU",
+    tpu: "TPU",
+    pvc: "PVC",
+    eva: "EVA",
     ios: "iOS",
     xl: "XL",
     xxl: "XXL",
   };
+  const connectors = new Set(["and", "with", "for", "of"]);
 
   return value
     .split(/(\s+|·)/)
     .map((part) => {
       const lower = part.toLowerCase();
       if (keep[lower]) return keep[lower];
+      if (connectors.has(lower)) return lower;
       if (/^\d/.test(part) || /^\s+$/.test(part) || part === "·") return part;
       return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
     })
@@ -82,7 +137,7 @@ export function storefrontVariantName(productValue: unknown, variantValue: unkno
 
   if (!variant) return "Standard option";
 
-  return titleCaseOption(variant);
+  return normalizeIPhoneModels(titleCaseOption(variant));
 }
 
 export function storefrontProductDetails(value: unknown) {
@@ -92,6 +147,7 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/<li[^>]*>/gi, "")
     .replace(/<[^>]*>/g, " ")
     .replace(/\r/g, "")
+    .replace(/[：]/g, ":")
     .replace(/[ \t]+/g, " ")
     .replace(/\s*\n\s*/g, "\n")
     .trim();
@@ -116,23 +172,11 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bFlame\s+retardant\b/gi, "Flame-retardant")
     .replace(/\b(\d{4,6})\s*m\s*ah\b/gi, (_, amount: string) => formatCapacity(amount))
     .replace(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm\b/gi, "$1 × $2 × $3 cm")
-    .replace(/\s+(?=(?:Power supply|Rated voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Battery|Heating time|Design|Compatibility|Features|Finish|Packing list|Package includes|Package content)\s*:)/gi, "\n")
+    .replace(/\s+(?=(?:Power supply|Rated voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Battery|Heating time|Design|Compatibility|Features|Finish|Note|Packing list|Package includes|Package content)\s*:)/gi, "\n")
     .replace(/\bPacking list\s*:/gi, "Included:")
     .replace(/\bPackage includes\s*:/gi, "Included:")
     .replace(/\bPackage content\s*:/gi, "Included:")
-    .replace(
-      /Included:\s*([^,.;\n]+?)\s*[x×*]\s*(\d+)\s*pcs?\b/gi,
-      (_, item: string, count: string) =>
-        `Included: ${formatPieceCount(count)} · ${item.trim()}`,
-    )
-    .replace(
-      /Included:\s*([^,.;\n]+?)\s+(\d+)\s*pcs?\b/gi,
-      (_, item: string, count: string) =>
-        `Included: ${formatPieceCount(count)} · ${item.trim()}`,
-    )
-    .replace(/Included:\s*([^,.;\n]+?)\s+(\d+)(?=\n|$)/gi, (_, item: string, count: string) =>
-      `Included: ${formatPieceCount(count)} · ${item.trim()}`,
-    )
+    .replace(/Included:\s*([^\n]+)/gi, (_, items: string) => formatIncludedBlock(items))
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
@@ -158,6 +202,22 @@ export function storefrontProductDetails(value: unknown) {
           .join(", ");
         cleaned = `Color: ${colors}`;
       }
+
+      const materialMatch = cleaned.match(/^Material:\s*(.+)$/i);
+      if (materialMatch) {
+        cleaned = `Material: ${titleCaseOption(materialMatch[1])}`;
+      }
+
+      const compatibilityMatch = cleaned.match(/^Compatibility:\s*(.+)$/i);
+      if (compatibilityMatch) {
+        cleaned = `Compatibility: ${normalizeIPhoneModels(compatibilityMatch[1])}`;
+      }
+
+      if (/^Note:/i.test(cleaned)) {
+        cleaned = normalizeIPhoneModels(cleaned);
+      }
+
+      cleaned = cleaned.replace(/^Design:\s*rear cover type$/i, "Design: Rear-cover case");
 
       return cleaned;
     })
