@@ -24,6 +24,11 @@ function formatCapacity(amount: string) {
   return `${Number(amount).toLocaleString("en-US")}mAh`;
 }
 
+function formatPieceCount(count: string) {
+  const amount = Number(count);
+  return `${amount.toLocaleString("en-US")} ${amount === 1 ? "piece" : "pieces"}`;
+}
+
 function titleCaseOption(value: string) {
   const keep: Record<string, string> = {
     usb: "USB",
@@ -95,7 +100,12 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
     .replace(/\bwholesale\b/gi, "")
-    .replace(/^product\s+(?:information|description)\s*:\s*/i, "")
+    .replace(/^(?:product\s+(?:information|description)|specifications?)\s*:?\s*$/gim, "")
+    .replace(/\bproduct\s+(?:information|description)\s*:\s*/gi, "")
+    .replace(/\bApplicable\s+Models?\s*:/gi, "Compatibility:")
+    .replace(/\bStyle\s*:/gi, "Design:")
+    .replace(/\bFunction\s*:/gi, "Features:")
+    .replace(/\bProcess\s*:/gi, "Finish:")
     .replace(
       /\b(\d{4,6})mAh large capacity,\s*once fully charged,\s*can warm for\s*(\d+)\s*hours?\.\s*It also belongs to the power bank,\s*Type\s*c-USB\b/gi,
       (_, amount: string, hours: string) =>
@@ -106,12 +116,22 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bFlame\s+retardant\b/gi, "Flame-retardant")
     .replace(/\b(\d{4,6})\s*m\s*ah\b/gi, (_, amount: string) => formatCapacity(amount))
     .replace(/\b(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*cm\b/gi, "$1 × $2 × $3 cm")
-    .replace(/\s+(?=(?:Power supply|Rated voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Battery|Heating time|Packing list|Package includes|Package content)\s*:)/gi, "\n")
+    .replace(/\s+(?=(?:Power supply|Rated voltage|Color|Colour|Capacity|Size|Dimensions|Material|Input|Output|Interface|Charging|Weight|Battery|Heating time|Design|Compatibility|Features|Finish|Packing list|Package includes|Package content)\s*:)/gi, "\n")
     .replace(/\bPacking list\s*:/gi, "Included:")
     .replace(/\bPackage includes\s*:/gi, "Included:")
     .replace(/\bPackage content\s*:/gi, "Included:")
+    .replace(
+      /Included:\s*([^,.;\n]+?)\s*[x×*]\s*(\d+)\s*pcs?\b/gi,
+      (_, item: string, count: string) =>
+        `Included: ${formatPieceCount(count)} · ${item.trim()}`,
+    )
+    .replace(
+      /Included:\s*([^,.;\n]+?)\s+(\d+)\s*pcs?\b/gi,
+      (_, item: string, count: string) =>
+        `Included: ${formatPieceCount(count)} · ${item.trim()}`,
+    )
     .replace(/Included:\s*([^,.;\n]+?)\s+(\d+)(?=\n|$)/gi, (_, item: string, count: string) =>
-      `Included: ${count} × ${item.trim()}`,
+      `Included: ${formatPieceCount(count)} · ${item.trim()}`,
     )
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
@@ -122,15 +142,34 @@ export function storefrontProductDetails(value: unknown) {
     .map((line) => line.trim().replace(/^[•\-–—]+\s*/, ""))
     .filter(Boolean)
     .map((line) => {
-      const colorMatch = line.match(/^(Color|Colour):\s*(.+)$/i);
-      if (!colorMatch) return line;
+      let cleaned = line
+        .replace(/\b[x×]\s*(\d+)\s*pcs?\b/gi, (_, count: string) => formatPieceCount(count))
+        .replace(/\b(\d+)\s*pcs?\b/gi, (_, count: string) => formatPieceCount(count))
+        .replace(/\s*·\s*/g, " · ")
+        .replace(/(?:\s*·\s*){2,}/g, " · ")
+        .replace(/^\s*·\s*|\s*·\s*$/g, "")
+        .trim();
 
-      const colors = colorMatch[2]
-        .split(",")
-        .map((color) => titleCaseOption(color.trim()))
-        .join(", ");
-      return `Color: ${colors}`;
-    });
+      const colorMatch = cleaned.match(/^(Color|Colour):\s*(.+)$/i);
+      if (colorMatch) {
+        const colors = colorMatch[2]
+          .split(",")
+          .map((color) => titleCaseOption(color.trim()))
+          .join(", ");
+        cleaned = `Color: ${colors}`;
+      }
 
-  return lines.join("\n");
+      return cleaned;
+    })
+    .filter(Boolean);
+
+  const seen = new Set<string>();
+  return lines
+    .filter((line) => {
+      const key = line.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join("\n");
 }
