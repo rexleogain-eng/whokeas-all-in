@@ -1,5 +1,4 @@
 import {
-  getCatalogueExpansionSettings,
   processCatalogueQueue,
   runDailyCatalogueExpansion,
 } from "@/lib/catalogue-expansion";
@@ -158,13 +157,16 @@ export async function cleanupBlockedCJProducts(
     const name = String(candidate.name || "CJ product");
     const externalProductId = String(candidate.externalProductId || "");
     const reason = String(candidate.reason || "blocked");
+    const hasOrderHistory =
+      candidate.hasOrderHistory === true ||
+      String(candidate.hasOrderHistory).toLowerCase() === "true";
     const reasonMessage =
       reason === "us_shipping_unavailable"
         ? "Removed from U.S. catalogue: CJ shipping is unavailable."
         : `Removed from U.S. catalogue: delivery exceeds ${US_SHIPPING_MAX_DAYS} days.`;
 
     try {
-      if (Boolean(candidate.hasOrderHistory)) {
+      if (hasOrderHistory) {
         await sql`
           UPDATE products
           SET
@@ -264,14 +266,13 @@ export async function cleanupBlockedCJProducts(
 }
 
 /**
- * Catalogue Fill used to process only one queue item even when the admin
- * setting requested a larger safe batch. This enhanced cycle keeps each CJ
- * request sequential, but allows up to three queue imports in the same cron.
+ * Catalogue Fill used to process only one queue item even when its admin
+ * setting suggested a larger safe job. The enhanced cron now runs exactly
+ * three serialized queue passes, keeping CJ calls spaced and non-parallel.
  */
 export async function runEnhancedCJCatalogueCycle() {
   const primary = await runDailyCatalogueExpansion();
-  const config = await getCatalogueExpansionSettings();
-  const desiredImports = Math.max(1, Math.min(3, config.processBatchSize || 3));
+  const desiredImports = 3;
   const extraProcessing = [];
 
   for (let index = 1; index < desiredImports; index += 1) {
