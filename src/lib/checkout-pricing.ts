@@ -55,6 +55,11 @@ export class CheckoutQuoteError extends Error {
   }
 }
 
+const STOREFRONT_COUNTRY = "US";
+const STOREFRONT_CURRENCY = "USD";
+const STOREFRONT_LOCALE = "en-US";
+const STOREFRONT_COUNTRY_NAME = "United States";
+
 function clean(value: unknown, maximum = 300) {
   return typeof value === "string"
     ? value.trim().slice(0, maximum)
@@ -91,58 +96,31 @@ export async function getCheckoutMarkets():
       country_code AS "countryCode",
       market_name AS "countryName",
       currency,
-      locale,
-      is_primary AS primary
+      locale
     FROM product_market_prices
     WHERE available = TRUE
       AND selling_price_local > 0
+      AND country_code = ${STOREFRONT_COUNTRY}
+      AND UPPER(currency) = ${STOREFRONT_CURRENCY}
     ORDER BY
       country_code,
-      is_primary DESC,
       updated_at DESC
   `;
 
-  const markets = rows.map((row) => ({
-    countryCode: String(row.countryCode).toUpperCase(),
-    countryName: String(row.countryName),
-    currency: String(row.currency).toUpperCase(),
-    locale: String(row.locale || "en-US"),
-    primary: Boolean(row.primary),
-  }));
-
-  if (
-    !markets.some(
-      (market) => market.countryCode === "TZ",
-    )
-  ) {
-    markets.push({
-      countryCode: "TZ",
-      countryName: "Tanzania",
-      currency: "TZS",
-      locale: "en-TZ",
-      primary: false,
-    });
+  if (!rows[0]) {
+    return [];
   }
 
-  const hasUnitedStates = markets.some(
-    (market) => market.countryCode === "US",
-  );
-  const prioritizedMarkets = markets.map((market) => ({
-    ...market,
-    primary: hasUnitedStates
-      ? market.countryCode === "US"
-      : market.primary,
-  }));
-
-  return prioritizedMarkets.sort((left, right) => {
-    if (left.primary !== right.primary) {
-      return left.primary ? -1 : 1;
-    }
-
-    return left.countryName.localeCompare(
-      right.countryName,
-    );
-  });
+  return [
+    {
+      countryCode: STOREFRONT_COUNTRY,
+      countryName:
+        String(rows[0].countryName || STOREFRONT_COUNTRY_NAME),
+      currency: STOREFRONT_CURRENCY,
+      locale: String(rows[0].locale || STOREFRONT_LOCALE),
+      primary: true,
+    },
+  ];
 }
 
 export async function quoteCheckout(input: {
@@ -153,6 +131,14 @@ export async function quoteCheckout(input: {
   await ensureGlobalMarketSchema();
 
   const selectedCountry = countryCode(input.countryCode);
+
+  if (selectedCountry !== STOREFRONT_COUNTRY) {
+    throw new CheckoutQuoteError(
+      "WHOKEAS currently ships this storefront to United States addresses only.",
+      400,
+    );
+  }
+
   const requestedItems = Array.isArray(input.items)
     ? input.items
     : [];
@@ -169,12 +155,7 @@ export async function quoteCheckout(input: {
   const sql = catalogSql();
   const canonicalItems: CheckoutQuotedItem[] = [];
 
-  let quoteCurrency = "";
-  let quoteLocale = "en-US";
-  let quoteCountryName =
-    selectedCountry === "TZ"
-      ? "Tanzania"
-      : selectedCountry;
+  let quoteCountryName = STOREFRONT_COUNTRY_NAME;
 
   for (const requested of requestedItems) {
     const productId = clean(
@@ -210,7 +191,6 @@ export async function quoteCheckout(input: {
           product.base_cost,
           0
         )::text AS "productCost",
-        product.currency AS "productCurrency",
 
         variant.id::text AS "variantId",
         variant.name AS "variantName",
@@ -222,6 +202,8 @@ export async function quoteCheckout(input: {
         )::text AS "variantCost",
         variant.stock_quantity AS "stockQuantity",
         variant.is_active AS "variantActive",
+
+        variant_anchor.price::text AS "variantAnchorPrice",
 
         market.market_name AS "marketName",
         market.currency AS "marketCurrency",
@@ -236,9 +218,25 @@ export async function quoteCheckout(input: {
         ON variant.product_id = product.id
        AND variant.id::text = ${variantId}
 
+      LEFT JOIN LATERAL (
+        SELECT anchor_variant.price
+        FROM product_variants anchor_variant
+        WHERE anchor_variant.product_id = product.id
+          AND anchor_variant.is_active = TRUE
+          AND anchor_variant.price > 0
+        ORDER BY
+          CASE
+            WHEN anchor_variant.stock_quantity > 0 THEN 0
+            ELSE 1
+          END,
+          anchor_variant.price ASC
+        LIMIT 1
+      ) variant_anchor ON TRUE
+
       LEFT JOIN product_market_prices market
         ON market.product_id = product.id
-       AND market.country_code = ${selectedCountry}
+       AND market.country_code = ${STOREFRONT_COUNTRY}
+       AND UPPER(market.currency) = ${STOREFRONT_CURRENCY}
 
       WHERE product.id::text = ${productId}
       LIMIT 1
@@ -269,17 +267,16 @@ export async function quoteCheckout(input: {
       }
     }
 
-    const hasMarket =
+    const hasMarket = Boolean(
       row.marketCurrency &&
       row.marketPrice &&
-      row.marketAvailable === true;
+      row.marketAvailable === true &&
+      String(row.marketCurrency).toUpperCase() === STOREFRONT_CURRENCY,
+    );
 
-    if (
-      selectedCountry !== "TZ" &&
-      !hasMarket
-    ) {
+    if (!hasMarket) {
       throw new CheckoutQuoteError(
-        `${String(row.productName)} is not currently available for delivery to the selected country.`,
+        `${String(row.productName)} is not currently available for delivery to the United States.`,
         409,
       );
     }
@@ -296,47 +293,34 @@ export async function quoteCheckout(input: {
         )
       : productPrice;
 
+    const variantAnchorPrice = Math.max(
+      0,
+      Number(row.variantAnchorPrice || productPrice),
+    );
+
     const variantRatio =
-      variantId && productPrice > 0
+      variantId && variantAnchorPrice > 0
         ? Math.min(
             5,
             Math.max(
               0.5,
-              variantPrice / productPrice,
+              variantPrice / variantAnchorPrice,
             ),
           )
         : 1;
 
-    const marketPrice = hasMarket
-      ? Number(row.marketPrice)
-      : productPrice;
+    const marketPrice = Number(row.marketPrice);
+    const marketCost = Number(row.marketCost || 0);
 
-    const marketCost = hasMarket
-      ? Number(row.marketCost || 0)
-      : variantId
-        ? Number(row.variantCost || 0)
-        : Number(row.productCost || 0);
-
-    const currency = String(
-      hasMarket
-        ? row.marketCurrency
-        : row.productCurrency || "TZS",
-    ).toUpperCase();
-
-    const locale = String(
-      hasMarket
-        ? row.marketLocale || "en-US"
-        : "en-TZ",
-    );
-
-    if (quoteCurrency && quoteCurrency !== currency) {
+    if (
+      !Number.isFinite(marketPrice) ||
+      marketPrice <= 0
+    ) {
       throw new CheckoutQuoteError(
-        "The cart contains products using incompatible market currencies.",
+        `${String(row.productName)} does not have a valid United States price.`,
+        409,
       );
     }
-
-    quoteCurrency = currency;
-    quoteLocale = locale;
 
     if (row.marketName) {
       quoteCountryName = String(row.marketName);
@@ -347,7 +331,7 @@ export async function quoteCheckout(input: {
     );
 
     const unitCost = roundMoney(
-      marketCost * variantRatio,
+      Math.max(0, marketCost) * variantRatio,
     );
 
     canonicalItems.push({
@@ -396,10 +380,10 @@ export async function quoteCheckout(input: {
   );
 
   return {
-    countryCode: selectedCountry,
-    countryName: quoteCountryName,
-    currency: quoteCurrency || "TZS",
-    locale: quoteLocale,
+    countryCode: STOREFRONT_COUNTRY,
+    countryName: quoteCountryName || STOREFRONT_COUNTRY_NAME,
+    currency: STOREFRONT_CURRENCY,
+    locale: STOREFRONT_LOCALE,
     subtotal,
     shippingFee,
     total,
