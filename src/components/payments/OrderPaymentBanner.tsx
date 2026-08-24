@@ -4,19 +4,28 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type OrderPaymentBannerProps = {
+  clickPesaEnabled?: boolean;
   pesapalEnabled?: boolean;
   selcomEnabled?: boolean;
 };
 
 export default function OrderPaymentBanner({
+  clickPesaEnabled = false,
   pesapalEnabled = false,
   selcomEnabled = false,
 }: OrderPaymentBannerProps) {
+  const [clickPesaHref, setClickPesaHref] = useState("");
   const [pesapalHref, setPesapalHref] = useState("");
   const [selcomHref, setSelcomHref] = useState("");
 
   useEffect(() => {
-    if (!pesapalEnabled && !selcomEnabled) return;
+    if (
+      !clickPesaEnabled &&
+      !pesapalEnabled &&
+      !selcomEnabled
+    ) {
+      return;
+    }
 
     const prefix = "/order-confirmation/";
     const pathname = window.location.pathname;
@@ -29,8 +38,13 @@ export default function OrderPaymentBanner({
 
     if (!orderNumber) return;
 
-    const searchParams = new URLSearchParams(window.location.search);
-    const paymentState = String(searchParams.get("payment") || "").toLowerCase();
+    const searchParams = new URLSearchParams(
+      window.location.search,
+    );
+
+    const paymentState = String(
+      searchParams.get("payment") || "",
+    ).toLowerCase();
 
     if (["success", "complete"].includes(paymentState)) {
       return;
@@ -44,16 +58,36 @@ export default function OrderPaymentBanner({
 
     const query = next.toString();
 
+    if (clickPesaEnabled) {
+      setClickPesaHref(
+        `/api/payments/clickpesa/start?${query}`,
+      );
+    }
+
     if (pesapalEnabled) {
-      setPesapalHref(`/api/payments/pesapal/start?${query}`);
+      setPesapalHref(
+        `/api/payments/pesapal/start?${query}`,
+      );
     }
 
     if (selcomEnabled) {
-      setSelcomHref(`/api/payments/selcom/start?${query}`);
+      setSelcomHref(
+        `/api/payments/selcom/start?${query}`,
+      );
     }
-  }, [pesapalEnabled, selcomEnabled]);
+  }, [
+    clickPesaEnabled,
+    pesapalEnabled,
+    selcomEnabled,
+  ]);
 
-  if (!pesapalHref && !selcomHref) return null;
+  if (
+    !clickPesaHref &&
+    !pesapalHref &&
+    !selcomHref
+  ) {
+    return null;
+  }
 
   return (
     <div className="border-b border-emerald-800 bg-emerald-700 px-4 py-3 text-white">
@@ -63,15 +97,24 @@ export default function OrderPaymentBanner({
             Secure online payment is available for this order.
           </p>
           <p className="mt-1 text-[10px] text-emerald-100">
-            You will be redirected to the payment provider&apos;s secure checkout page.
+            You will be redirected to the payment provider&apos;s secure checkout page. WHOKEAS never stores your card details.
           </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
+          {clickPesaHref ? (
+            <Link
+              href={clickPesaHref}
+              className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
+            >
+              Pay securely by card
+            </Link>
+          ) : null}
+
           {pesapalHref ? (
             <Link
               href={pesapalHref}
-              className="border border-white/50 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-800 hover:bg-emerald-50"
+              className="border border-white/60 bg-emerald-900/30 px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white hover:bg-emerald-900/50"
             >
               Pay securely with Pesapal
             </Link>
