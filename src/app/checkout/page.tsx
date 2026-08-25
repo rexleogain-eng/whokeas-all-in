@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import CheckoutClient from "@/components/checkout/CheckoutClient";
+import CheckoutClientUs from "@/components/checkout/CheckoutClientUs";
 import CheckoutCopyPolish from "@/components/checkout/CheckoutCopyPolish";
 import CheckoutUsGuard from "@/components/checkout/CheckoutUsGuard";
 import StoreHeader from "@/components/store/StoreHeader";
@@ -82,7 +82,7 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        <CheckoutClient />
+        <CheckoutClientUs />
       </div>
     </main>
   );
