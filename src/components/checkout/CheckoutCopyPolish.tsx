@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 
 const exactReplacements: Record<string, string> = {
-  "Preparing international checkout…": "Preparing your checkout…",
+  "Preparing international checkout…": "Preparing U.S. checkout…",
   "Guest or customer": "Customer details",
-  "International delivery details": "Delivery details",
+  "International delivery details": "U.S. delivery details",
   "Choose the available method": "Choose your payment option",
   "Market quote": "Order total",
   "Calculating pricing for your delivery country…": "Updating your order total…",
@@ -13,6 +13,8 @@ const exactReplacements: Record<string, string> = {
   "Additional checkout fee": "Extra checkout fees",
   "Secure Online Payment Link": "Secure online payment",
   "Continue as guest": "Place order as guest",
+  "Guest checkout · Secure order access · International addresses":
+    "Guest checkout · Secure order access · United States delivery",
 };
 
 function polishElement(element: Element) {
