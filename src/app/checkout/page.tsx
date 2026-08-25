@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import CheckoutClient from "@/components/checkout/CheckoutClient";
 import CheckoutCopyPolish from "@/components/checkout/CheckoutCopyPolish";
+import CheckoutUsGuard from "@/components/checkout/CheckoutUsGuard";
 import StoreHeader from "@/components/store/StoreHeader";
 import { SITE_URL, US_RETURN_DAYS } from "@/lib/seo";
 
@@ -22,6 +23,7 @@ export default function CheckoutPage() {
     <main className="min-h-screen bg-[#f4efe6] text-[#1d1914]">
       <StoreHeader />
       <CheckoutCopyPolish />
+      <CheckoutUsGuard />
       <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:py-12">
         <section className="mb-6 border border-[#d8cfbf] bg-[#fffdf8] p-5 sm:p-7">
           <div className="flex flex-wrap items-end justify-between gap-4">
