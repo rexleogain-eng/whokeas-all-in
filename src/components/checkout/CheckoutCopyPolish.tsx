@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 const exactReplacements: Record<string, string> = {
   "Preparing international checkout…": "Preparing U.S. checkout…",
@@ -55,7 +55,7 @@ function polishCheckoutCopy() {
 }
 
 export default function CheckoutCopyPolish() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     polishCheckoutCopy();
 
     const observer = new MutationObserver(() => {
