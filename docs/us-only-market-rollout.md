@@ -1,0 +1,1 @@
+Rollout goal: keep WHOKEAS customer-facing catalogue and pricing aligned to the United States market only. The automation sanitizer now collapses legacy multi-market settings to one canonical United States market so old saved configuration cannot leak Tanzania or other international market labels back into product/category pages.
