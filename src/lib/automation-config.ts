@@ -44,8 +44,8 @@ export type CatalogAutomationConfig = {
   categoryRules: AutomationCategoryRule[];
   markets: AutomationMarketRule[];
 
-  // Legacy Tanzania settings are retained so existing installations and
-  // previously-saved JSON remain compatible with the original engine.
+  // Legacy fields remain only for backwards compatibility with saved JSON.
+  // They are never used to expose Tanzania or another customer-facing market.
   maximumSellingPriceTzs: number;
   usdToTzsRate: number;
   paymentFeePercent: number;
@@ -54,152 +54,24 @@ export type CatalogAutomationConfig = {
   roundingIncrementTzs: number;
 };
 
-const DEFAULT_MARKETS: AutomationMarketRule[] = [
-  {
-    key: "tz",
-    name: "Tanzania",
-    countryCode: "TZ",
-    currency: "TZS",
-    locale: "en-TZ",
-    enabled: true,
-    primary: false,
-    exactFreight: true,
-    markupPercent: 30,
-    paymentFeePercent: 3,
-    riskReserveLocal: 3000,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 250000,
-    roundingIncrementLocal: 500,
-  },
-  {
-    key: "us",
-    name: "United States",
-    countryCode: "US",
-    currency: "USD",
-    locale: "en-US",
-    enabled: true,
-    primary: true,
-    exactFreight: true,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 2,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 140,
-    roundingIncrementLocal: 1,
-  },
-  {
-    key: "uk",
-    name: "United Kingdom",
-    countryCode: "GB",
-    currency: "GBP",
-    locale: "en-GB",
-    enabled: true,
-    primary: false,
-    exactFreight: true,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 2,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 120,
-    roundingIncrementLocal: 1,
-  },
-  {
-    key: "eu",
-    name: "European Union",
-    countryCode: "DE",
-    currency: "EUR",
-    locale: "en-DE",
-    enabled: true,
-    primary: false,
-    exactFreight: true,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 2,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 130,
-    roundingIncrementLocal: 1,
-  },
-  {
-    key: "ca",
-    name: "Canada",
-    countryCode: "CA",
-    currency: "CAD",
-    locale: "en-CA",
-    enabled: true,
-    primary: false,
-    exactFreight: false,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 3,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 180,
-    roundingIncrementLocal: 1,
-  },
-  {
-    key: "au",
-    name: "Australia",
-    countryCode: "AU",
-    currency: "AUD",
-    locale: "en-AU",
-    enabled: true,
-    primary: false,
-    exactFreight: false,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 3,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 200,
-    roundingIncrementLocal: 1,
-  },
-  {
-    key: "ae",
-    name: "United Arab Emirates",
-    countryCode: "AE",
-    currency: "AED",
-    locale: "en-AE",
-    enabled: true,
-    primary: false,
-    exactFreight: false,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 8,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 550,
-    roundingIncrementLocal: 5,
-  },
-  {
-    key: "ke",
-    name: "Kenya",
-    countryCode: "KE",
-    currency: "KES",
-    locale: "en-KE",
-    enabled: true,
-    primary: false,
-    exactFreight: false,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 250,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 22000,
-    roundingIncrementLocal: 50,
-  },
-  {
-    key: "za",
-    name: "South Africa",
-    countryCode: "ZA",
-    currency: "ZAR",
-    locale: "en-ZA",
-    enabled: true,
-    primary: false,
-    exactFreight: false,
-    markupPercent: 30,
-    paymentFeePercent: 3.5,
-    riskReserveLocal: 35,
-    minimumProfitLocal: 0,
-    maximumSellingPriceLocal: 2500,
-    roundingIncrementLocal: 10,
-  },
-];
+const UNITED_STATES_MARKET: AutomationMarketRule = {
+  key: "us",
+  name: "United States",
+  countryCode: "US",
+  currency: "USD",
+  locale: "en-US",
+  enabled: true,
+  primary: true,
+  exactFreight: true,
+  markupPercent: 30,
+  paymentFeePercent: 3.5,
+  riskReserveLocal: 2,
+  minimumProfitLocal: 0,
+  maximumSellingPriceLocal: 140,
+  roundingIncrementLocal: 1,
+};
+
+const DEFAULT_MARKETS: AutomationMarketRule[] = [UNITED_STATES_MARKET];
 
 export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
   enabled: true,
@@ -212,8 +84,8 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
   minimumSupplierPriceUsd: 1.5,
   maximumSupplierPriceUsd: 45,
   defaultMarkupPercent: 30,
-  minimumMarketsAvailable: 3,
-  maximumExactFreightMarkets: 4,
+  minimumMarketsAvailable: 1,
+  maximumExactFreightMarkets: 1,
   estimatedFreightMultiplier: 1.18,
   fxRefreshHours: 20,
   blockedKeywords: [
@@ -385,7 +257,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
   ],
   maximumSellingPriceTzs: 250000,
   usdToTzsRate: 2700,
-  paymentFeePercent: 3,
+  paymentFeePercent: 3.5,
   riskReserveTzs: 3000,
   minimumProfitTzs: 0,
   roundingIncrementTzs: 500,
@@ -464,110 +336,52 @@ function sanitizeRules(value: unknown) {
     : DEFAULT_AUTOMATION_CONFIG.categoryRules;
 }
 
-function sanitizeMarkets(value: unknown) {
-  if (!Array.isArray(value)) return DEFAULT_MARKETS;
+function sanitizeMarkets(value: unknown): AutomationMarketRule[] {
+  const savedUs = Array.isArray(value)
+    ? value.find((raw) => {
+        if (!raw || typeof raw !== "object") return false;
+        const record = raw as Record<string, unknown>;
+        return (
+          String(record.key || "").toLowerCase() === "us" ||
+          String(record.countryCode || "").toUpperCase() === "US"
+        );
+      })
+    : null;
 
-  const markets = value
-    .map((raw, index): AutomationMarketRule | null => {
-      if (!raw || typeof raw !== "object") return null;
-      const record = raw as Record<string, unknown>;
-      const fallback =
-        DEFAULT_MARKETS.find(
-          (item) => item.key === String(record.key || "").toLowerCase(),
-        ) || DEFAULT_MARKETS[index];
-      const key = String(record.key || fallback?.key || `market-${index + 1}`)
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, "-")
-        .slice(0, 40);
-      const name = String(record.name || fallback?.name || key)
-        .trim()
-        .slice(0, 120);
-      const countryCode = String(
-        record.countryCode || fallback?.countryCode || "US",
-      )
-        .trim()
-        .toUpperCase()
-        .slice(0, 2);
-      const currency = String(record.currency || fallback?.currency || "USD")
-        .trim()
-        .toUpperCase()
-        .slice(0, 3);
+  const record =
+    savedUs && typeof savedUs === "object"
+      ? (savedUs as Record<string, unknown>)
+      : {};
 
-      if (!key || !name || countryCode.length !== 2 || currency.length !== 3) {
-        return null;
-      }
-
-      return {
-        key,
-        name,
-        countryCode,
-        currency,
-        locale: String(record.locale || fallback?.locale || "en-US")
-          .trim()
-          .slice(0, 20),
-        enabled: record.enabled !== false,
-        primary: record.primary === true,
-        exactFreight: record.exactFreight === true,
-        markupPercent: 30,
-        paymentFeePercent: numberWithin(
-          record.paymentFeePercent,
-          fallback?.paymentFeePercent || 3.5,
-          0,
-          25,
-        ),
-        riskReserveLocal: numberWithin(
-          record.riskReserveLocal,
-          fallback?.riskReserveLocal || 0,
-          0,
-          100000000,
-        ),
-        minimumProfitLocal: 0,
-        maximumSellingPriceLocal: numberWithin(
-          record.maximumSellingPriceLocal,
-          fallback?.maximumSellingPriceLocal || 100000000,
-          1,
-          1000000000,
-        ),
-        roundingIncrementLocal: numberWithin(
-          record.roundingIncrementLocal,
-          fallback?.roundingIncrementLocal || 1,
-          0.01,
-          1000000,
-        ),
-      };
-    })
-    .filter((item): item is AutomationMarketRule => Boolean(item));
-
-  const unique = markets.filter(
-    (market, index, list) =>
-      list.findIndex((candidate) => candidate.key === market.key) === index,
-  );
-  const enabled = unique.filter((market) => market.enabled);
-
-  if (enabled.length === 0) return DEFAULT_MARKETS;
-
-  const limited = unique.slice(0, 20);
-  const unitedStatesIndex = limited.findIndex(
-    (market) => market.enabled && market.countryCode === "US",
-  );
-
-  if (unitedStatesIndex >= 0) {
-    return limited.map((market, index) => ({
-      ...market,
-      primary: index === unitedStatesIndex,
-    }));
-  }
-
-  let primaryAssigned = false;
-  return limited.map((market) => {
-    const primary = market.enabled && market.primary && !primaryAssigned;
-    if (primary) primaryAssigned = true;
-    return { ...market, primary };
-  }).map((market, index, list) => {
-    if (list.some((item) => item.primary)) return market;
-    const firstEnabled = list.findIndex((item) => item.enabled);
-    return index === firstEnabled ? { ...market, primary: true } : market;
-  });
+  return [
+    {
+      ...UNITED_STATES_MARKET,
+      paymentFeePercent: numberWithin(
+        record.paymentFeePercent,
+        UNITED_STATES_MARKET.paymentFeePercent,
+        0,
+        25,
+      ),
+      riskReserveLocal: numberWithin(
+        record.riskReserveLocal,
+        UNITED_STATES_MARKET.riskReserveLocal,
+        0,
+        100000000,
+      ),
+      maximumSellingPriceLocal: numberWithin(
+        record.maximumSellingPriceLocal,
+        UNITED_STATES_MARKET.maximumSellingPriceLocal,
+        1,
+        1000000000,
+      ),
+      roundingIncrementLocal: numberWithin(
+        record.roundingIncrementLocal,
+        UNITED_STATES_MARKET.roundingIncrementLocal,
+        0.01,
+        1000000,
+      ),
+    },
+  ];
 }
 
 export function sanitizeAutomationConfig(
@@ -579,7 +393,7 @@ export function sanitizeAutomationConfig(
       : {};
 
   const markets = sanitizeMarkets(input.markets);
-  const primaryMarket = markets.find((market) => market.primary && market.enabled) || markets[0];
+  const primaryMarket = markets[0];
 
   return {
     enabled: input.enabled !== false,
@@ -622,22 +436,8 @@ export function sanitizeAutomationConfig(
       10000,
     ),
     defaultMarkupPercent: 30,
-    minimumMarketsAvailable: Math.floor(
-      numberWithin(
-        input.minimumMarketsAvailable,
-        DEFAULT_AUTOMATION_CONFIG.minimumMarketsAvailable,
-        1,
-        Math.max(1, markets.filter((market) => market.enabled).length),
-      ),
-    ),
-    maximumExactFreightMarkets: Math.floor(
-      numberWithin(
-        input.maximumExactFreightMarkets,
-        DEFAULT_AUTOMATION_CONFIG.maximumExactFreightMarkets,
-        1,
-        10,
-      ),
-    ),
+    minimumMarketsAvailable: 1,
+    maximumExactFreightMarkets: 1,
     estimatedFreightMultiplier: numberWithin(
       input.estimatedFreightMultiplier,
       DEFAULT_AUTOMATION_CONFIG.estimatedFreightMultiplier,
@@ -657,9 +457,7 @@ export function sanitizeAutomationConfig(
 
     maximumSellingPriceTzs: numberWithin(
       input.maximumSellingPriceTzs,
-      primaryMarket?.currency === "TZS"
-        ? primaryMarket.maximumSellingPriceLocal
-        : DEFAULT_AUTOMATION_CONFIG.maximumSellingPriceTzs,
+      DEFAULT_AUTOMATION_CONFIG.maximumSellingPriceTzs,
       1000,
       100000000,
     ),
@@ -671,15 +469,13 @@ export function sanitizeAutomationConfig(
     ),
     paymentFeePercent: numberWithin(
       input.paymentFeePercent,
-      primaryMarket?.paymentFeePercent || DEFAULT_AUTOMATION_CONFIG.paymentFeePercent,
+      primaryMarket.paymentFeePercent,
       0,
       25,
     ),
     riskReserveTzs: numberWithin(
       input.riskReserveTzs,
-      primaryMarket?.currency === "TZS"
-        ? primaryMarket.riskReserveLocal
-        : DEFAULT_AUTOMATION_CONFIG.riskReserveTzs,
+      DEFAULT_AUTOMATION_CONFIG.riskReserveTzs,
       0,
       10000000,
     ),
@@ -687,9 +483,7 @@ export function sanitizeAutomationConfig(
     roundingIncrementTzs: Math.floor(
       numberWithin(
         input.roundingIncrementTzs,
-        primaryMarket?.currency === "TZS"
-          ? primaryMarket.roundingIncrementLocal
-          : DEFAULT_AUTOMATION_CONFIG.roundingIncrementTzs,
+        DEFAULT_AUTOMATION_CONFIG.roundingIncrementTzs,
         1,
         1000000,
       ),
@@ -719,7 +513,6 @@ export function calculateMarketSellingPrice(input: {
   const landedCostLocal =
     supplierCostLocal + shippingLocal + Math.max(0, input.reserveLocal);
 
-  // Fixed WHOKEAS policy: approximately 30% gross margin after payment fees.
   const targetMarginRate = FIXED_GROSS_MARGIN_PERCENT / 100;
   const feeRate = Math.min(0.25, Math.max(0, input.paymentFeePercent / 100));
   const denominator = Math.max(0.05, 1 - targetMarginRate - feeRate);
