@@ -8,6 +8,7 @@ import {
   ensureCatalogSchema,
 } from "@/lib/catalog-schema";
 import { cjNumber, cjRequest } from "@/lib/cj";
+import { US_SHIPPING_MAX_DAYS } from "@/lib/seo";
 
 type FreightOption = {
   logisticAging?: string;
@@ -299,17 +300,36 @@ async function calculateFreight(input: {
     .map((option) => ({
       ...option,
       amount: cjNumber(option.totalPostageFee ?? option.logisticPrice),
+      deliveryDays: deliveryDays(option.logisticAging),
     }))
-    .filter((option) => option.amount > 0)
-    .sort((left, right) => left.amount - right.amount);
+    .filter((option) => option.amount > 0);
 
-  if (!available[0]) return null;
+  const fastVerified = available
+    .filter(
+      (option) =>
+        option.deliveryDays !== null &&
+        option.deliveryDays <= US_SHIPPING_MAX_DAYS,
+    )
+    .sort(
+      (left, right) =>
+        Number(left.deliveryDays) - Number(right.deliveryDays) ||
+        left.amount - right.amount,
+    );
+  const fastestFallback = [...available].sort(
+    (left, right) =>
+      (left.deliveryDays ?? Number.POSITIVE_INFINITY) -
+        (right.deliveryDays ?? Number.POSITIVE_INFINITY) ||
+      left.amount - right.amount,
+  );
+  const selected = fastVerified[0] || fastestFallback[0];
+
+  if (!selected) return null;
 
   return {
-    freightUsd: available[0].amount,
-    method: available[0].logisticName || null,
-    aging: available[0].logisticAging || null,
-    deliveryDays: deliveryDays(available[0].logisticAging),
+    freightUsd: selected.amount,
+    method: selected.logisticName || null,
+    aging: selected.logisticAging || null,
+    deliveryDays: selected.deliveryDays,
   };
 }
 
@@ -351,10 +371,17 @@ function priceOffer(input: {
   const withinMaximum =
     pricing.sellingPriceLocal > 0 &&
     pricing.sellingPriceLocal <= input.market.maximumSellingPriceLocal;
-  const available = input.available && withinMaximum;
+  const requiresFastUsDelivery = input.market.countryCode === "US";
+  const deliveryEligible =
+    !requiresFastUsDelivery ||
+    (input.deliveryDays !== null &&
+      input.deliveryDays <= US_SHIPPING_MAX_DAYS);
+  const available = input.available && withinMaximum && deliveryEligible;
   const warning = !withinMaximum
     ? `Price exceeds ${input.market.currency} ${input.market.maximumSellingPriceLocal}.`
-    : input.warning;
+    : !deliveryEligible
+      ? `U.S. delivery must be verified at ${US_SHIPPING_MAX_DAYS} days or less before publication.`
+      : input.warning;
   const compareAtPriceLocal = Math.max(
     pricing.sellingPriceLocal,
     Math.ceil(
@@ -710,5 +737,5 @@ export function marketKeyForCountry(
   const direct = config.markets.find(
     (market) => market.enabled && market.countryCode === country,
   );
-  return direct?.key || primaryMarket(config)?.key || "tz";
+  return direct?.key || primaryMarket(config)?.key || "us";
 }
