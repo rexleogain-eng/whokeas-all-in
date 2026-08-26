@@ -157,6 +157,7 @@ export async function getStoreProductPage(options?: {
     ORDER BY
       CASE WHEN ${sort} = 'price-low' THEN us_market.selling_price_local END ASC,
       CASE WHEN ${sort} = 'price-high' THEN us_market.selling_price_local END DESC,
+      CASE WHEN ${sort} = 'newest' THEN us_market.estimated_delivery_days END ASC NULLS LAST,
       CASE WHEN ${sort} = 'newest' THEN p.created_at END DESC,
       p.is_featured DESC,
       p.created_at DESC
