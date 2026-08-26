@@ -334,9 +334,6 @@ export default async function HomePage() {
             <h3 className="text-lg font-normal text-[#d6bd7b]">Shop</h3>
             <Link href="/products" className="mt-4 block text-sm text-white/60 hover:text-white">All products</Link>
             <Link href="/handcrafted" className="mt-3 block text-sm text-white/60 hover:text-white">WHOKEAS Handcrafted</Link>
-            <Link href="/shop/portable-power-banks" className="mt-3 block text-sm text-white/60 hover:text-white">Power banks</Link>
-            <Link href="/shop/car-fm-transmitters" className="mt-3 block text-sm text-white/60 hover:text-white">Car audio</Link>
-            <Link href="/shop/beauty-grooming-essentials" className="mt-3 block text-sm text-white/60 hover:text-white">Beauty &amp; grooming</Link>
           </div>
           <div>
             <h3 className="text-lg font-normal text-[#d6bd7b]">Service</h3>
