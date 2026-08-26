@@ -113,27 +113,6 @@ export default async function StoreHeader({
           </Link>
 
           <Link
-            href="/shop/portable-power-banks"
-            className="shrink-0 hover:text-[#9b762c]"
-          >
-            Power banks
-          </Link>
-
-          <Link
-            href="/shop/car-fm-transmitters"
-            className="shrink-0 hover:text-[#9b762c]"
-          >
-            Car audio
-          </Link>
-
-          <Link
-            href="/shop/beauty-grooming-essentials"
-            className="shrink-0 hover:text-[#9b762c]"
-          >
-            Beauty &amp; grooming
-          </Link>
-
-          <Link
             href="/guides"
             className="shrink-0 hover:text-[#9b762c]"
           >
