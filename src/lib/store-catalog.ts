@@ -54,6 +54,41 @@ type StoreVariantRow = {
   stockQuantity: number;
 };
 
+const STOREFRONT_RESTRICTED_PATTERNS = [
+  /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
+  /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
+  /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
+  /\b(?:microneedl\w*|derma\s+roller)\b/i,
+  /\b(?:eye\s+care\s+device|heated\s+eye\s+massager)\b/i,
+  /\b(?:radiation\s+protection|radiation\s+shield(?:ing)?)\b/i,
+  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping|body\s+sculpt(?:ing)?)\b/i,
+  /\b(?:face|facial)\s+sculpt(?:ing)?\b/i,
+  /\banti[-\s]?cellulite\b/i,
+  /\b(?:skin\s+tightening|facial\s+lifting)\b/i,
+  /\b(?:hair\s+growth|hair\s+regrowth|anti[-\s]?hair\s+loss|stimulates?\s+hair\s+follicles?)\b/i,
+  /\blymphatic\s+drainage\b/i,
+  /\b(?:skin\s+)?whitening\b/i,
+  /\bskin\s+rejuvenation\b/i,
+];
+
+function isRestrictedStorefrontProduct(product: {
+  name?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+}) {
+  const searchable = [
+    product.name,
+    product.shortDescription,
+    product.description,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return STOREFRONT_RESTRICTED_PATTERNS.some((pattern) =>
+    pattern.test(searchable),
+  );
+}
+
 function cleanSupplierCopy(value: string | null) {
   const cleaned = String(value || "")
     .replace(/<[^>]*>/g, " ")
@@ -182,7 +217,9 @@ export async function getStoreProducts(options?: {
     LIMIT ${limit}
   `;
 
-  return (rows as unknown as StoreProduct[]).map(cleanProductCopy);
+  return (rows as unknown as StoreProduct[])
+    .filter((product) => !isRestrictedStorefrontProduct(product))
+    .map(cleanProductCopy);
 }
 
 export async function getStoreCategories() {
@@ -193,7 +230,10 @@ export async function getStoreCategories() {
     SELECT
       c.name,
       c.slug,
-      COUNT(p.id)::int AS count
+      p.id,
+      p.name AS "productName",
+      p.short_description AS "shortDescription",
+      p.description
     FROM categories c
     JOIN products p ON p.category_id = c.id
     WHERE c.is_active = true
@@ -211,15 +251,40 @@ export async function getStoreCategories() {
             OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
           )
       )
-    GROUP BY c.id, c.name, c.slug
-    ORDER BY COUNT(p.id) DESC, c.name ASC
+    ORDER BY c.name ASC
   `;
 
-  return rows as unknown as Array<{
-    name: string;
-    slug: string;
-    count: number;
-  }>;
+  const categories = new Map<string, { name: string; slug: string; count: number }>();
+
+  for (const row of rows) {
+    if (
+      isRestrictedStorefrontProduct({
+        name: String(row.productName || ""),
+        shortDescription: row.shortDescription
+          ? String(row.shortDescription)
+          : null,
+        description: row.description ? String(row.description) : null,
+      })
+    ) {
+      continue;
+    }
+
+    const slug = String(row.slug || "");
+    const existing = categories.get(slug);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      categories.set(slug, {
+        name: String(row.name || ""),
+        slug,
+        count: 1,
+      });
+    }
+  }
+
+  return [...categories.values()].sort(
+    (left, right) => right.count - left.count || left.name.localeCompare(right.name),
+  );
 }
 
 export async function getStoreProductBySlug(slug: string) {
@@ -273,7 +338,7 @@ export async function getStoreProductBySlug(slug: string) {
   const product = rows[0] as unknown as
     | StoreProductDetailRow
     | undefined;
-  if (!product) return null;
+  if (!product || isRestrictedStorefrontProduct(product)) return null;
 
   const cleanedProduct = cleanProductCopy(product);
   const usAvailable = Boolean(product.usAvailable);
