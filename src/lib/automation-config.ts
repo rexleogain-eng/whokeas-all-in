@@ -54,6 +54,8 @@ export type CatalogAutomationConfig = {
   roundingIncrementTzs: number;
 };
 
+export const COMPETITIVE_GROSS_MARGIN_PERCENT = 15;
+
 const UNITED_STATES_MARKET: AutomationMarketRule = {
   key: "us",
   name: "United States",
@@ -63,9 +65,9 @@ const UNITED_STATES_MARKET: AutomationMarketRule = {
   enabled: true,
   primary: true,
   exactFreight: true,
-  markupPercent: 30,
+  markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
   paymentFeePercent: 3.5,
-  riskReserveLocal: 2,
+  riskReserveLocal: 1,
   minimumProfitLocal: 0,
   maximumSellingPriceLocal: 140,
   roundingIncrementLocal: 1,
@@ -83,7 +85,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
   minimumInventory: 30,
   minimumSupplierPriceUsd: 1.5,
   maximumSupplierPriceUsd: 45,
-  defaultMarkupPercent: 30,
+  defaultMarkupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
   minimumMarketsAvailable: 1,
   maximumExactFreightMarkets: 1,
   estimatedFreightMultiplier: 1.18,
@@ -141,7 +143,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "rechargeable fan",
         "phone stand",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
     {
@@ -163,7 +165,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "reading lamp",
         "book",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
     {
@@ -185,7 +187,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "household",
         "light",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
     {
@@ -208,7 +210,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "clothing",
         "apparel",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
     {
@@ -229,7 +231,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "mirror",
         "brush",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
     {
@@ -251,7 +253,7 @@ export const DEFAULT_AUTOMATION_CONFIG: CatalogAutomationConfig = {
         "travel organizer",
         "cable organizer",
       ],
-      markupPercent: 30,
+      markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
       maxImportsPerRun: 1,
     },
   ],
@@ -318,7 +320,8 @@ function sanitizeRules(value: unknown) {
           fallback?.matchKeywords || [category.toLowerCase()],
           30,
         ),
-        markupPercent: 30,
+        // Keep saved legacy 30% settings from silently restoring expensive prices.
+        markupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
         maxImportsPerRun: Math.floor(
           numberWithin(
             record.maxImportsPerRun,
@@ -362,12 +365,8 @@ function sanitizeMarkets(value: unknown): AutomationMarketRule[] {
         0,
         25,
       ),
-      riskReserveLocal: numberWithin(
-        record.riskReserveLocal,
-        UNITED_STATES_MARKET.riskReserveLocal,
-        0,
-        100000000,
-      ),
+      // A smaller reserve keeps low-ticket products competitive while retaining a cushion.
+      riskReserveLocal: UNITED_STATES_MARKET.riskReserveLocal,
       maximumSellingPriceLocal: numberWithin(
         record.maximumSellingPriceLocal,
         UNITED_STATES_MARKET.maximumSellingPriceLocal,
@@ -435,7 +434,7 @@ export function sanitizeAutomationConfig(
       0.01,
       10000,
     ),
-    defaultMarkupPercent: 30,
+    defaultMarkupPercent: COMPETITIVE_GROSS_MARGIN_PERCENT,
     minimumMarketsAvailable: 1,
     maximumExactFreightMarkets: 1,
     estimatedFreightMultiplier: numberWithin(
@@ -496,7 +495,8 @@ export function roundPrice(value: number, increment: number) {
   return Math.ceil(Math.max(0, value) / safeIncrement) * safeIncrement;
 }
 
-export const FIXED_GROSS_MARGIN_PERCENT = 30;
+// Kept as an export for compatibility with older imports and admin diagnostics.
+export const FIXED_GROSS_MARGIN_PERCENT = COMPETITIVE_GROSS_MARGIN_PERCENT;
 
 export function calculateMarketSellingPrice(input: {
   supplierCostUsd: number;
@@ -513,7 +513,16 @@ export function calculateMarketSellingPrice(input: {
   const landedCostLocal =
     supplierCostLocal + shippingLocal + Math.max(0, input.reserveLocal);
 
-  const targetMarginRate = FIXED_GROSS_MARGIN_PERCENT / 100;
+  const requestedMargin = Number(input.markupPercent);
+  const targetMarginRate = Math.min(
+    0.3,
+    Math.max(
+      0.05,
+      (Number.isFinite(requestedMargin)
+        ? requestedMargin
+        : FIXED_GROSS_MARGIN_PERCENT) / 100,
+    ),
+  );
   const feeRate = Math.min(0.25, Math.max(0, input.paymentFeePercent / 100));
   const denominator = Math.max(0.05, 1 - targetMarginRate - feeRate);
   const beforeRounding = landedCostLocal / denominator;
