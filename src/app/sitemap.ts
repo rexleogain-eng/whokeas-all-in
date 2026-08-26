@@ -18,6 +18,28 @@ const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
+const GOOGLE_RESTRICTED_PRODUCT_PATTERNS = [
+  /\bhearing\s+(?:aid|amplifier)\b/i,
+  /\bpersonal\s+sound\s+amplifier\b/i,
+  /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
+  /\b(?:moxibustion|acupuncture|acupoint)\b/i,
+  /\b(?:blood\s+pressure|blood\s+glucose|glucose\s+meter|oximeter|nebulizer|insulin)\b/i,
+  /\b(?:pregnan\w*|fertility|ovulation|breast\s+pump)\b/i,
+  /\b(?:pelvic|vaginal|erectile|prostate|penis|sex\s+toy|adult\s+toy)\b/i,
+  /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
+  /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
+  /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
+];
+
+const GOOGLE_RESTRICTED_CLAIM_PATTERNS = [
+  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping)\b/i,
+  /\blymphatic\s+drainage\b/i,
+  /\b(?:skin\s+)?whitening\b/i,
+  /\bskin\s+rejuvenation\b/i,
+  /\bbreast\s+enlargement\b/i,
+  /\b(?:prevent|cure|treat(?:ment)?|heal(?:ing)?)\s+(?:a|an|the\s+)?(?:disease|condition|ailment|pain)\b/i,
+];
+
 type SitemapProduct = {
   slug: string;
   name: string;
@@ -51,7 +73,14 @@ function sitemapEligibleProduct(product: SitemapProduct) {
     .filter(Boolean)
     .join(" ");
 
-  return !blockedProductReason(policyText, DEFAULT_AUTOMATION_CONFIG);
+  if (blockedProductReason(policyText, DEFAULT_AUTOMATION_CONFIG)) {
+    return false;
+  }
+
+  return ![
+    ...GOOGLE_RESTRICTED_PRODUCT_PATTERNS,
+    ...GOOGLE_RESTRICTED_CLAIM_PATTERNS,
+  ].some((pattern) => pattern.test(policyText));
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
