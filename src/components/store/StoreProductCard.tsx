@@ -3,6 +3,10 @@ import Link from "next/link";
 import type { StoreProduct } from "@/lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
+import {
+  US_SHIPPING_MAX_DAYS,
+  US_SHIPPING_MIN_DAYS,
+} from "@/lib/seo";
 
 export default function StoreProductCard({
   product,
@@ -79,9 +83,7 @@ export default function StoreProductCard({
           </div>
 
           <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#5e745f]">
-            {product.deliveryDays
-              ? `Estimated delivery · ${product.deliveryDays} days`
-              : "Delivery confirmed at checkout"}
+            Estimated delivery · {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days
           </p>
         </div>
       </div>
