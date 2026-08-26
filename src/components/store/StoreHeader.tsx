@@ -99,6 +99,13 @@ export default function StoreHeader({
           </Link>
 
           <Link
+            href="/handcrafted"
+            className="shrink-0 border border-[#9b762c]/60 bg-[#171512] px-3 py-1.5 text-[#d6bd7b] hover:border-[#171512] hover:bg-[#9b762c] hover:text-white"
+          >
+            WHOKEAS Handcrafted
+          </Link>
+
+          <Link
             href="/shop/portable-power-banks"
             className="shrink-0 hover:text-[#9b762c]"
           >
