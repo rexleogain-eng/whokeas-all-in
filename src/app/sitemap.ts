@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
 
+import {
+  DEFAULT_AUTOMATION_CONFIG,
+  blockedProductReason,
+} from "../lib/automation-config";
 import { catalogSql } from "../lib/catalog-schema";
 import { ensureGlobalMarketSchema } from "../lib/global-markets";
 import {
@@ -16,6 +20,9 @@ const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
 type SitemapProduct = {
   slug: string;
+  name: string;
+  shortDescription: string | null;
+  description: string | null;
   updatedAt: string | null;
 };
 
@@ -33,6 +40,18 @@ function productLastModified(updatedAt: string | null) {
   return productUpdatedAt > PRODUCT_TEMPLATE_LAST_MODIFIED
     ? productUpdatedAt
     : PRODUCT_TEMPLATE_LAST_MODIFIED;
+}
+
+function sitemapEligibleProduct(product: SitemapProduct) {
+  const policyText = [
+    product.name,
+    product.shortDescription,
+    product.description,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return !blockedProductReason(policyText, DEFAULT_AUTOMATION_CONFIG);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -112,6 +131,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const rows = await sql`
       SELECT
         slug,
+        name,
+        short_description AS "shortDescription",
+        description,
         updated_at::text AS "updatedAt"
       FROM products
       WHERE status::text = 'active'
@@ -132,7 +154,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ORDER BY updated_at DESC
     `;
 
-    const products = rows as unknown as SitemapProduct[];
+    const products = (rows as unknown as SitemapProduct[]).filter(
+      sitemapEligibleProduct,
+    );
 
     return [
       ...staticPages,
