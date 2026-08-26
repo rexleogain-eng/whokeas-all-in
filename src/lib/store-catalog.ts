@@ -71,7 +71,7 @@ const STOREFRONT_RESTRICTED_PATTERNS = [
   /\bskin\s+rejuvenation\b/i,
 ];
 
-function isRestrictedStorefrontProduct(product: {
+export function isRestrictedStorefrontProduct(product: {
   name?: string | null;
   shortDescription?: string | null;
   description?: string | null;
