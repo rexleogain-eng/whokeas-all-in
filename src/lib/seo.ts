@@ -5,8 +5,8 @@ export const RETURN_POLICY_URL = `${SITE_URL}/returns-refunds`;
 export const SHIPPING_POLICY_URL = `${SITE_URL}/shipping-delivery`;
 
 export const US_TARGET_COUNTRY_CODE = "US";
-export const US_SHIPPING_MIN_DAYS = 9;
-export const US_SHIPPING_MAX_DAYS = 10;
+export const US_SHIPPING_MIN_DAYS = 2;
+export const US_SHIPPING_MAX_DAYS = 7;
 export const US_RETURN_DAYS = 30;
 
 export const SITE_DESCRIPTION =
