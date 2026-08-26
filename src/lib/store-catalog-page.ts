@@ -4,7 +4,10 @@ import {
   US_SHIPPING_MAX_DAYS,
   US_TARGET_COUNTRY_CODE,
 } from "@/lib/seo";
-import type { StoreProduct } from "@/lib/store-catalog";
+import {
+  isRestrictedStorefrontProduct,
+  type StoreProduct,
+} from "@/lib/store-catalog";
 
 function cleanSupplierCopy(value: string | null) {
   const cleaned = String(value || "")
@@ -67,41 +70,6 @@ export async function getStoreProductPage(options?: {
   const requestedPage = Math.max(1, Math.floor(options?.page || 1));
   const sort = options?.sort || "newest";
 
-  const countRows = await sql`
-    SELECT COUNT(*)::int AS count
-    FROM products p
-    LEFT JOIN categories c ON c.id = p.category_id
-    WHERE p.status::text = 'active'
-      AND EXISTS (
-        SELECT 1
-        FROM product_market_prices market
-        WHERE market.product_id = p.id
-          AND market.country_code = ${US_TARGET_COUNTRY_CODE}
-          AND market.currency = 'USD'
-          AND market.available = true
-          AND market.selling_price_local > 0
-          AND (
-            market.estimated_delivery_days IS NULL
-            OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
-          )
-      )
-      AND (
-        ${query} = ''
-        OR p.name ILIKE ${`%${query}%`}
-        OR COALESCE(p.short_description, '') ILIKE ${`%${query}%`}
-        OR COALESCE(c.name, '') ILIKE ${`%${query}%`}
-      )
-      AND (
-        ${category} = ''
-        OR LOWER(COALESCE(c.name, '')) = LOWER(${category})
-      )
-  `;
-
-  const total = Number(countRows[0]?.count || 0);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(requestedPage, totalPages);
-  const offset = (page - 1) * pageSize;
-
   const rows = await sql`
     SELECT
       p.id,
@@ -161,12 +129,19 @@ export async function getStoreProductPage(options?: {
       CASE WHEN ${sort} = 'newest' THEN p.created_at END DESC,
       p.is_featured DESC,
       p.created_at DESC
-    LIMIT ${pageSize}
-    OFFSET ${offset}
   `;
 
+  const eligibleProducts = (rows as unknown as StoreProduct[])
+    .filter((product) => !isRestrictedStorefrontProduct(product))
+    .map(cleanProductCopy);
+  const total = eligibleProducts.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const offset = (page - 1) * pageSize;
+  const products = eligibleProducts.slice(offset, offset + pageSize);
+
   return {
-    products: (rows as unknown as StoreProduct[]).map(cleanProductCopy),
+    products,
     total,
     page,
     pageSize,
