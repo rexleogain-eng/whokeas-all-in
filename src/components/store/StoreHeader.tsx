@@ -9,9 +9,7 @@ const nav = [
   "Tech",
   "Home",
   "Fashion",
-  "Beauty",
   "Study",
-  "Accessories",
 ];
 
 export default async function StoreHeader({
