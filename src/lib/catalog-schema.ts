@@ -138,6 +138,223 @@ async function repairCatalogSchema() {
     ON product_variants (product_id, is_active)
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS store_policy_migrations (
+      migration_key varchar(120) PRIMARY KEY,
+      applied_at timestamptz NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  // Establish a WHOKEAS-owned handcrafted collection without pretending the
+  // products are already manufactured. These records stay as drafts until
+  // real materials, photos, stock, pricing and fulfilment are confirmed.
+  await sql`
+    INSERT INTO categories (
+      name,
+      slug,
+      description,
+      is_active
+    )
+    VALUES (
+      'Handcrafted',
+      'handcrafted',
+      'Small-batch WHOKEAS originals developed under our own brand.',
+      true
+    )
+    ON CONFLICT (slug)
+    DO UPDATE SET
+      name = EXCLUDED.name,
+      description = EXCLUDED.description,
+      is_active = true
+  `;
+
+  await sql`
+    INSERT INTO products (
+      category_id,
+      name,
+      slug,
+      short_description,
+      description,
+      brand,
+      status,
+      supplier_type,
+      supplier_platform,
+      base_cost,
+      price,
+      currency,
+      is_featured,
+      supplier_sync_enabled,
+      fulfillment_notes
+    )
+    SELECT
+      c.id,
+      'WHOKEAS Hand-Poured Home Candle',
+      'whokeas-hand-poured-home-candle',
+      'A planned small-batch WHOKEAS candle concept for the Handcrafted Originals line.',
+      'Prototype concept. Publish only after wax, fragrance, vessel, safety labelling, final photography, cost and U.S. fulfilment are verified.',
+      'WHOKEAS ALL IN',
+      'draft'::product_status,
+      'handcrafted',
+      'whokeas-handcrafted',
+      0,
+      0,
+      'USD',
+      false,
+      false,
+      'WHOKEAS-owned handcrafted draft. Not yet available to order.'
+    FROM categories c
+    WHERE c.slug = 'handcrafted'
+    ON CONFLICT (slug) DO NOTHING
+  `;
+
+  await sql`
+    INSERT INTO products (
+      category_id,
+      name,
+      slug,
+      short_description,
+      description,
+      brand,
+      status,
+      supplier_type,
+      supplier_platform,
+      base_cost,
+      price,
+      currency,
+      is_featured,
+      supplier_sync_enabled,
+      fulfillment_notes
+    )
+    SELECT
+      c.id,
+      'WHOKEAS Wooden Desk Valet',
+      'whokeas-wooden-desk-valet',
+      'A planned handcrafted desk organizer designed as a WHOKEAS small-batch original.',
+      'Prototype concept. Publish only after material source, dimensions, finish, product photography, production capacity, cost and U.S. fulfilment are verified.',
+      'WHOKEAS ALL IN',
+      'draft'::product_status,
+      'handcrafted',
+      'whokeas-handcrafted',
+      0,
+      0,
+      'USD',
+      false,
+      false,
+      'WHOKEAS-owned handcrafted draft. Not yet available to order.'
+    FROM categories c
+    WHERE c.slug = 'handcrafted'
+    ON CONFLICT (slug) DO NOTHING
+  `;
+
+  await sql`
+    INSERT INTO products (
+      category_id,
+      name,
+      slug,
+      short_description,
+      description,
+      brand,
+      status,
+      supplier_type,
+      supplier_platform,
+      base_cost,
+      price,
+      currency,
+      is_featured,
+      supplier_sync_enabled,
+      fulfillment_notes
+    )
+    SELECT
+      c.id,
+      'WHOKEAS Braided Utility Key Loop',
+      'whokeas-braided-utility-key-loop',
+      'A planned hand-finished everyday carry accessory for the WHOKEAS Originals line.',
+      'Prototype concept. Publish only after cord and hardware specifications, load testing, photography, production capacity, cost and U.S. fulfilment are verified.',
+      'WHOKEAS ALL IN',
+      'draft'::product_status,
+      'handcrafted',
+      'whokeas-handcrafted',
+      0,
+      0,
+      'USD',
+      false,
+      false,
+      'WHOKEAS-owned handcrafted draft. Not yet available to order.'
+    FROM categories c
+    WHERE c.slug = 'handcrafted'
+    ON CONFLICT (slug) DO NOTHING
+  `;
+
+  // Reprice all already-stored U.S. offers once so the competitive policy is
+  // visible immediately, rather than waiting for every supplier sync cycle.
+  // The target is a 15% gross margin after a 3.5% payment-fee allowance and a
+  // $1 risk reserve. Future supplier syncs use the same policy in
+  // automation-config.ts.
+  const pricingMigration = await sql`
+    SELECT migration_key
+    FROM store_policy_migrations
+    WHERE migration_key = 'us-competitive-pricing-v1-15pct'
+    LIMIT 1
+  `;
+
+  if (pricingMigration.length === 0) {
+    const marketTable = await sql`
+      SELECT to_regclass('public.product_market_prices')::text AS name
+    `;
+
+    if (marketTable[0]?.name) {
+      await sql`
+        UPDATE product_market_prices
+        SET
+          landed_cost_local = supplier_cost_local + shipping_local + 1,
+          selling_price_local = CEIL(
+            (supplier_cost_local + shipping_local + 1) / 0.815
+          ),
+          compare_at_price_local = CEIL(
+            CEIL((supplier_cost_local + shipping_local + 1) / 0.815) * 1.08
+          ),
+          estimated_profit_local = GREATEST(
+            0,
+            CEIL((supplier_cost_local + shipping_local + 1) / 0.815)
+              - (supplier_cost_local + shipping_local + 1)
+              - (
+                CEIL((supplier_cost_local + shipping_local + 1) / 0.815)
+                * 0.035
+              )
+          ),
+          updated_at = NOW()
+        WHERE country_code = 'US'
+          AND UPPER(currency) = 'USD'
+          AND supplier_cost_local >= 0
+          AND shipping_local >= 0
+          AND selling_price_local > 0
+      `;
+
+      await sql`
+        UPDATE products p
+        SET
+          base_cost = market.supplier_cost_local,
+          price = market.selling_price_local,
+          compare_at_price = market.compare_at_price_local,
+          estimated_shipping_cost = market.shipping_local,
+          currency = 'USD',
+          updated_at = NOW()
+        FROM product_market_prices market
+        WHERE market.product_id = p.id
+          AND market.country_code = 'US'
+          AND UPPER(market.currency) = 'USD'
+          AND market.available = true
+          AND market.selling_price_local > 0
+      `;
+
+      await sql`
+        INSERT INTO store_policy_migrations (migration_key)
+        VALUES ('us-competitive-pricing-v1-15pct')
+        ON CONFLICT (migration_key) DO NOTHING
+      `;
+    }
+  }
+
   // Preserve images created by earlier experimental patches, but keep
   // product_images as the single canonical media table from now on.
   await sql`
