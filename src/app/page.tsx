@@ -125,15 +125,15 @@ export default async function HomePage() {
                   Shop featured pick
                 </Link>
               )}
-              <Link href="/products" className="classic-button-hero">
-                Explore the collection
+              <Link href="/handcrafted" className="classic-button-hero">
+                WHOKEAS Handcrafted
               </Link>
             </div>
 
             <div className="mt-12 grid max-w-2xl grid-cols-3 gap-5 border-t border-white/15 pt-7 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bdb5aa]">
               <span>USD pricing</span>
               <span>Free U.S. shipping</span>
-              <span>14-day returns</span>
+              <span>30-day returns</span>
             </div>
           </div>
 
@@ -182,15 +182,50 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-[1580px] divide-y divide-[#ded5c7] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           {[
             ["Curated catalogue", "Products are checked for U.S. delivery before publication."],
-            ["Transparent pricing", "Clear product prices shown in U.S. dollars."],
+            ["Sharper pricing", "Our catalogue is being repriced around a leaner competitive margin."],
             ["Faster U.S. shipping", "Products with a verified U.S. estimate over 10 days are held back."],
-            ["Clear returns", "Eligible return requests are accepted within 14 days."],
+            ["30-day returns", "Eligible return requests are accepted within 30 calendar days."],
           ].map(([title, text]) => (
             <div key={title} className="px-6 py-7 lg:px-8">
               <h3 className="text-lg font-normal">{title}</h3>
               <p className="mt-2 text-xs leading-5 text-[#746d62]">{text}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="border-b border-[#302b24] bg-[#191713] text-white">
+        <div className="mx-auto grid max-w-[1580px] gap-10 px-6 py-14 sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-16 lg:py-20">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#d6bd7b]">
+              WHOKEAS Originals
+            </p>
+            <h2 className="mt-4 max-w-3xl font-serif text-4xl font-semibold leading-tight sm:text-6xl">
+              We are starting a handcrafted line under our own brand.
+            </h2>
+            <p className="mt-6 max-w-2xl text-sm leading-8 text-white/60 sm:text-base">
+              The first WHOKEAS handcrafted concepts are now in development. We are keeping them
+              visibly separate from supplier products and will only activate ordering after real
+              materials, production capacity, photos, pricing and U.S. fulfilment are verified.
+            </p>
+            <Link href="/handcrafted" className="classic-button-gold mt-8 inline-flex">
+              Preview Handcrafted Originals
+            </Link>
+          </div>
+
+          <div className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3 lg:grid-cols-1">
+            {[
+              ["01", "Hand-poured", "Home fragrance concept"],
+              ["02", "Wood-finished", "Desk valet concept"],
+              ["03", "Hand-finished", "Utility key loop concept"],
+            ].map(([number, title, text]) => (
+              <div key={number} className="bg-[#191713] p-6">
+                <p className="text-[10px] font-black tracking-[0.2em] text-[#d6bd7b]">{number}</p>
+                <h3 className="mt-3 font-serif text-2xl font-semibold">{title}</h3>
+                <p className="mt-2 text-xs leading-6 text-white/50">{text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -298,6 +333,7 @@ export default async function HomePage() {
           <div>
             <h3 className="text-lg font-normal text-[#d6bd7b]">Shop</h3>
             <Link href="/products" className="mt-4 block text-sm text-white/60 hover:text-white">All products</Link>
+            <Link href="/handcrafted" className="mt-3 block text-sm text-white/60 hover:text-white">WHOKEAS Handcrafted</Link>
             <Link href="/shop/portable-power-banks" className="mt-3 block text-sm text-white/60 hover:text-white">Power banks</Link>
             <Link href="/shop/car-fm-transmitters" className="mt-3 block text-sm text-white/60 hover:text-white">Car audio</Link>
             <Link href="/shop/beauty-grooming-essentials" className="mt-3 block text-sm text-white/60 hover:text-white">Beauty &amp; grooming</Link>

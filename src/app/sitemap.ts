@@ -14,7 +14,7 @@ import {
 
 export const revalidate = 3600;
 
-const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
+const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-26T00:00:00.000Z");
 const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
@@ -102,6 +102,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}/products`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/handcrafted`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
