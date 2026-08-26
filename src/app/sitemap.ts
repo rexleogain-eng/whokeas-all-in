@@ -29,10 +29,17 @@ const GOOGLE_RESTRICTED_PRODUCT_PATTERNS = [
   /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
   /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
   /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
+  /\b(?:microneedl\w*|derma\s+roller)\b/i,
+  /\b(?:eye\s+care\s+device|heated\s+eye\s+massager)\b/i,
+  /\b(?:radiation\s+protection|radiation\s+shield(?:ing)?)\b/i,
 ];
 
 const GOOGLE_RESTRICTED_CLAIM_PATTERNS = [
-  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping)\b/i,
+  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping|body\s+sculpt(?:ing)?)\b/i,
+  /\b(?:face|facial)\s+sculpt(?:ing)?\b/i,
+  /\banti[-\s]?cellulite\b/i,
+  /\b(?:skin\s+tightening|facial\s+lifting)\b/i,
+  /\b(?:hair\s+growth|hair\s+regrowth|anti[-\s]?hair\s+loss|stimulates?\s+hair\s+follicles?)\b/i,
   /\blymphatic\s+drainage\b/i,
   /\b(?:skin\s+)?whitening\b/i,
   /\bskin\s+rejuvenation\b/i,
