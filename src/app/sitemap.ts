@@ -117,24 +117,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.95,
     },
     {
-      url: `${SITE_URL}/shop/portable-power-banks`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.85,
-    },
-    {
-      url: `${SITE_URL}/shop/car-fm-transmitters`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.85,
-    },
-    {
-      url: `${SITE_URL}/shop/beauty-grooming-essentials`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.82,
-    },
-    {
       url: `${SITE_URL}/guides`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
       changeFrequency: "weekly",
