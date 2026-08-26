@@ -9,6 +9,8 @@ import {
   SITE_NAME,
   SITE_URL,
   US_RETURN_DAYS,
+  US_SHIPPING_MAX_DAYS,
+  US_SHIPPING_MIN_DAYS,
 } from "../../../lib/seo";
 
 type ProductRouteProps = {
@@ -197,6 +199,15 @@ export default async function ProductSeoLayout({
           "@type": "DefinedRegion",
           addressCountry: "US",
         },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: US_SHIPPING_MIN_DAYS,
+            maxValue: US_SHIPPING_MAX_DAYS,
+            unitCode: "DAY",
+          },
+        },
         shippingSettingsLink: SHIPPING_POLICY_URL,
       },
       hasMerchantReturnPolicy: {
@@ -206,6 +217,8 @@ export default async function ProductSeoLayout({
           "https://schema.org/MerchantReturnFiniteReturnWindow",
         merchantReturnDays: US_RETURN_DAYS,
         returnMethod: "https://schema.org/ReturnByMail",
+        returnFees:
+          "https://schema.org/ReturnFeesCustomerResponsibility",
         merchantReturnLink: RETURN_POLICY_URL,
       },
     },
