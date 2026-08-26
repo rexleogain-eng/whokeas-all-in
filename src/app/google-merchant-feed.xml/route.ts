@@ -176,9 +176,13 @@ function merchantItem(row: MerchantProductRow) {
     ? "out_of_stock"
     : "in_stock";
 
-  // Never invent a brand or manufacturer part number. Product identifiers
-  // should only be submitted when they are genuinely assigned to the item.
-  const brand = cleanText(row.brand, 70);
+  // Never invent a brand or manufacturer part number. WHOKEAS is the
+  // retailer for supplier catalogue items, so a database placeholder equal
+  // to the store name must not be submitted as the item's manufacturer brand.
+  const storedBrand = cleanText(row.brand, 70);
+  const brand = storedBrand && storedBrand.toLowerCase() !== SITE_NAME.toLowerCase()
+    ? storedBrand
+    : "";
 
   if (!productId || !title || !mainImage || priceUsd <= 0) {
     return null;
