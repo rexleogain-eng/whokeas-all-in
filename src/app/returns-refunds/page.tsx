@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: "Returns and Refunds Policy | WHOKEAS ALL IN",
     description:
-      "Clear information about return eligibility, the 14-day request window, return shipping and refund processing.",
+      "Clear information about return eligibility, the 30-day request window, return shipping and refund processing.",
   },
   robots: {
     index: true,
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
 };
 
-const effectiveDate = "August 2, 2026";
+const effectiveDate = "August 26, 2026";
 
 export default function ReturnsRefundsPage() {
   const policyStructuredData = [
@@ -43,7 +43,7 @@ export default function ReturnsRefundsPage() {
       isPartOf: {
         "@id": `${SITE_URL}/#website`,
       },
-      dateModified: "2026-08-21",
+      dateModified: "2026-08-26",
       description:
         "WHOKEAS ALL IN returns and refunds policy, including eligibility, return shipping and refund processing.",
     },
@@ -92,7 +92,7 @@ export default function ReturnsRefundsPage() {
             explained clearly.
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
-            Eligible return requests must be started within 14 calendar days
+            Eligible return requests must be started within 30 calendar days
             after confirmed delivery. Please contact WHOKEAS before sending
             anything back so we can provide the correct instructions and
             return address.
@@ -100,7 +100,7 @@ export default function ReturnsRefundsPage() {
 
           <div className="mt-10 grid max-w-3xl gap-px border border-white/15 bg-white/15 sm:grid-cols-3">
             {[
-              ["14 days", "Return-request window"],
+              ["30 days", "Return-request window"],
               ["5–10 days", "Refund processing after approval"],
               ["Order first", "Authorization required before shipping"],
             ].map(([value, label]) => (
@@ -126,7 +126,7 @@ export default function ReturnsRefundsPage() {
             </h2>
             <div className="mt-5 space-y-4 text-sm leading-7 text-[#625b52]">
               <p>
-                A return request must be submitted within 14 calendar days
+                A return request must be submitted within 30 calendar days
                 after the order is marked delivered. The item must be unused,
                 unworn, unwashed, complete, and returned with its original
                 packaging, labels, accessories and proof of purchase.
@@ -308,7 +308,7 @@ export default function ReturnsRefundsPage() {
             <dl className="mt-5 space-y-4 text-sm">
               <div>
                 <dt className="text-[#857d72]">Return window</dt>
-                <dd className="mt-1 font-semibold">14 calendar days</dd>
+                <dd className="mt-1 font-semibold">30 calendar days</dd>
               </div>
               <div>
                 <dt className="text-[#857d72]">Return method</dt>
