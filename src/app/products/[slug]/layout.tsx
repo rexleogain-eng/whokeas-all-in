@@ -8,6 +8,7 @@ import {
   SHIPPING_POLICY_URL,
   SITE_NAME,
   SITE_URL,
+  US_RETURN_DAYS,
 } from "../../../lib/seo";
 
 type ProductRouteProps = {
@@ -203,7 +204,7 @@ export default async function ProductSeoLayout({
         applicableCountry: "US",
         returnPolicyCategory:
           "https://schema.org/MerchantReturnFiniteReturnWindow",
-        merchantReturnDays: 14,
+        merchantReturnDays: US_RETURN_DAYS,
         returnMethod: "https://schema.org/ReturnByMail",
         merchantReturnLink: RETURN_POLICY_URL,
       },
