@@ -1,25 +1,29 @@
 {
-    "$schema":  "https://openapi.vercel.sh/vercel.json",
-    "crons":  [
-                  {
-                      "path":  "/api/cron/fx-sync",
-                      "schedule":  "15 0 * * *"
-                  },
-                  {
-                      "path":  "/api/cron/cj-sync",
-                      "schedule":  "0 2 * * *"
-                  },
-                  {
-                      "path":  "/api/cron/catalog-autopilot",
-                      "schedule":  "30 3 * * *"
-                  },
-                  {
-                      "path":  "/api/cron/catalogue-expansion",
-                      "schedule":  "15 4 * * *"
-                  },
-                  {
-                      "path":  "/api/cron/cj-order-sync",
-                      "schedule":  "45 5 * * *"
-                  }
-              ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/fx-sync",
+      "schedule": "15 0 * * *"
+    },
+    {
+      "path": "/api/cron/cj-sync",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/catalog-autopilot",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/catalogue-expansion",
+      "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/cj-order-sync",
+      "schedule": "45 5 * * *"
+    },
+    {
+      "path": "/api/cron/competitive-pricing",
+      "schedule": "15 6 * * *"
+    }
+  ]
 }
