@@ -33,6 +33,7 @@ type MerchantProductRow = {
 // they are only held out of the Merchant Center feed until product-specific
 // compliance/certification data can be verified.
 const MERCHANT_RESTRICTED_PRODUCT_PATTERNS = [
+  /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
   /\bhearing\s+(?:aid|amplifier)\b/i,
   /\bpersonal\s+sound\s+amplifier\b/i,
   /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
