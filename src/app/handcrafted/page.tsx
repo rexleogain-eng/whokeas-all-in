@@ -8,7 +8,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "WHOKEAS Custom Products & Personalized Gifts",
   description:
-    "Buy WHOKEAS custom mugs, shirts, caps, tumblers, bags, bottles and personalized made-to-order products for U.S. customers. Orders over $200 can qualify for a complimentary WHOKEAS gift.",
+    "Shop WHOKEAS custom mugs, shirts, caps, tumblers, bags, bottles and personalized made-to-order products with clear U.S. starting prices. Orders over $200 can qualify for a complimentary WHOKEAS gift.",
   alternates: { canonical: `${SITE_URL}/handcrafted` },
   openGraph: {
     type: "website",
@@ -16,15 +16,19 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: "WHOKEAS Custom Products & Personalized Gifts",
     description:
-      "Shop WHOKEAS custom products and unlock a complimentary gift option on qualifying orders over $200.",
+      "Shop market-aligned WHOKEAS custom products and unlock a complimentary gift option on qualifying orders over $200.",
   },
 };
 
+// Starting prices are positioned against current U.S. consumer custom-product
+// benchmarks. Premium sizes, materials, finishes or complex artwork can change
+// the final made-to-order total after the customer approves the proof.
 const products = [
   {
     name: "Personalized WHOKEAS Mug",
     image: "/brand/mockups/mug.svg",
     category: "Drinkware",
+    price: 16.99,
     description:
       "WHOKEAS-branded ceramic mug with optional customer name, short text or approved artwork.",
     personalization: "Name · text · approved artwork",
@@ -34,6 +38,7 @@ const products = [
     name: "WHOKEAS Custom T-Shirt",
     image: "/brand/mockups/tshirt.svg",
     category: "Apparel",
+    price: 21.99,
     description:
       "WHOKEAS logo T-shirt prepared as a made-to-order branded piece with optional personalization.",
     personalization: "Size · color · custom text",
@@ -43,6 +48,7 @@ const products = [
     name: "WHOKEAS Custom Cap",
     image: "/brand/mockups/cap.svg",
     category: "Apparel",
+    price: 19.99,
     description:
       "Branded cap featuring the WHOKEAS mark, with embroidery or print method confirmed before production.",
     personalization: "Color · initials · short text",
@@ -52,6 +58,7 @@ const products = [
     name: "Personalized WHOKEAS Tumbler",
     image: "/brand/mockups/tumbler.svg",
     category: "Drinkware",
+    price: 29.99,
     description:
       "Reusable WHOKEAS tumbler for hot or cold drinks, with optional name or short-message personalization.",
     personalization: "Name · text · finish",
@@ -61,6 +68,7 @@ const products = [
     name: "WHOKEAS Custom Tote Bag",
     image: "/brand/mockups/tote.svg",
     category: "Bags",
+    price: 18.99,
     description:
       "Reusable tote bag carrying the WHOKEAS logo and an optional customer name or approved design.",
     personalization: "Name · text · approved artwork",
@@ -70,6 +78,7 @@ const products = [
     name: "WHOKEAS Custom Phone Case",
     image: "/brand/mockups/phone-case.svg",
     category: "Accessories",
+    price: 24.99,
     description:
       "WHOKEAS-branded phone case made for supported device models, with optional custom text or artwork.",
     personalization: "Phone model · text · artwork",
@@ -79,6 +88,7 @@ const products = [
     name: "WHOKEAS Custom Wall Art",
     image: "/brand/mockups/wall-art.svg",
     category: "Home",
+    price: 14.99,
     description:
       "Minimal WHOKEAS wall print or personalized artwork prepared after size and print-stock confirmation.",
     personalization: "Size · name · message",
@@ -88,6 +98,7 @@ const products = [
     name: "WHOKEAS Custom Keychain",
     image: "/brand/mockups/keychain.svg",
     category: "Accessories",
+    price: 9.99,
     description:
       "Compact branded keychain with the WHOKEAS mark and optional name, initials or short text.",
     personalization: "Initials · name · short text",
@@ -97,6 +108,7 @@ const products = [
     name: "WHOKEAS Custom Apron",
     image: "/brand/mockups/apron.svg",
     category: "Home",
+    price: 27.99,
     description:
       "WHOKEAS-branded apron for cooking, studio or workshop use with optional customer personalization.",
     personalization: "Name · text · placement",
@@ -106,6 +118,7 @@ const products = [
     name: "Personalized WHOKEAS Notebook",
     image: "/brand/mockups/notebook.svg",
     category: "Stationery",
+    price: 24.99,
     description:
       "Branded notebook with the WHOKEAS logo and optional customer name, initials or short message.",
     personalization: "Name · initials · message",
@@ -115,6 +128,7 @@ const products = [
     name: "WHOKEAS Custom Pillow",
     image: "/brand/mockups/pillow.svg",
     category: "Home",
+    price: 34.99,
     description:
       "Decorative WHOKEAS pillow cover with optional personalized text or approved artwork.",
     personalization: "Text · artwork · size",
@@ -124,6 +138,7 @@ const products = [
     name: "Personalized WHOKEAS Water Bottle",
     image: "/brand/mockups/water-bottle.svg",
     category: "Drinkware",
+    price: 29.99,
     description:
       "Reusable WHOKEAS bottle with optional name or short text, produced after material and finish confirmation.",
     personalization: "Name · text · finish",
@@ -133,10 +148,14 @@ const products = [
 
 const heroImages = products.slice(0, 4);
 
-function orderHref(productName: string) {
-  const subject = encodeURIComponent(`WHOKEAS custom order – ${productName}`);
+function usd(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
+function orderHref(product: (typeof products)[number]) {
+  const subject = encodeURIComponent(`WHOKEAS custom order – ${product.name}`);
   const body = encodeURIComponent(
-    `Hello WHOKEAS,\n\nI would like to order: ${productName}.\n\nPersonalization requested:\nQuantity:\nDelivery ZIP code (U.S.):\n\nPlease confirm the final price, proof and delivery estimate before payment.`,
+    `Hello WHOKEAS,\n\nI would like to order: ${product.name}.\nStarting price shown: ${usd(product.price)}.\n\nPersonalization requested:\nQuantity:\nDelivery ZIP code (U.S.):\n\nPlease confirm the final total, proof and delivery estimate before payment.`,
   );
   return `mailto:whokeasallin@gmail.com?subject=${subject}&body=${body}`;
 }
@@ -162,15 +181,15 @@ function LuxuryProductImage({
         src={src}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-[0.16] blur-2xl saturate-0"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-[0.14] blur-2xl saturate-0"
       />
       <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,.03),transparent_35%,rgba(214,189,123,.05)_65%,transparent)]" />
       <div className={`relative z-10 mx-auto flex h-full items-center justify-center ${compact ? "p-3" : "p-5 sm:p-6"}`}>
-        <div className="relative aspect-[4/3] w-full max-w-[310px] overflow-hidden border border-[#d6bd7b]/45 bg-[#171512] shadow-[0_20px_55px_rgba(0,0,0,.48)]">
+        <div className="relative aspect-[4/3] w-full max-w-[340px] overflow-hidden border border-[#d6bd7b]/45 bg-[#171512] shadow-[0_20px_55px_rgba(0,0,0,.48)]">
           <img
             src={src}
             alt={alt}
-            className="h-full w-full object-cover brightness-[0.96] contrast-[1.08] saturate-[0.84]"
+            className="h-full w-full object-cover brightness-[0.98] contrast-[1.08] saturate-[0.88]"
           />
           <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.05]" />
         </div>
@@ -191,14 +210,14 @@ export default function HandcraftedPage() {
         <div className="relative mx-auto grid max-w-[1500px] gap-12 px-6 py-16 sm:px-10 lg:grid-cols-[1.03fr_.97fr] lg:px-16 lg:py-24">
           <div className="self-center">
             <p className="text-[10px] font-black uppercase tracking-[0.32em] text-[#d6bd7b]">
-              WHOKEAS Custom Shop · Made to order
+              WHOKEAS Custom Shop · Market-aligned U.S. pricing
             </p>
             <h1 className="mt-5 max-w-4xl font-serif text-5xl font-semibold leading-[0.96] sm:text-7xl lg:text-[80px]">
               Custom products.
               <span className="block italic text-[#d6bd7b]">Made to be owned.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-sm leading-8 text-white/68 sm:text-base">
-              Every custom item in this collection is available to buy. Choose a WHOKEAS piece, request your personalization, and receive final pricing and a design confirmation before payment.
+              Every custom item is available to buy with a clear starting price. Choose a WHOKEAS piece, request your personalization, then approve the final proof and total before payment.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <a href="#collection" className="classic-button-gold">
@@ -210,7 +229,7 @@ export default function HandcraftedPage() {
             </div>
             <div className="mt-10 grid max-w-2xl grid-cols-2 border-l border-t border-white/15 sm:grid-cols-4">
               {[
-                ["Buy", "All custom items"],
+                ["Price", "Clear starting price"],
                 ["Custom", "Personalization"],
                 ["Reward", `Spend over $${threshold}`],
                 ["U.S.", "Made-to-order"],
@@ -229,8 +248,14 @@ export default function HandcraftedPage() {
             </div>
             <div className="grid h-full min-h-[400px] grid-cols-2 gap-3 pt-9">
               {heroImages.map((product) => (
-                <div key={product.name} className="overflow-hidden border border-white/10 bg-black/30">
+                <div key={product.name} className="relative overflow-hidden border border-white/10 bg-black/30">
                   <LuxuryProductImage src={product.image} alt={`${product.name} luxury product image`} compact />
+                  <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between gap-2 border border-white/10 bg-[#090807]/90 px-3 py-2 backdrop-blur-sm">
+                    <span className="truncate text-[8px] font-black uppercase tracking-[0.12em] text-white/72">
+                      {product.name}
+                    </span>
+                    <span className="shrink-0 text-xs font-black text-[#e3c979]">{usd(product.price)}</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -243,19 +268,19 @@ export default function HandcraftedPage() {
           <div>
             <p className="classic-kicker">WHOKEAS custom collection</p>
             <h2 className="mt-3 max-w-4xl font-serif text-4xl font-semibold sm:text-5xl">
-              Luxury pieces you can actually order.
+              Luxury pieces. Clear prices.
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-7 text-[#6b6358]">
-            Product photography is displayed inside a dark luxury frame at a controlled size for a cleaner, sharper presentation. Every item below is available to buy; marked gift options can also be complimentary on qualifying orders over ${threshold}.
+            Starting prices are positioned against the current U.S. personalized-product market. Premium sizes, materials or complex artwork may change the final total. Marked gift options can also be complimentary on qualifying orders over ${threshold}.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-10 grid gap-7 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product) => (
             <article
               key={product.name}
-              className="group flex min-h-full flex-col overflow-hidden border border-[#cfc2ab] bg-[#fffdf8] shadow-[0_12px_35px_rgba(37,29,18,.06)] transition hover:-translate-y-1 hover:border-[#a98235] hover:shadow-[0_28px_70px_rgba(37,29,18,.14)]"
+              className="group flex min-h-full flex-col overflow-hidden border border-[#c9b994] bg-[#fffdf8] shadow-[0_14px_38px_rgba(37,29,18,.07)] transition duration-300 hover:-translate-y-1 hover:border-[#9f7930] hover:shadow-[0_30px_75px_rgba(37,29,18,.16)]"
             >
               <div className="relative border-b border-[#cfc2ab]">
                 <LuxuryProductImage src={product.image} alt={`${product.name} product image`} />
@@ -267,35 +292,48 @@ export default function HandcraftedPage() {
                 </div>
               </div>
 
-              <div className="flex flex-1 flex-col p-5">
-                <div className="flex flex-wrap gap-2">
-                  <span className="border border-[#171512] bg-[#171512] px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white">
-                    Available to buy
+              <div className="flex flex-1 flex-col p-6 sm:p-7">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="border border-[#171512] bg-[#171512] px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white">
+                    Made to order
                   </span>
                   {product.giftEligible ? (
-                    <span className="border border-[#b69349] bg-[#f3e6c2] px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-[#6f5116]">
+                    <span className="border border-[#b69349] bg-[#f3e6c2] px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-[#6f5116]">
                       Over $200 gift option
                     </span>
                   ) : null}
                 </div>
 
-                <h3 className="mt-4 font-serif text-2xl font-semibold leading-tight">{product.name}</h3>
-                <p className="mt-3 text-sm leading-6 text-[#6b6358]">{product.description}</p>
+                <h3 className="mt-4 font-serif text-[28px] font-semibold leading-[1.05]">{product.name}</h3>
 
-                <div className="mt-5 border-t border-[#e1d8ca] pt-4">
-                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#9b762c]">Personalize</p>
-                  <p className="mt-2 text-xs leading-5 text-[#5f584e]">{product.personalization}</p>
+                <div className="mt-5 flex items-end justify-between gap-4 border-y border-[#e1d8ca] py-4">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#9b762c]">Starting at</p>
+                    <p className="mt-1 font-serif text-4xl font-semibold leading-none text-[#17130e]">{usd(product.price)}</p>
+                  </div>
+                  <div className="max-w-[150px] text-right">
+                    <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6e665b]">U.S. market aligned</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[#8a8175]">Final total depends on selected options.</p>
+                  </div>
                 </div>
 
-                <div className="mt-auto pt-5">
+                <p className="mt-4 text-sm leading-6 text-[#625b50]">{product.description}</p>
+
+                <div className="mt-5 rounded-sm bg-[#f4ede1] px-4 py-3">
+                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#8d6b26]">Personalization options</p>
+                  <p className="mt-2 text-xs font-semibold leading-5 text-[#4f493f]">{product.personalization}</p>
+                </div>
+
+                <div className="mt-auto pt-6">
                   <a
-                    href={orderHref(product.name)}
-                    className="block w-full border border-[#171512] bg-[#171512] px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.14em] text-white transition hover:border-[#9b762c] hover:bg-[#9b762c]"
+                    href={orderHref(product)}
+                    className="flex w-full items-center justify-between border border-[#171512] bg-[#171512] px-4 py-3.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition hover:border-[#9b762c] hover:bg-[#9b762c]"
                   >
-                    Order & customize →
+                    <span>Customize & order</span>
+                    <span>{usd(product.price)}+ →</span>
                   </a>
-                  <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-[0.1em] text-[#8c8275]">
-                    Made to order · Final price confirmed before payment
+                  <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-[0.09em] text-[#8c8275]">
+                    Starting price · Proof & final total confirmed before payment
                   </p>
                 </div>
               </div>
@@ -346,8 +384,8 @@ export default function HandcraftedPage() {
         <div className="mx-auto grid max-w-[1500px] gap-0 lg:grid-cols-3">
           {[
             ["01", "Every custom item is for sale", "Customers can order and personalize any item in the collection without needing to reach the gift threshold."],
-            ["02", "Over $200 to qualify", `The complimentary gift reward applies only when the qualifying order total is strictly greater than $${threshold}.`],
-            ["03", "Gift verified with the order", "WHOKEAS confirms the qualifying spend, available gift option, personalization and delivery details before fulfilment."],
+            ["02", "Clear starting prices", "Each card shows a competitive starting price; premium options are confirmed before payment."],
+            ["03", "Over $200 reward", `The complimentary gift reward applies only when the qualifying order total is strictly greater than $${threshold}.`],
           ].map(([number, title, text]) => (
             <div key={number} className="border-b border-[#cfc3af] p-8 lg:border-b-0 lg:border-r lg:p-10 last:lg:border-r-0">
               <p className="text-[10px] font-black tracking-[0.2em] text-[#9b762c]">{number}</p>
