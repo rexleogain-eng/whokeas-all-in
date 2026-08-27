@@ -55,6 +55,7 @@ type StoreVariantRow = {
 };
 
 const STOREFRONT_RESTRICTED_PATTERNS = [
+  /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
   /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
   /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
   /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
