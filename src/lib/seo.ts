@@ -10,7 +10,7 @@ export const US_SHIPPING_MAX_DAYS = 7;
 export const US_RETURN_DAYS = 30;
 
 export const SITE_DESCRIPTION =
-  "Shop curated tech, home, beauty and everyday essentials with USD pricing, free standard U.S. shipping, guest checkout and direct WHOKEAS order support.";
+  "Shop curated tech, home, study and everyday essentials with USD pricing, free standard U.S. shipping, guest checkout and direct WHOKEAS order support.";
 
 export const BRAND_ALTERNATE_NAMES = [
   "WHOKEAS",
