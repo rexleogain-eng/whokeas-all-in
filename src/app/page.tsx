@@ -199,23 +199,23 @@ export default async function HomePage() {
               WHOKEAS Originals
             </p>
             <h2 className="mt-4 max-w-3xl font-serif text-4xl font-semibold leading-tight sm:text-6xl">
-              We are starting a handcrafted line under our own brand.
+              Branded and personalized pieces, made to order.
             </h2>
             <p className="mt-6 max-w-2xl text-sm leading-8 text-white/60 sm:text-base">
-              The first WHOKEAS handcrafted concepts are now in development. We are keeping them
-              visibly separate from supplier products and will only activate ordering after real
-              materials, production capacity, photos, pricing and U.S. fulfilment are verified.
+              The WHOKEAS branded collection is now open for custom-order requests. Product images
+              are design previews; final materials, personalization, price and U.S. fulfilment are
+              confirmed with the customer before payment.
             </p>
             <Link href="/handcrafted" className="classic-button-gold mt-8 inline-flex">
-              Preview Handcrafted Originals
+              Explore Branded Collection
             </Link>
           </div>
 
           <div className="grid gap-px border border-white/15 bg-white/15 sm:grid-cols-3 lg:grid-cols-1">
             {[
-              ["01", "Hand-poured", "Home fragrance concept"],
-              ["02", "Wood-finished", "Desk valet concept"],
-              ["03", "Hand-finished", "Utility key loop concept"],
+              ["01", "WHOKEAS branded", "Mugs, apparel, drinkware and more"],
+              ["02", "Personalized", "Names, short text and approved artwork"],
+              ["03", "Made to order", "Final details confirmed before payment"],
             ].map(([number, title, text]) => (
               <div key={number} className="bg-[#191713] p-6">
                 <p className="text-[10px] font-black tracking-[0.2em] text-[#d6bd7b]">{number}</p>
