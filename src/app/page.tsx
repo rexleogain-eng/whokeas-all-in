@@ -20,8 +20,7 @@ export const revalidate = 0;
 const fallbackCollections = [
   { name: "Tech", number: "01", text: "Smart tools and refined everyday electronics" },
   { name: "Home", number: "02", text: "Useful pieces selected for modern living" },
-  { name: "Fashion", number: "03", text: "Quiet statement pieces and WHOKEAS originals" },
-  { name: "Study", number: "04", text: "Focused essentials for work and learning" },
+  { name: "Study", number: "03", text: "Focused essentials for work and learning" },
 ];
 
 function rankStorefrontProducts(products: StoreProduct[]) {
@@ -112,8 +111,8 @@ export default async function HomePage() {
               <span className="mt-2 block italic text-[#d6bd7b]">One trusted brand.</span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-[#d8d1c7] sm:text-base">
-              Curated technology, home, fashion, beauty and study products for
-              U.S. shoppers—priced in USD with free standard shipping and direct support.
+              Curated technology, home, study and everyday essentials for U.S.
+              shoppers—priced in USD with free standard shipping and direct support.
             </p>
 
             <div className="mt-9 flex flex-wrap gap-3">
@@ -177,7 +176,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
       <section className="border-b border-[#d8cfbf] bg-[#fffdf8]">
         <div className="mx-auto grid max-w-[1580px] divide-y divide-[#ded5c7] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
           {[
