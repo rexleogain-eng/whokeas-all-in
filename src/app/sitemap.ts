@@ -19,6 +19,7 @@ const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
 const GOOGLE_RESTRICTED_PRODUCT_PATTERNS = [
+  /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
   /\bhearing\s+(?:aid|amplifier)\b/i,
   /\bpersonal\s+sound\s+amplifier\b/i,
   /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
