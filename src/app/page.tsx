@@ -181,7 +181,7 @@ export default async function HomePage() {
           {[
             ["Curated catalogue", "Products are checked for U.S. delivery before publication."],
             ["Sharper pricing", "Our catalogue is being repriced around a leaner competitive margin."],
-            ["Faster U.S. shipping", "Products with a verified U.S. estimate over 7 days are held back."],
+            ["Clear U.S. delivery", "Verified U.S. delivery estimates are shown before purchase."],
             ["30-day returns", "Eligible return requests are accepted within 30 calendar days."],
           ].map(([title, text]) => (
             <div key={title} className="px-6 py-7 lg:px-8">
