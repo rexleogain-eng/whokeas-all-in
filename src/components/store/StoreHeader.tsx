@@ -9,7 +9,7 @@ const nav = [
   "Tech",
   "Home",
   "Fashion",
-  "Beauty & grooming",
+  "Beauty",
   "Study",
 ];
 
