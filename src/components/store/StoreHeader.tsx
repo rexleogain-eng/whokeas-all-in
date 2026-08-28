@@ -8,6 +8,8 @@ import { bootstrapCompetitivePricing } from "@/lib/competitive-pricing-bootstrap
 const nav = [
   "Tech",
   "Home",
+  "Fashion",
+  "Beauty & grooming",
   "Study",
 ];
 
