@@ -213,12 +213,10 @@ function merchantItem(row: MerchantProductRow) {
     .map((gtin) => `    <g:gtin>${xml(gtin)}</g:gtin>`)
     .join("\n");
 
-  const category = cleanText(row.categoryName, 750);
-
+  // Category assignments from the catalogue-recovery pass are still being
+  // reverified. product_type is optional in Merchant Center, so omit it
+  // rather than submit a demonstrably incorrect retailer-defined category.
   const optionalLines = [
-    category
-      ? `    <g:product_type>${xml(category)}</g:product_type>`
-      : "",
     brand
       ? `    <g:brand>${xml(brand)}</g:brand>`
       : "",
