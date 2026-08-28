@@ -24,6 +24,10 @@
     {
       "path": "/api/cron/competitive-pricing",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/cj-identifiers",
+      "schedule": "0 16 * * *"
     }
   ]
 }
