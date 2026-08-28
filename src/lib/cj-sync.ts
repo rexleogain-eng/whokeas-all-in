@@ -12,12 +12,16 @@ import {
   repriceStoredMarketOffers,
 } from "@/lib/global-markets";
 import { cjNumber, cjRequest } from "@/lib/cj";
+import { collectCJProductIdentifiers } from "@/lib/merchant-identifiers";
 
 type CJVariant = {
   vid?: string;
   variantNameEn?: string;
   variantName?: string;
   variantKey?: string;
+  variantSku?: string;
+  barcode?: string;
+  barcode2?: string;
   variantSellPrice?: number | string;
 };
 
@@ -113,6 +117,8 @@ export async function syncCJProducts(limit = 10) {
       }
 
       variants = variants.filter((variant) => variant.vid).slice(0, 100);
+      const identifiers = collectCJProductIdentifiers(variants);
+      const identifiersJson = JSON.stringify(identifiers);
       const supplierActive = String(detail.status ?? "3") === "3";
       let knownStockRows = 0;
       let totalStock = 0;
@@ -267,6 +273,15 @@ export async function syncCJProducts(limit = 10) {
           estimated_delivery_days = ${primaryOffer.estimatedDeliveryDays},
           currency = ${primaryOffer.currency},
           supplier_price_usd = ${productSupplierPriceUsd},
+          supplier_raw_data = COALESCE(supplier_raw_data, '{}'::jsonb)
+            || jsonb_build_object(
+              'cj',
+              COALESCE(supplier_raw_data -> 'cj', '{}'::jsonb)
+                || jsonb_build_object(
+                  'identifiers',
+                  ${identifiersJson}::jsonb
+                )
+            ),
           status = CASE
             WHEN ${supplierActive} = false THEN 'draft'
             WHEN ${shouldDraftForStock} = true THEN 'draft'
@@ -285,6 +300,8 @@ export async function syncCJProducts(limit = 10) {
         externalProductId,
         ok: true,
         variants: variants.length,
+        gtins: identifiers.gtins.length,
+        primaryGtin: identifiers.primaryGtin,
         stockChecked: knownStockRows,
         stock: totalStock,
         primaryCurrency: primaryOffer.currency,
