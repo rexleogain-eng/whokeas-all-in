@@ -82,6 +82,7 @@ function cleanText(value: unknown, maximumLength: number) {
     .replace(/<[^>]*>/g, " ")
     .replace(/\b(?:Highlights|Specification|Details)\s+undefined\b/gi, " ")
     .replace(/\bsupplied through CJdropshipping\.?\b/gi, " ")
+    .replace(/\b(?:supplied|fulfilled)\s+(?:through|by)\s*\.\s*/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, maximumLength);
