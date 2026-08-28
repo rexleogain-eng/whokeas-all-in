@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { catalogSql } from "../../../lib/catalog-schema";
+import {
+  productLevelGtin,
+  verifiedMerchantBrand,
+} from "../../../lib/merchant-identifiers";
 import { getStoreProductBySlug } from "../../../lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "../../../lib/store-copy";
 import {
@@ -24,23 +29,24 @@ function metadataDescription(title: unknown, summary: unknown) {
   return storefrontSummary(title, summary).slice(0, 160);
 }
 
-function verifiedProductBrand(value: unknown) {
-  const brand = String(value || "").trim();
-
-  if (!brand) return null;
-
-  // WHOKEAS is the retailer/seller for catalogue items, not automatically the
-  // manufacturer. Only expose a product brand when one is actually stored.
-  if (brand.toLowerCase() === SITE_NAME.toLowerCase()) {
-    return null;
-  }
-
-  return brand;
-}
-
 async function readProduct(rawSlug: string) {
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
   return getStoreProductBySlug(slug);
+}
+
+async function readSupplierRawData(productId: unknown) {
+  const id = String(productId || "").trim();
+  if (!id) return null;
+
+  const sql = catalogSql();
+  const rows = await sql`
+    SELECT supplier_raw_data AS "supplierRawData"
+    FROM products
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+
+  return rows[0]?.supplierRawData ?? null;
 }
 
 export async function generateMetadata({
@@ -150,7 +156,9 @@ export default async function ProductSeoLayout({
     product.name,
     product.shortDescription || product.description,
   );
-  const productBrand = verifiedProductBrand(product.brand);
+  const productBrand = verifiedMerchantBrand(product.brand, [SITE_NAME]);
+  const supplierRawData = await readSupplierRawData(product.id);
+  const productGtin = productLevelGtin(supplierRawData);
   const hasVariants = variants.length > 0;
   const isInStock = !hasVariants || variants.some(
     (variant) => Number(variant.stockQuantity || 0) > 0,
@@ -173,6 +181,7 @@ export default async function ProductSeoLayout({
           },
         }
       : {}),
+    ...(productGtin ? { gtin: productGtin } : {}),
     ...(product.categoryName
       ? { category: String(product.categoryName) }
       : {}),

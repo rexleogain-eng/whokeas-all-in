@@ -24,6 +24,7 @@ import {
   slugify,
   stripHtml,
 } from "@/lib/cj";
+import { collectCJProductIdentifiers } from "@/lib/merchant-identifiers";
 import { saveProduct } from "@/lib/product-admin";
 
 export class CJProductAlreadyImportedError extends Error {
@@ -53,6 +54,8 @@ type CJVariant = {
   variantName?: string;
   variantKey?: string;
   variantSku?: string;
+  barcode?: string;
+  barcode2?: string;
   variantSellPrice?: number | string;
   inventories?: CJInventory[];
 };
@@ -263,6 +266,7 @@ export async function importCJProduct(
   }
 
   variants = variants.filter((variant) => variant.vid).slice(0, 60);
+  const identifiers = collectCJProductIdentifiers(variants);
   const rawSupplierPrices = variants
     .map((variant) => cjNumber(variant.variantSellPrice ?? detail.sellPrice))
     .filter((price) => price > 0);
@@ -513,6 +517,7 @@ export async function importCJProduct(
             supplierName: detail.supplierName || null,
             originCountryCode,
             primaryMarket: primaryOffer.marketKey,
+            identifiers,
             merchantImage: imageSelection.primary
               ? {
                   verified: true,

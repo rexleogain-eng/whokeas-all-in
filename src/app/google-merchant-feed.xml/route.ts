@@ -3,6 +3,10 @@ import {
 } from "@/lib/catalog-schema";
 import { ensureGlobalMarketSchema } from "@/lib/global-markets";
 import {
+  supplierGtins,
+  verifiedMerchantBrand,
+} from "@/lib/merchant-identifiers";
+import {
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
@@ -22,6 +26,7 @@ type MerchantProductRow = {
   shortDescription: string | null;
   description: string | null;
   brand: string | null;
+  supplierRawData: unknown;
   categoryName: string | null;
   priceUsd: string;
   images: unknown;
@@ -192,10 +197,9 @@ function merchantItem(row: MerchantProductRow) {
   // Never invent a brand or manufacturer part number. WHOKEAS is the
   // retailer for supplier catalogue items, so a database placeholder equal
   // to the store name must not be submitted as the item's manufacturer brand.
-  const storedBrand = cleanText(row.brand, 70);
-  const brand = storedBrand && storedBrand.toLowerCase() !== SITE_NAME.toLowerCase()
-    ? storedBrand
-    : "";
+  const brand = verifiedMerchantBrand(row.brand, [SITE_NAME]) || "";
+  const gtins = supplierGtins(row.supplierRawData);
+  const identifierExists = Boolean(brand || gtins.length > 0);
 
   if (!productId || !title || !mainImage || priceUsd <= 0) {
     return null;
@@ -204,6 +208,9 @@ function merchantItem(row: MerchantProductRow) {
   const additionalImages = imageUrls
     .slice(1, 11)
     .map((image) => `    <g:additional_image_link>${xml(image)}</g:additional_image_link>`)
+    .join("\n");
+  const gtinLines = gtins
+    .map((gtin) => `    <g:gtin>${xml(gtin)}</g:gtin>`)
     .join("\n");
 
   const category = cleanText(row.categoryName, 750);
@@ -215,7 +222,8 @@ function merchantItem(row: MerchantProductRow) {
     brand
       ? `    <g:brand>${xml(brand)}</g:brand>`
       : "",
-    "    <g:identifier_exists>false</g:identifier_exists>",
+    gtinLines,
+    `    <g:identifier_exists>${identifierExists ? "true" : "false"}</g:identifier_exists>`,
     additionalImages,
   ].filter(Boolean).join("\n");
 
@@ -247,6 +255,7 @@ async function readMerchantProducts() {
       p.short_description AS "shortDescription",
       p.description,
       p.brand,
+      p.supplier_raw_data AS "supplierRawData",
       c.name AS "categoryName",
       us_market.selling_price_local::text AS "priceUsd",
       (
