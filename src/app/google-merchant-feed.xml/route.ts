@@ -142,6 +142,7 @@ function merchantPolicyEligible(row: MerchantProductRow) {
   }
 
   const productIdentity = [
+    row.name,
     storefrontTitle(row.name),
     row.categoryName,
   ]
