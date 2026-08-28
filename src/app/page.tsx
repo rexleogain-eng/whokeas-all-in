@@ -111,7 +111,7 @@ export default async function HomePage() {
               <span className="mt-2 block italic text-[#d6bd7b]">One trusted brand.</span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-7 text-[#d8d1c7] sm:text-base">
-              Curated technology, home, study and everyday essentials for U.S.
+              Curated technology, home, fashion, beauty, study and everyday essentials for U.S.
               shoppers—priced in USD with free standard shipping and direct support.
             </p>
 
