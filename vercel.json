@@ -10,14 +10,6 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/catalog-autopilot",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron/catalogue-expansion",
-      "schedule": "15 4 * * *"
-    },
-    {
       "path": "/api/cron/cj-order-sync",
       "schedule": "45 5 * * *"
     },
