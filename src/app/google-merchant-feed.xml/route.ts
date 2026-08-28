@@ -9,6 +9,7 @@ import {
   US_SHIPPING_MAX_DAYS,
   US_TARGET_COUNTRY_CODE,
 } from "@/lib/seo";
+import { isRestrictedStorefrontProduct } from "@/lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +131,16 @@ function merchantIdentifier(value: unknown, maximumLength: number) {
 }
 
 function merchantPolicyEligible(row: MerchantProductRow) {
+  if (
+    isRestrictedStorefrontProduct({
+      name: row.name,
+      shortDescription: row.shortDescription,
+      description: row.description,
+    })
+  ) {
+    return false;
+  }
+
   const productIdentity = [
     storefrontTitle(row.name),
     row.categoryName,
