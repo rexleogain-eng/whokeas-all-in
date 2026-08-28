@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { getStoreProductBySlug } from "../../../lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "../../../lib/store-copy";
@@ -127,7 +128,7 @@ export default async function ProductSeoLayout({
   const result = await readProduct(slug);
 
   if (!result) {
-    return children;
+    notFound();
   }
 
   const product = result.product as Record<string, unknown>;
