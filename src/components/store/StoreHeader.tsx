@@ -10,6 +10,7 @@ const nav = [
   "Home",
   "Fashion",
   "Beauty",
+  "Accessories",
   "Study",
 ];
 
