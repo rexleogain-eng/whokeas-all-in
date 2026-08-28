@@ -2,17 +2,11 @@ import {
   processCatalogueQueue,
   runDailyCatalogueExpansion,
 } from "@/lib/catalogue-expansion";
-import { catalogSql, ensureCatalogSchema } from "@/lib/catalog-schema";
 import { syncCJProducts } from "@/lib/cj-sync";
-import { ensureGlobalMarketSchema } from "@/lib/global-markets";
 import {
   repairHiddenStorefrontProducts,
   type StorefrontRepairReport,
 } from "@/lib/storefront-catalog-health";
-import {
-  US_SHIPPING_MAX_DAYS,
-  US_TARGET_COUNTRY_CODE,
-} from "@/lib/seo";
 
 export type BlockedProductCleanupReport = {
   considered: number;
@@ -55,11 +49,6 @@ function mergeRepairReport(
   target.products.push(...source.products);
 }
 
-/**
- * repairHiddenStorefrontProducts intentionally handles at most five products
- * per API call. This helper keeps that low-level throttle but can run several
- * serialized batches when an admin or cron wants a larger maintenance pass.
- */
 export async function repairHiddenCJProductsSequential(
   requestedLimit = 10,
 ): Promise<StorefrontRepairReport> {
@@ -83,201 +72,34 @@ export async function repairHiddenCJProductsSequential(
 }
 
 /**
- * Removes CJ products that are definitively unsuitable for the U.S. store:
- * an existing U.S. offer is unavailable, or its delivery estimate is above
- * the store's published maximum. Missing offers and price errors are kept for
- * repair because they may be data problems rather than bad products.
- *
- * Both active and draft CJ products are checked so rejected imports do not
- * accumulate as hidden database records. Products referenced by an order are
- * archived instead of deleted so order history remains intact. Product
- * images/variants/market offers cascade when a product is deleted. CJ image
- * URLs are remote references, not uploaded image bytes in Supabase Storage.
+ * Delivery speed is no longer a reason to delete catalogue records.
+ * Slow-but-valid products stay in the database and can carry their truthful
+ * delivery estimate. This no-op is kept for compatibility with admin code
+ * that imports the old cleanup function.
  */
 export async function cleanupBlockedCJProducts(
-  requestedLimit = 100,
+  _requestedLimit = 100,
 ): Promise<BlockedProductCleanupReport> {
-  await ensureCatalogSchema();
-  await ensureGlobalMarketSchema();
-  const sql = catalogSql();
-  const limit = Math.max(1, Math.min(250, Math.floor(requestedLimit || 100)));
-
-  const candidates = await sql`
-    WITH latest_us AS (
-      SELECT DISTINCT ON (market.product_id)
-        market.product_id,
-        market.available,
-        market.estimated_delivery_days,
-        market.updated_at
-      FROM product_market_prices market
-      WHERE market.country_code = ${US_TARGET_COUNTRY_CODE}
-        AND market.currency = 'USD'
-      ORDER BY
-        market.product_id,
-        market.is_primary DESC,
-        market.updated_at DESC
-    )
-    SELECT
-      p.id,
-      p.name,
-      p.supplier_external_product_id AS "externalProductId",
-      CASE
-        WHEN latest_us.available IS NOT TRUE THEN 'us_shipping_unavailable'
-        ELSE 'delivery_over_limit'
-      END AS reason,
-      EXISTS (
-        SELECT 1
-        FROM order_items item
-        WHERE item.product_id = p.id
-      ) AS "hasOrderHistory"
-    FROM products p
-    JOIN latest_us ON latest_us.product_id = p.id
-    WHERE p.supplier_platform = 'cj'
-      AND p.status::text IN ('active', 'draft')
-      AND (
-        latest_us.available IS NOT TRUE
-        OR (
-          latest_us.estimated_delivery_days IS NOT NULL
-          AND latest_us.estimated_delivery_days > ${US_SHIPPING_MAX_DAYS}
-        )
-      )
-    ORDER BY latest_us.updated_at ASC, p.updated_at ASC
-    LIMIT ${limit}
-  `;
-
-  const report: BlockedProductCleanupReport = {
-    considered: candidates.length,
+  return {
+    considered: 0,
     removed: 0,
     archived: 0,
     failed: 0,
     products: [],
   };
-
-  for (const candidate of candidates) {
-    const id = String(candidate.id);
-    const name = String(candidate.name || "CJ product");
-    const externalProductId = String(candidate.externalProductId || "");
-    const reason = String(candidate.reason || "blocked");
-    const hasOrderHistory =
-      candidate.hasOrderHistory === true ||
-      String(candidate.hasOrderHistory).toLowerCase() === "true";
-    const reasonMessage =
-      reason === "us_shipping_unavailable"
-        ? "Removed from U.S. catalogue: CJ shipping is unavailable."
-        : `Removed from U.S. catalogue: delivery exceeds ${US_SHIPPING_MAX_DAYS} days.`;
-
-    try {
-      if (hasOrderHistory) {
-        await sql`
-          UPDATE products
-          SET
-            status = 'archived',
-            supplier_sync_enabled = false,
-            supplier_sync_error = ${reasonMessage},
-            updated_at = NOW()
-          WHERE id = ${id}
-        `;
-
-        await sql`
-          UPDATE catalogue_import_queue
-          SET
-            status = 'rejected',
-            imported_status = 'archived',
-            last_error = ${reasonMessage},
-            updated_at = NOW()
-          WHERE product_id = ${id}
-             OR (
-               supplier_platform = 'cj'
-               AND supplier_external_product_id = ${externalProductId}
-             )
-        `;
-
-        report.archived += 1;
-        report.products.push({
-          id,
-          name,
-          reason,
-          action: "archived",
-        });
-        continue;
-      }
-
-      await sql`
-        UPDATE catalogue_import_queue
-        SET
-          status = 'rejected',
-          product_id = NULL,
-          imported_status = 'removed',
-          last_error = ${reasonMessage},
-          updated_at = NOW()
-        WHERE product_id = ${id}
-           OR (
-             supplier_platform = 'cj'
-             AND supplier_external_product_id = ${externalProductId}
-           )
-      `;
-
-      try {
-        await sql`DELETE FROM products WHERE id = ${id}`;
-        report.removed += 1;
-        report.products.push({
-          id,
-          name,
-          reason,
-          action: "removed",
-        });
-      } catch (deleteError) {
-        const fallbackMessage =
-          deleteError instanceof Error
-            ? `Delete was blocked by related data, so the product was archived instead: ${deleteError.message}`
-            : "Delete was blocked by related data, so the product was archived instead.";
-
-        await sql`
-          UPDATE products
-          SET
-            status = 'archived',
-            supplier_sync_enabled = false,
-            supplier_sync_error = ${reasonMessage},
-            updated_at = NOW()
-          WHERE id = ${id}
-        `;
-
-        report.archived += 1;
-        report.products.push({
-          id,
-          name,
-          reason,
-          action: "archived",
-          message: fallbackMessage,
-        });
-      }
-    } catch (error) {
-      report.failed += 1;
-      report.products.push({
-        id,
-        name,
-        reason,
-        action: "failed",
-        message: error instanceof Error ? error.message : "Blocked product cleanup failed.",
-      });
-    }
-  }
-
-  return report;
 }
 
 /**
- * Catalogue Fill used to process only one queue item even when its admin
- * setting suggested a larger safe job. The enhanced cron now runs exactly
- * three serialized queue passes, keeping CJ calls spaced and non-parallel.
+ * Rebuild the catalogue steadily without deleting products just because their
+ * verified U.S. delivery estimate is longer than the fastest shipping tier.
  */
 export async function runEnhancedCJCatalogueCycle() {
   const primary = await runDailyCatalogueExpansion();
-  const desiredImports = 3;
+  const desiredPasses = 8;
   const extraProcessing = [];
 
-  for (let index = 1; index < desiredImports; index += 1) {
-    await sleep(1800);
+  for (let index = 1; index < desiredPasses; index += 1) {
+    await sleep(1400);
     const result = await processCatalogueQueue({ trigger: "cron" });
     extraProcessing.push(result);
     if (result.status === "skipped" || result.failed > 0 || result.retried > 0) {
@@ -286,25 +108,23 @@ export async function runEnhancedCJCatalogueCycle() {
   }
 
   const repair = await repairHiddenCJProductsSequential(10);
-  const cleanup = await cleanupBlockedCJProducts(100);
 
   return {
     primary,
     extraProcessing,
     repair,
-    cleanup,
-    message: `CJ catalogue cycle complete: ${1 + extraProcessing.length} queue pass(es), ${repair.repaired} hidden products repaired, ${cleanup.removed} blocked products removed and ${cleanup.archived} archived.`,
+    cleanup: await cleanupBlockedCJProducts(),
+    message: `CJ catalogue cycle complete: ${1 + extraProcessing.length} queue pass(es), ${repair.repaired} hidden products repaired. Delivery speed no longer deletes catalogue products.`,
   };
 }
 
 export async function runEnhancedCJSynchronization() {
   const sync = await syncCJProducts(20);
   const repair = await repairHiddenCJProductsSequential(10);
-  const cleanup = await cleanupBlockedCJProducts(100);
 
   return {
     sync,
     repair,
-    cleanup,
+    cleanup: await cleanupBlockedCJProducts(),
   };
 }
