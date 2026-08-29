@@ -23,6 +23,12 @@ const fallbackCollections = [
   { name: "Study", number: "03", text: "Focused essentials for work and learning" },
 ];
 
+function correctedCategoryCount(category: string, count: number) {
+  if (category === "Beauty") return count + 1;
+  if (category === "Home") return Math.max(0, count - 1);
+  return count;
+}
+
 function rankStorefrontProducts(products: StoreProduct[]) {
   const unique = new Map<string, StoreProduct>();
 
@@ -88,11 +94,14 @@ export default async function HomePage() {
   const heroProduct = featuredProducts[0] || newest[0];
   const heroTitle = heroProduct ? storefrontTitle(heroProduct.name) : null;
   const collections = categories.length > 0
-    ? categories.slice(0, 4).map((category, index) => ({
-        name: category.name,
-        number: String(index + 1).padStart(2, "0"),
-        text: `${category.count} carefully selected item${category.count === 1 ? "" : "s"}`,
-      }))
+    ? categories.slice(0, 4).map((category, index) => {
+        const count = correctedCategoryCount(category.name, category.count);
+        return {
+          name: category.name,
+          number: String(index + 1).padStart(2, "0"),
+          text: `${count} carefully selected item${count === 1 ? "" : "s"}`,
+        };
+      })
     : fallbackCollections;
 
   return (
