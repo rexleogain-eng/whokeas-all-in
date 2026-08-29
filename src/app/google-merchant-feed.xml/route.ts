@@ -3,7 +3,7 @@ import {
 } from "@/lib/catalog-schema";
 import { ensureGlobalMarketSchema } from "@/lib/global-markets";
 import {
-  supplierGtins,
+  productLevelGtin,
   verifiedMerchantBrand,
 } from "@/lib/merchant-identifiers";
 import {
@@ -199,8 +199,12 @@ function merchantItem(row: MerchantProductRow) {
   // retailer for supplier catalogue items, so a database placeholder equal
   // to the store name must not be submitted as the item's manufacturer brand.
   const brand = verifiedMerchantBrand(row.brand, [SITE_NAME]) || "";
-  const gtins = supplierGtins(row.supplierRawData);
-  const identifierExists = Boolean(brand || gtins.length > 0);
+  // A product-level feed item must not aggregate distinct GTINs belonging to
+  // different variants. Only submit a GTIN when supplier data resolves to one
+  // unambiguous product-level identifier; otherwise leave it blank until each
+  // variant can be represented as its own Merchant Center item.
+  const gtin = productLevelGtin(row.supplierRawData);
+  const identifierExists = Boolean(brand || gtin);
 
   if (!productId || !title || !mainImage || priceUsd <= 0) {
     return null;
@@ -210,9 +214,6 @@ function merchantItem(row: MerchantProductRow) {
     .slice(1, 11)
     .map((image) => `    <g:additional_image_link>${xml(image)}</g:additional_image_link>`)
     .join("\n");
-  const gtinLines = gtins
-    .map((gtin) => `    <g:gtin>${xml(gtin)}</g:gtin>`)
-    .join("\n");
 
   // Category assignments from the catalogue-recovery pass are still being
   // reverified. product_type is optional in Merchant Center, so omit it
@@ -221,7 +222,9 @@ function merchantItem(row: MerchantProductRow) {
     brand
       ? `    <g:brand>${xml(brand)}</g:brand>`
       : "",
-    gtinLines,
+    gtin
+      ? `    <g:gtin>${xml(gtin)}</g:gtin>`
+      : "",
     `    <g:identifier_exists>${identifierExists ? "true" : "false"}</g:identifier_exists>`,
     additionalImages,
   ].filter(Boolean).join("\n");
