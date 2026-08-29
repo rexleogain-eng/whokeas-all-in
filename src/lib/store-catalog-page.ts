@@ -55,6 +55,18 @@ function cleanProductCopy(product: StoreProduct): StoreProduct {
   };
 }
 
+function storefrontCategory(product: StoreProduct) {
+  if (
+    product.slug ===
+      "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
+    /\bhair\s+removal\s+cream\b/i.test(product.name)
+  ) {
+    return "Beauty";
+  }
+
+  return product.categoryName || null;
+}
+
 export async function getStoreProductPage(options?: {
   query?: string;
   category?: string;
@@ -118,10 +130,6 @@ export async function getStoreProductPage(options?: {
         OR COALESCE(p.short_description, '') ILIKE ${`%${query}%`}
         OR COALESCE(c.name, '') ILIKE ${`%${query}%`}
       )
-      AND (
-        ${category} = ''
-        OR LOWER(COALESCE(c.name, '')) = LOWER(${category})
-      )
     ORDER BY
       CASE WHEN ${sort} = 'price-low' THEN us_market.selling_price_local END ASC,
       CASE WHEN ${sort} = 'price-high' THEN us_market.selling_price_local END DESC,
@@ -133,7 +141,15 @@ export async function getStoreProductPage(options?: {
 
   const eligibleProducts = (rows as unknown as StoreProduct[])
     .filter((product) => !isRestrictedStorefrontProduct(product))
-    .map(cleanProductCopy);
+    .map((product) => ({
+      ...cleanProductCopy(product),
+      categoryName: storefrontCategory(product),
+    }))
+    .filter(
+      (product) =>
+        !category ||
+        String(product.categoryName || "").toLowerCase() === category.toLowerCase(),
+    );
   const total = eligibleProducts.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
