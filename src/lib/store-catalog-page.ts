@@ -19,6 +19,10 @@ function cleanSupplierCopy(value: string | null) {
     )
     .replace(/\b(?:undefined|null)\b/gi, " ")
     .replace(/\bsupplied through CJdropshipping\b\.?/gi, " ")
+    .replace(
+      /\bAvailable\s+Ship\s+to\s*:\s*(?:Puerto\s+Rico\s*,\s*)?United\s+States\b[.,;:]?\s*/gi,
+      " ",
+    )
     .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
