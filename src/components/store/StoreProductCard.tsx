@@ -3,10 +3,7 @@ import Link from "next/link";
 import type { StoreProduct } from "@/lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
 import { formatStorePrice } from "@/lib/store-currency";
-import {
-  US_SHIPPING_MAX_DAYS,
-  US_SHIPPING_MIN_DAYS,
-} from "@/lib/seo";
+import { usDeliveryWindow } from "@/lib/seo";
 
 function storefrontCategory(product: StoreProduct) {
   if (
@@ -30,6 +27,7 @@ export default function StoreProductCard({
   const productTitle = storefrontTitle(product.name);
   const productSummary = storefrontSummary(product.name, product.shortDescription);
   const categoryLabel = storefrontCategory(product);
+  const deliveryWindow = usDeliveryWindow(product.deliveryDays);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -96,7 +94,7 @@ export default function StoreProductCard({
           </div>
 
           <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#5e745f]">
-            Estimated delivery · {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days
+            Estimated delivery · {deliveryWindow.minDays}–{deliveryWindow.maxDays} days
           </p>
         </div>
       </div>
