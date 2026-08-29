@@ -56,6 +56,13 @@ type StoreVariantRow = {
 
 const STOREFRONT_RESTRICTED_PATTERNS = [
   /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
+  /\bhearing\s+(?:aid|amplifier)\b/i,
+  /\bpersonal\s+sound\s+amplifier\b/i,
+  /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
+  /\b(?:moxibustion|acupuncture|acupoint)\b/i,
+  /\b(?:blood\s+pressure|blood\s+glucose|glucose\s+meter|oximeter|nebulizer|insulin)\b/i,
+  /\b(?:pregnan\w*|fertility|ovulation|breast\s+pump)\b/i,
+  /\b(?:pelvic|vaginal|erectile|prostate|penis|sex\s+toy|adult\s+toy)\b/i,
   /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
   /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
   /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
