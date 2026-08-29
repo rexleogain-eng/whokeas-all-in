@@ -33,6 +33,16 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
     return "Beauty";
   }
 
+  if (
+    /\bweb\s*cam\b/i.test(name) ||
+    /\bwalkie[-\s]?talkie\b/i.test(name) ||
+    /\btwo[-\s]?way\s+radio\b/i.test(name) ||
+    /\brgb\s+led\s+controller\b/i.test(name) ||
+    /\bled\s+controller\b/i.test(name)
+  ) {
+    return "Tech";
+  }
+
   return String(categoryName || "General");
 }
 
