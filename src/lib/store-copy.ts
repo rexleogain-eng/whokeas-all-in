@@ -14,6 +14,7 @@ function removeSupplierNoise(value: string) {
     .replace(/\bhot\s*sale\b/gi, "")
     .replace(/\bnew\s*arrival\b/gi, "")
     .replace(/\b202[0-9]\b/g, "")
+    .replace(/\b(?:note\s*:\s*)?MOQ\s*(?:is|[:=])?\s*\d+(?:\s*(?:pieces?|pcs?))?\b[.;,]?/gi, "")
     .replace(/\s+/g, " ")
     .replace(/^[,;:\-–—\s]+|[,;:\-–—\s]+$/g, "")
     .trim();
