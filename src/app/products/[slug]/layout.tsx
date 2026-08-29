@@ -67,7 +67,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const result = await readProduct(slug);
 
-  if (!result) {
+  if (!result || !result.product.usAvailable) {
     return {
       title: "Product not found",
       robots: {
@@ -120,10 +120,10 @@ export async function generateMetadata({
         : [DEFAULT_SOCIAL_IMAGE],
     },
     robots: {
-      index: Boolean(product.usAvailable),
+      index: true,
       follow: true,
       googleBot: {
-        index: Boolean(product.usAvailable),
+        index: true,
         follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,
@@ -145,17 +145,13 @@ export default async function ProductSeoLayout({
   const { slug } = await params;
   const result = await readProduct(slug);
 
-  if (!result) {
+  if (!result || !result.product.usAvailable) {
     notFound();
   }
 
   const product = result.product as Record<string, unknown>;
   const images = result.images as Array<Record<string, unknown>>;
   const variants = result.variants as Array<Record<string, unknown>>;
-
-  if (!product.usAvailable) {
-    return children;
-  }
 
   const productName = storefrontTitle(product.name || SITE_NAME);
   const productSlug = String(product.slug || slug);
