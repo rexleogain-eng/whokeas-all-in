@@ -24,6 +24,18 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+function storefrontCategory(slug: string, name: string, categoryName: unknown) {
+  if (
+    slug ===
+      "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
+    /\bhair\s+removal\s+cream\b/i.test(name)
+  ) {
+    return "Beauty";
+  }
+
+  return String(categoryName || "General");
+}
+
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
@@ -36,6 +48,7 @@ export default async function ProductPage({ params }: PageProps) {
   const displayName = storefrontTitle(rawName);
   const displaySummary = storefrontSummary(rawName, product.shortDescription);
   const displayDetails = storefrontProductDetails(product.description);
+  const categoryLabel = storefrontCategory(slug, rawName, product.categoryName);
   const displayVariants = variants.map((variant) => ({
     id: String(variant.id),
     name: storefrontVariantName(rawName, variant.name),
@@ -81,7 +94,7 @@ export default async function ProductPage({ params }: PageProps) {
           <span>/</span>
           <Link href="/products" className="hover:text-[#9b762c]">Collection</Link>
           <span>/</span>
-          <span>{String(product.categoryName || "General")}</span>
+          <span>{categoryLabel}</span>
         </div>
 
         <section className="grid border border-[#d8cfbf] bg-[#fffdf8] lg:grid-cols-[minmax(380px,1.05fr)_minmax(360px,.95fr)_340px]">
@@ -115,7 +128,7 @@ export default async function ProductPage({ params }: PageProps) {
           <div className="border-b border-[#d8cfbf] p-6 sm:p-9 lg:border-b-0 lg:border-r lg:p-10">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">
-                {String(product.categoryName || "General")}
+                {categoryLabel}
               </span>
               <span className="border-l border-[#d8cfbf] pl-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5b745f]">
                 WHOKEAS selection
