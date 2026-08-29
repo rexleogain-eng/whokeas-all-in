@@ -56,12 +56,27 @@ function cleanProductCopy(product: StoreProduct): StoreProduct {
 }
 
 function storefrontCategory(product: StoreProduct) {
+  const name = String(product.name || "");
+
   if (
     product.slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
-    /\bhair\s+removal\s+cream\b/i.test(product.name)
+    /\bhair\s+removal\s+cream\b/i.test(name)
   ) {
     return "Beauty";
+  }
+
+  // Correct only high-confidence electronics that were imported into Fashion.
+  // This is intentionally narrow so catalogue records stay untouched and
+  // ambiguous products keep their stored category until reviewed.
+  if (
+    /\bweb\s*cam\b/i.test(name) ||
+    /\bwalkie[-\s]?talkie\b/i.test(name) ||
+    /\btwo[-\s]?way\s+radio\b/i.test(name) ||
+    /\brgb\s+led\s+controller\b/i.test(name) ||
+    /\bled\s+controller\b/i.test(name)
+  ) {
+    return "Tech";
   }
 
   return product.categoryName || null;
