@@ -76,6 +76,7 @@ export function storefrontTitle(value: unknown) {
   if (/hair\s*identifier/.test(lower)) return "Facial Hair Identifier Spray & Razor Set";
 
   const cleaned = trimRepeatedEdgePhrase(source)
+    .replace(/^compatible\s+with\s*[,;:\-–—\s]+/i, "")
     .replace(/^\d+\s*(?:pc|pcs|pack)\s+/i, "")
     .replace(/\s+(?:for|fit for)\s+(?:ios|iphone|android|galaxy)\b.*$/i, "")
     .trim();
