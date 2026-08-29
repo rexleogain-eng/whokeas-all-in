@@ -156,6 +156,7 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
     .replace(/\bwholesale\b/gi, "")
+    .replace(/^available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s*/i, "")
     .replace(/^(?:product\s+(?:information|description)|specifications?)\s*:?\s*$/gim, "")
     .replace(/\bproduct\s+(?:information|description)\s*:\s*/gi, "")
     .replace(/\bApplicable\s+Models?\s*:/gi, "Compatibility:")
