@@ -1,6 +1,4 @@
-import {
-  catalogSql,
-} from "@/lib/catalog-schema";
+import { catalogSql } from "@/lib/catalog-schema";
 import { ensureGlobalMarketSchema } from "@/lib/global-markets";
 import {
   productLevelGtin,
@@ -34,10 +32,9 @@ type MerchantProductRow = {
   variantInStock: boolean;
 };
 
-// Keep Google Shopping focused on low-policy-risk retail items while the
-// catalogue is broad. These products remain available on the storefront;
-// they are only held out of the Merchant Center feed until product-specific
-// compliance/certification data can be verified.
+// Keep Merchant Center at least as strict as the indexable storefront/sitemap.
+// These rules only hold products out of Google Shopping; they do not delete or
+// deactivate catalogue records.
 const MERCHANT_RESTRICTED_PRODUCT_PATTERNS = [
   /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
   /\bhearing\s+(?:aid|amplifier)\b/i,
@@ -50,10 +47,17 @@ const MERCHANT_RESTRICTED_PRODUCT_PATTERNS = [
   /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
   /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
   /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
+  /\b(?:microneedl\w*|derma\s+roller)\b/i,
+  /\b(?:eye\s+care\s+device|heated\s+eye\s+massager)\b/i,
+  /\b(?:radiation\s+protection|radiation\s+shield(?:ing)?)\b/i,
 ];
 
 const MERCHANT_RESTRICTED_CLAIM_PATTERNS = [
-  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping)\b/i,
+  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping|body\s+sculpt(?:ing)?)\b/i,
+  /\b(?:face|facial)\s+sculpt(?:ing)?\b/i,
+  /\banti[-\s]?cellulite\b/i,
+  /\b(?:skin\s+tightening|facial\s+lifting)\b/i,
+  /\b(?:hair\s+growth|hair\s+regrowth|anti[-\s]?hair\s+loss|stimulates?\s+hair\s+follicles?)\b/i,
   /\blymphatic\s+drainage\b/i,
   /\b(?:skin\s+)?whitening\b/i,
   /\bskin\s+rejuvenation\b/i,
@@ -62,10 +66,7 @@ const MERCHANT_RESTRICTED_CLAIM_PATTERNS = [
 ];
 
 function removeInvalidXmlCharacters(value: string) {
-  return value.replace(
-    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
-    " ",
-  );
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ");
 }
 
 function xml(value: unknown) {
@@ -83,23 +84,40 @@ function cleanText(value: unknown, maximumLength: number) {
     .replace(/\b(?:Highlights|Specification|Details)\s+undefined\b/gi, " ")
     .replace(/\bsupplied through CJdropshipping\.?\b/gi, " ")
     .replace(/\b(?:supplied|fulfilled)\s+(?:through|by)\s*\.\s*/gi, " ")
+    // Supplier MOQ notes are fulfilment metadata, not a customer-facing offer
+    // condition, and must not leak into Google Shopping descriptions.
+    .replace(/\b(?:note\s*:\s*)?MOQ\s*(?:is|[:=])?\s*\d+(?:\s*(?:pieces?|pcs?))?\b[.;,]?/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, maximumLength);
 }
 
+function merchantTitle(value: unknown) {
+  const curated = cleanText(storefrontTitle(value), 150);
+  if (curated && !curated.endsWith("…")) return curated;
+
+  const full = cleanText(value, 150)
+    .replace(/\bCJ\s*dropshipping\b/gi, "")
+    .replace(/\bdropshipping\b/gi, "")
+    .replace(/\bwholesale\b/gi, "")
+    .replace(/\bhot\s*sale\b/gi, "")
+    .replace(/\bnew\s*arrival\b/gi, "")
+    .replace(/\b202[0-9]\b/g, "")
+    .replace(/[_|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^[,;:\-–—\s]+|[,;:\-–—\s]+$/g, "")
+    .trim();
+
+  return full || curated || "WHOKEAS Selection";
+}
+
 function absoluteHttpUrl(value: unknown) {
   const text = String(value ?? "").trim();
-
   if (!text) return null;
 
   try {
     const url = new URL(text, `${SITE_URL}/`);
-
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return null;
-    }
-
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
     return url.toString();
   }
   catch {
@@ -112,7 +130,6 @@ function readImageUrls(value: unknown) {
     ? value
     : (() => {
         if (typeof value !== "string") return [];
-
         try {
           const parsed = JSON.parse(value);
           return Array.isArray(parsed) ? parsed : [];
@@ -147,84 +164,48 @@ function merchantPolicyEligible(row: MerchantProductRow) {
     return false;
   }
 
-  const productIdentity = [
-    row.name,
-    storefrontTitle(row.name),
-    row.categoryName,
-  ]
+  const productIdentity = [row.name, storefrontTitle(row.name), row.categoryName]
     .filter(Boolean)
     .join(" ");
 
-  if (
-    MERCHANT_RESTRICTED_PRODUCT_PATTERNS.some((pattern) =>
-      pattern.test(productIdentity)
-    )
-  ) {
+  if (MERCHANT_RESTRICTED_PRODUCT_PATTERNS.some((pattern) => pattern.test(productIdentity))) {
     return false;
   }
 
-  const productClaims = [
-    productIdentity,
-    row.shortDescription,
-    row.description,
-  ]
+  const productClaims = [productIdentity, row.shortDescription, row.description]
     .filter(Boolean)
     .join(" ");
 
-  return !MERCHANT_RESTRICTED_CLAIM_PATTERNS.some((pattern) =>
-    pattern.test(productClaims)
-  );
+  return !MERCHANT_RESTRICTED_CLAIM_PATTERNS.some((pattern) => pattern.test(productClaims));
 }
 
 function merchantItem(row: MerchantProductRow) {
   const productId = merchantIdentifier(row.id, 50);
-  const title = cleanText(storefrontTitle(row.name), 150);
+  const title = merchantTitle(row.name);
   const description = cleanText(
-    storefrontSummary(
-      row.name,
-      row.shortDescription || row.description,
-    ),
+    storefrontSummary(row.name, row.shortDescription || row.description),
     1500,
   ) || `Buy ${title} online from ${SITE_NAME}.`;
-  const productUrl =
-    `${SITE_URL}/products/${encodeURIComponent(row.slug)}`;
+  const productUrl = `${SITE_URL}/products/${encodeURIComponent(row.slug)}`;
   const imageUrls = readImageUrls(row.images);
   const mainImage = imageUrls[0];
   const priceUsd = Number(row.priceUsd || 0);
-  const availability = row.hasVariants && !row.variantInStock
-    ? "out_of_stock"
-    : "in_stock";
+  const availability = row.hasVariants && !row.variantInStock ? "out_of_stock" : "in_stock";
 
-  // Never invent a brand or manufacturer part number. WHOKEAS is the
-  // retailer for supplier catalogue items, so a database placeholder equal
-  // to the store name must not be submitted as the item's manufacturer brand.
   const brand = verifiedMerchantBrand(row.brand, [SITE_NAME]) || "";
-  // A product-level feed item must not aggregate distinct GTINs belonging to
-  // different variants. Only submit a GTIN when supplier data resolves to one
-  // unambiguous product-level identifier; otherwise leave it blank until each
-  // variant can be represented as its own Merchant Center item.
   const gtin = productLevelGtin(row.supplierRawData);
   const identifierExists = Boolean(brand || gtin);
 
-  if (!productId || !title || !mainImage || priceUsd <= 0) {
-    return null;
-  }
+  if (!productId || !title || !mainImage || priceUsd <= 0) return null;
 
   const additionalImages = imageUrls
     .slice(1, 11)
     .map((image) => `    <g:additional_image_link>${xml(image)}</g:additional_image_link>`)
     .join("\n");
 
-  // Category assignments from the catalogue-recovery pass are still being
-  // reverified. product_type is optional in Merchant Center, so omit it
-  // rather than submit a demonstrably incorrect retailer-defined category.
   const optionalLines = [
-    brand
-      ? `    <g:brand>${xml(brand)}</g:brand>`
-      : "",
-    gtin
-      ? `    <g:gtin>${xml(gtin)}</g:gtin>`
-      : "",
+    brand ? `    <g:brand>${xml(brand)}</g:brand>` : "",
+    gtin ? `    <g:gtin>${xml(gtin)}</g:gtin>` : "",
     `    <g:identifier_exists>${identifierExists ? "true" : "false"}</g:identifier_exists>`,
     additionalImages,
   ].filter(Boolean).join("\n");
@@ -262,10 +243,7 @@ async function readMerchantProducts() {
       us_market.selling_price_local::text AS "priceUsd",
       (
         SELECT COALESCE(
-          json_agg(
-            pi.image_url
-            ORDER BY pi.sort_order ASC, pi.created_at ASC
-          ),
+          json_agg(pi.image_url ORDER BY pi.sort_order ASC, pi.created_at ASC),
           '[]'::json
         )
         FROM product_images pi
@@ -317,7 +295,6 @@ async function readMerchantProducts() {
 
 function feedDocument(items: string[]) {
   const generatedAt = new Date().toUTCString();
-
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">',
@@ -345,8 +322,7 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control":
-          "public, s-maxage=3600, stale-while-revalidate=86400",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
         "X-Content-Type-Options": "nosniff",
         "X-WHOKEAS-Feed-Items": String(items.length),
         "X-WHOKEAS-Feed-Excluded": String(products.length - eligibleProducts.length),
@@ -355,10 +331,8 @@ export async function GET() {
   }
   catch (error) {
     console.error("Google Merchant feed generation failed:", error);
-
     return new Response(
-      '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<error>Product feed is temporarily unavailable.</error>\n',
+      '<?xml version="1.0" encoding="UTF-8"?>\n<error>Product feed is temporarily unavailable.</error>\n',
       {
         status: 503,
         headers: {
