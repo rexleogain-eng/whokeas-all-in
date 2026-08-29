@@ -125,13 +125,13 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   if (/hair\s*identifier/.test(title)) {
     return "A facial-grooming set designed to make fine hairs easier to see before shaving or shaping.";
   }
+  if (/silk\s+bonnet|satin\s+hair\s+bonnet/.test(title)) {
+    return "A soft satin sleep bonnet selected to help protect hair overnight and reduce friction during sleep.";
+  }
 
   const source = removeSupplierNoise(normalize(summaryValue))
     .replace(/^our\s+/i, "")
     .replace(/\b(supplied|fulfilled)\s+(through|by)\s+[^.]+\.?/gi, "")
-    // Supplier shipping territory text is backend fulfilment metadata. WHOKEAS
-    // owns the customer-facing market and delivery promise, so strip only
-    // leading supplier logistics preambles before presenting product copy.
     .replace(/^specification\s+(?:brand\s*:\s*.{1,80}?\s+)?available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s+details\s+(?:product\s+)?description\s*/i, "")
     .replace(/^product\s+attributes:.*?estimated\s+shipping\s+time\s*:[^:]{0,80}?product\s+description:\s*/i, "")
     .replace(/^note\s*[:：]\s*only\s+(?:sold|sales?)\s+in\s+the\s+usa\s*\([^)]*\)\s*[,.;:\-–—]?\s*/i, "")
