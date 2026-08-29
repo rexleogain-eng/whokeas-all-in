@@ -6,8 +6,7 @@ import StoreHeader from "@/components/store/StoreHeader";
 import {
   SHIPPING_POLICY_URL,
   US_RETURN_DAYS,
-  US_SHIPPING_MAX_DAYS,
-  US_SHIPPING_MIN_DAYS,
+  usDeliveryWindow,
 } from "@/lib/seo";
 import { getStoreProductBySlug } from "@/lib/store-catalog";
 import { storefrontSummary, storefrontTitle } from "@/lib/store-copy";
@@ -59,6 +58,7 @@ export default async function ProductPage({ params }: PageProps) {
   const displaySummary = storefrontSummary(rawName, product.shortDescription);
   const displayDetails = storefrontProductDetails(product.description);
   const categoryLabel = storefrontCategory(slug, rawName, product.categoryName);
+  const deliveryWindow = usDeliveryWindow(product.deliveryDays);
   const displayVariants = variants.map((variant) => ({
     id: String(variant.id),
     name: storefrontVariantName(rawName, variant.name),
@@ -175,7 +175,7 @@ export default async function ProductPage({ params }: PageProps) {
               <div className="border-b border-r border-[#ddd4c6] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b762c]">Delivery</p>
                 <p className="mt-2 text-sm font-semibold">
-                  Free U.S. shipping · {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days
+                  Free U.S. shipping · {deliveryWindow.minDays}–{deliveryWindow.maxDays} days
                 </p>
               </div>
               <div className="border-b border-r border-[#ddd4c6] p-4">
@@ -227,7 +227,7 @@ export default async function ProductPage({ params }: PageProps) {
             </p>
             <p className="mt-4 text-xs leading-6 text-[#746d62]">
               Price shown in USD. Standard U.S. shipping is free and estimated
-              at {US_SHIPPING_MIN_DAYS}–{US_SHIPPING_MAX_DAYS} days.
+              at {deliveryWindow.minDays}–{deliveryWindow.maxDays} days.
             </p>
 
             {purchasable ? (
