@@ -9,6 +9,18 @@ export const US_SHIPPING_MIN_DAYS = 2;
 export const US_SHIPPING_MAX_DAYS = 30;
 export const US_RETURN_DAYS = 30;
 
+export function usDeliveryWindow(deliveryDays: unknown) {
+  const parsed = Number(deliveryDays);
+  const maxDays = Number.isFinite(parsed) && parsed > 0
+    ? Math.min(US_SHIPPING_MAX_DAYS, Math.max(US_SHIPPING_MIN_DAYS, Math.ceil(parsed)))
+    : US_SHIPPING_MAX_DAYS;
+
+  return {
+    minDays: Math.min(US_SHIPPING_MIN_DAYS, maxDays),
+    maxDays,
+  };
+}
+
 export const SITE_DESCRIPTION =
   "Shop curated tech, home, fashion, beauty, study and everyday essentials with USD pricing, free standard U.S. shipping, guest checkout and direct WHOKEAS order support.";
 
