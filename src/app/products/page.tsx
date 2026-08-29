@@ -40,24 +40,6 @@ function positivePage(value: string | string[] | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-function effectiveCategoryCounts(
-  categories: Array<{ name: string; slug: string; count: number }>,
-) {
-  const beauty = categories.find((item) => item.name.toLowerCase() === "beauty");
-  const home = categories.find((item) => item.name.toLowerCase() === "home");
-
-  if (!beauty || !home || home.count < 1) return categories;
-
-  return categories
-    .map((item) => {
-      const name = item.name.toLowerCase();
-      if (name === "beauty") return { ...item, count: item.count + 1 };
-      if (name === "home") return { ...item, count: item.count - 1 };
-      return item;
-    })
-    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
-}
-
 export async function generateMetadata({
   searchParams,
 }: ProductsPageProps): Promise<Metadata> {
@@ -114,7 +96,7 @@ export default async function ProductsPage({
   const sort = filterValue(params.sort) || "newest";
   const requestedPage = positivePage(params.page);
 
-  const [catalogPage, rawCategories] = await Promise.all([
+  const [catalogPage, categories] = await Promise.all([
     getStoreProductPage({
       query,
       category,
@@ -124,7 +106,6 @@ export default async function ProductsPage({
     }),
     getStoreCategories(),
   ]);
-  const categories = effectiveCategoryCounts(rawCategories);
 
   const {
     products,
@@ -222,7 +203,7 @@ export default async function ProductsPage({
                   }`}
                 >
                   <span>{item.name}</span>
-                  <span className="text-[10px] text-[#9b9287]">{item.count}</span>
+                  <span aria-hidden="true">→</span>
                 </Link>
               );
             })}
