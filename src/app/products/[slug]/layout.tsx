@@ -30,12 +30,24 @@ function metadataDescription(title: unknown, summary: unknown) {
 }
 
 function storefrontCategory(slug: string, name: unknown, categoryName: unknown) {
+  const normalizedName = String(name || "");
+
   if (
     slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
-    /\bhair\s+removal\s+cream\b/i.test(String(name || ""))
+    /\bhair\s+removal\s+cream\b/i.test(normalizedName)
   ) {
     return "Beauty";
+  }
+
+  if (
+    /\bweb\s*cam\b/i.test(normalizedName) ||
+    /\bwalkie[-\s]?talkie\b/i.test(normalizedName) ||
+    /\btwo[-\s]?way\s+radio\b/i.test(normalizedName) ||
+    /\brgb\s+led\s+controller\b/i.test(normalizedName) ||
+    /\bled\s+controller\b/i.test(normalizedName)
+  ) {
+    return "Tech";
   }
 
   return categoryName ? String(categoryName) : null;
