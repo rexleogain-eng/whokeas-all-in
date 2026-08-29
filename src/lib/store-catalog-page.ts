@@ -79,6 +79,22 @@ function storefrontCategory(product: StoreProduct) {
     return "Tech";
   }
 
+  // Correct only obvious recovered catalogue items whose stored category is wrong.
+  // Keep these title matches precise to avoid moving ambiguous products.
+  if (
+    /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(name) ||
+    /\bportable\s+power\s+washer\b/i.test(name)
+  ) {
+    return "Home";
+  }
+
+  if (
+    /\breusable\s+cable\s+organizer\b/i.test(name) ||
+    /\bcable\s+organizer\s+silicone\b/i.test(name)
+  ) {
+    return "Accessories";
+  }
+
   return product.categoryName || null;
 }
 
