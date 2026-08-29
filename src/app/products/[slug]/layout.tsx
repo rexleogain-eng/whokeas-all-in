@@ -29,6 +29,18 @@ function metadataDescription(title: unknown, summary: unknown) {
   return storefrontSummary(title, summary).slice(0, 160);
 }
 
+function storefrontCategory(slug: string, name: unknown, categoryName: unknown) {
+  if (
+    slug ===
+      "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
+    /\bhair\s+removal\s+cream\b/i.test(String(name || ""))
+  ) {
+    return "Beauty";
+  }
+
+  return categoryName ? String(categoryName) : null;
+}
+
 async function readProduct(rawSlug: string) {
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
   return getStoreProductBySlug(slug);
@@ -147,6 +159,7 @@ export default async function ProductSeoLayout({
 
   const productName = storefrontTitle(product.name || SITE_NAME);
   const productSlug = String(product.slug || slug);
+  const categoryName = storefrontCategory(productSlug, product.name, product.categoryName);
   const productUrl =
     `${SITE_URL}/products/${encodeURIComponent(productSlug)}`;
   const imageUrls = images
@@ -182,8 +195,8 @@ export default async function ProductSeoLayout({
         }
       : {}),
     ...(productGtin ? { gtin: productGtin } : {}),
-    ...(product.categoryName
-      ? { category: String(product.categoryName) }
+    ...(categoryName
+      ? { category: categoryName }
       : {}),
     offers: {
       "@type": "Offer",
