@@ -8,6 +8,18 @@ import {
   US_SHIPPING_MIN_DAYS,
 } from "@/lib/seo";
 
+function storefrontCategory(product: StoreProduct) {
+  if (
+    product.slug ===
+      "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
+    /\bhair\s+removal\s+cream\b/i.test(product.name)
+  ) {
+    return "Beauty";
+  }
+
+  return product.categoryName || "General";
+}
+
 export default function StoreProductCard({
   product,
 }: {
@@ -17,6 +29,7 @@ export default function StoreProductCard({
   const current = Number(product.price || 0);
   const productTitle = storefrontTitle(product.name);
   const productSummary = storefrontSummary(product.name, product.shortDescription);
+  const categoryLabel = storefrontCategory(product);
   const discount =
     compareAt > current && compareAt > 0
       ? Math.round(((compareAt - current) / compareAt) * 100)
@@ -56,7 +69,7 @@ export default function StoreProductCard({
 
       <div className="p-4 sm:p-5">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9b762c]">
-          {product.categoryName || "General"}
+          {categoryLabel}
         </p>
         <h3 className="mt-2 line-clamp-2 min-h-12 text-[17px] font-normal leading-6 text-[#1d1914] group-hover:text-[#8a6824]">
           {productTitle}
