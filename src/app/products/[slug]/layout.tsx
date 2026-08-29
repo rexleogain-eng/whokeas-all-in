@@ -15,8 +15,7 @@ import {
   SITE_NAME,
   SITE_URL,
   US_RETURN_DAYS,
-  US_SHIPPING_MAX_DAYS,
-  US_SHIPPING_MIN_DAYS,
+  usDeliveryWindow,
 } from "../../../lib/seo";
 
 type ProductRouteProps = {
@@ -184,6 +183,7 @@ export default async function ProductSeoLayout({
   const isInStock = !hasVariants || variants.some(
     (variant) => Number(variant.stockQuantity || 0) > 0,
   );
+  const deliveryWindow = usDeliveryWindow(product.deliveryDays);
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -234,8 +234,8 @@ export default async function ProductSeoLayout({
           "@type": "ShippingDeliveryTime",
           transitTime: {
             "@type": "QuantitativeValue",
-            minValue: US_SHIPPING_MIN_DAYS,
-            maxValue: US_SHIPPING_MAX_DAYS,
+            minValue: deliveryWindow.minDays,
+            maxValue: deliveryWindow.maxDays,
             unitCode: "DAY",
           },
         },
