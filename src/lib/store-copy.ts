@@ -129,6 +129,11 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   const source = removeSupplierNoise(normalize(summaryValue))
     .replace(/^our\s+/i, "")
     .replace(/\b(supplied|fulfilled)\s+(through|by)\s+[^.]+\.?/gi, "")
+    // Supplier shipping territory text is backend fulfilment metadata. WHOKEAS
+    // owns the customer-facing market and delivery promise, so strip only
+    // leading supplier logistics preambles before presenting product copy.
+    .replace(/^specification\s+(?:brand\s*:\s*.{1,80}?\s+)?available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s+details\s+(?:product\s+)?description\s*/i, "")
+    .replace(/^note\s*:\s*only\s+sold\s+in\s+the\s+usa\s*\([^)]*\)\s*[,.;:\-–—]?\s*/i, "")
     .replace(/^available\s+ship\s+to:\s*united\s+states\s*/i, "")
     .replace(/^product\s+information:\s*/i, "")
     .trim();
