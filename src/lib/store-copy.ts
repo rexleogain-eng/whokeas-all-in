@@ -133,7 +133,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     // owns the customer-facing market and delivery promise, so strip only
     // leading supplier logistics preambles before presenting product copy.
     .replace(/^specification\s+(?:brand\s*:\s*.{1,80}?\s+)?available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s+details\s+(?:product\s+)?description\s*/i, "")
-    .replace(/^product\s+attributes:\s*brand\s*:\s*\S+\s+type\s*:\s*.+?\s+estimated\s+shipping\s+time\s*:\s*\d+\s*days?\s+product\s+description:\s*/i, "")
+    .replace(/^product\s+attributes:.*?estimated\s+shipping\s+time\s*:[^:]{0,80}?product\s+description:\s*/i, "")
     .replace(/^note\s*[:：]\s*only\s+(?:sold|sales?)\s+in\s+the\s+usa\s*\([^)]*\)\s*[,.;:\-–—]?\s*/i, "")
     .replace(/^available\s+ship\s+to:\s*united\s+states\s*/i, "")
     .replace(/^product\s+information:\s*/i, "")
