@@ -66,7 +66,8 @@ function storefrontCategory(product: StoreProduct) {
     product.slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
     product.slug === "high-light-brightening-repair-paste-922952" ||
-    /\bhair\s+removal\s+cream\b/i.test(name)
+    /\bhair\s+removal\s+cream\b/i.test(name) ||
+    /\belectric\s+nail\s+clippers?\b/i.test(name)
   ) {
     return "Beauty";
   }
