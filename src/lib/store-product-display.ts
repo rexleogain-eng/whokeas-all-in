@@ -160,6 +160,16 @@ export function storefrontProductDetails(value: unknown) {
 
   if (supplierSpecLabels.length >= 3) return "";
 
+  // Numbered "Overview 1...2...3..." blocks are supplier marketplace copy,
+  // not polished customer-facing product details. Suppress them rather than
+  // publishing awkward claims/translation artefacts verbatim.
+  if (
+    /\boverview\s*1\s*[.、:【]/i.test(source) &&
+    /(?:\b2\s*[.、:【]|\b3\s*[.、:【])/i.test(source)
+  ) {
+    return "";
+  }
+
   source = source
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
