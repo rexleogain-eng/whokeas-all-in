@@ -26,6 +26,20 @@ type PageProps = {
 function storefrontCategory(slug: string, name: string, categoryName: unknown) {
   if (
     slug ===
+      "vintage-women-hollow-out-short-dress-summer-v-neck-halter-dress-sleeveless-mini-dresses-backless-holiday-beach-sundress-vestidos-250210"
+  ) {
+    return "Fashion";
+  }
+
+  if (
+    slug ===
+      "floor-lamp-with-table-narrow-3-tier-end-table-with-open-shelves-3-color-temperature-lighting-side-nightstand-bedside-desk-with-usb-203671"
+  ) {
+    return "Home";
+  }
+
+  if (
+    slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
     slug === "high-light-brightening-repair-paste-922952" ||
     /\bhair\s+removal\s+cream\b/i.test(name) ||
