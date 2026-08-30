@@ -65,12 +65,13 @@ function storefrontCategory(product: StoreProduct) {
   if (
     product.slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
+    product.slug === "high-light-brightening-repair-paste-922952" ||
     /\bhair\s+removal\s+cream\b/i.test(name)
   ) {
     return "Beauty";
   }
 
-  // Correct only high-confidence electronics that were imported into Fashion.
+  // Correct only high-confidence electronics that were imported into the wrong collection.
   // This is intentionally narrow so catalogue records stay untouched and
   // ambiguous products keep their stored category until reviewed.
   if (
@@ -78,7 +79,9 @@ function storefrontCategory(product: StoreProduct) {
     /\bwalkie[-\s]?talkie\b/i.test(name) ||
     /\btwo[-\s]?way\s+radio\b/i.test(name) ||
     /\brgb\s+led\s+controller\b/i.test(name) ||
-    /\bled\s+controller\b/i.test(name)
+    /\bled\s+controller\b/i.test(name) ||
+    /\bwireless\s+bluetooth\s+headset\b/i.test(name) ||
+    /\bwireless\s+karaoke\s+(?:singing\s+)?mic(?:rophone)?\b/i.test(name)
   ) {
     return "Tech";
   }
