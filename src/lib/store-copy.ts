@@ -146,7 +146,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     .trim();
 
   const specificationLabels = source.match(
-    /\b(?:style|material|color|colour|size|dimensions?|applicable models?|specifications?|packing list|package includes?)\s*:/gi,
+    /\b(?:model|product\s+name|style|material|color|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list)\s*:/gi,
   ) || [];
 
   if (specificationLabels.length >= 2) {
