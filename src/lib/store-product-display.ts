@@ -155,7 +155,7 @@ export function storefrontProductDetails(value: unknown) {
     .trim();
 
   const supplierSpecLabels = source.match(
-    /\b(?:model|product\s+name|product\s+list|list|clamping\s+range|product\s+angle|weight)\s*:/gi,
+    /\b(?:model|product\s+name|product\s+list|list|clamping\s+range|product\s+angle|weight|transmission\s+range|transmission\s+distance|chip\s+type|battery\s+life|standby\s+time|bluetooth\s+version|impedance|rated\s+input|speaker\s+size|frequency\s+response|functions?|material|usage|design|included)\s*:/gi,
   ) || [];
 
   if (supplierSpecLabels.length >= 3) return "";
