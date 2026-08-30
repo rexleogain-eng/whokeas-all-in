@@ -149,7 +149,16 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     /\b(?:model|product\s+name|style|material|color|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list)\s*:/gi,
   ) || [];
 
-  if (specificationLabels.length >= 2) {
+  const supplierCopyLabels = source.match(
+    /\b(?:overview|features?|fabric|composition|care\s+instructions?|net\s+weight|functions?|suggested\s+usage)\s*[:：]?/gi,
+  ) || [];
+
+  if (
+    specificationLabels.length >= 2 ||
+    supplierCopyLabels.length >= 2 ||
+    /\boverview\s*\d+\s*[.、:【]/i.test(source) ||
+    /^note\s*[:：].*?\boverview\b/i.test(source)
+  ) {
     const productName = storefrontTitle(titleValue);
     return `${productName} selected for everyday use, with clear USD pricing and U.S. delivery through WHOKEAS.`;
   }
