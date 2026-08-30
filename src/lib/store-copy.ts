@@ -146,7 +146,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     .trim();
 
   const specificationLabels = source.match(
-    /\b(?:model|product\s+name|style|material|composition|pattern|color(?:\s+classification)?|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list)\s*:/gi,
+    /\b(?:model|product\s+name|style|material|composition|pattern|color(?:\s+classification)?|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list|transmission\s+range|transmission\s+distance|chip\s+type|battery\s+life|standby\s+time|bluetooth\s+version|impedance|rated\s+input|speaker\s+size|frequency\s+response|usage|design|included)\s*:/gi,
   ) || [];
 
   const supplierCopyLabels = source.match(
