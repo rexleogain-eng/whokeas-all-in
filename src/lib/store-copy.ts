@@ -14,6 +14,7 @@ function removeSupplierNoise(value: string) {
     .replace(/\bhot\s*sale\b/gi, "")
     .replace(/\bnew\s*arrival\b/gi, "")
     .replace(/\b202[0-9]\b/g, "")
+    .replace(/\bforeign\s+trade\s+explosion\s*(?:--?|[-–—:])?\s*/gi, "")
     .replace(/\b(?:note\s*:\s*)?MOQ\s*(?:is|[:=])?\s*\d+(?:\s*(?:pieces?|pcs?))?\b[.;,]?/gi, "")
     .replace(/\bphysical\s+pictures?\s*,?\s*amazon\s*,?\s*cross[-\s]?border\s+business\s+opportunities?\b[^.!?]*/gi, "")
     .replace(/\bcross[-\s]?border\s+business\s+opportunities?\b[^.!?]*/gi, "")
@@ -114,6 +115,9 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   }
   if (/hair\s*removal/.test(title)) {
     return "A convenient at-home grooming option. Follow the product directions and patch-test guidance before use.";
+  }
+  if (/brightening\s+repair\s+paste|gaoguang\s+eye\s+cream/.test(title)) {
+    return "A compact cosmetic highlighting cream selected for everyday makeup and beauty routines.";
   }
   if (/glitter/.test(title) && /spray/.test(title)) {
     return "An easy-to-apply shimmer spray for adding a visible sparkle effect to hair or body for events and styling.";
