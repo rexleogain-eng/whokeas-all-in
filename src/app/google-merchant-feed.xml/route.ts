@@ -103,6 +103,9 @@ function merchantTitle(value: unknown) {
     .replace(/\bhot\s*sale\b/gi, "")
     .replace(/\bnew\s*arrival\b/gi, "")
     .replace(/\b202[0-9]\b/g, "")
+    // Supplier marketplace storefront names are fulfilment metadata, not
+    // customer-facing product identity. Keep the product wording itself.
+    .replace(/\s+by\s+[a-z0-9 .&'’-]{2,80}\s+boutique\s+store$/i, "")
     .replace(/[_|]+/g, " ")
     .replace(/\s+/g, " ")
     .replace(/^[,;:\-–—\s]+|[,;:\-–—\s]+$/g, "")
