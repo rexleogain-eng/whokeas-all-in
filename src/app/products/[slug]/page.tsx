@@ -68,7 +68,7 @@ export default async function ProductPage({ params }: PageProps) {
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
   const result = await getStoreProductBySlug(slug);
 
-  if (!result) notFound();
+  if (!result || !result.product.usAvailable) notFound();
 
   const { product, images, variants } = result;
   const rawName = String(product.name || "");
