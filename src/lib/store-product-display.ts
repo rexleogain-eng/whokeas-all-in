@@ -160,12 +160,14 @@ export function storefrontProductDetails(value: unknown) {
 
   if (supplierSpecLabels.length >= 3) return "";
 
-  // Numbered "Overview 1...2...3..." blocks are supplier marketplace copy,
-  // not polished customer-facing product details. Suppress them rather than
-  // publishing awkward claims/translation artefacts verbatim.
+  // Numbered marketplace feature/overview blocks are supplier copy, not
+  // polished customer-facing details. Suppress them rather than publishing
+  // awkward claims or translation artefacts verbatim.
   if (
-    /\boverview\s*1\s*[.、:【]/i.test(source) &&
-    /(?:\b2\s*[.、:【]|\b3\s*[.、:【])/i.test(source)
+    (/\boverview\s*1\s*[.、:【]/i.test(source) &&
+      /(?:\b2\s*[.、:【]|\b3\s*[.、:【])/i.test(source)) ||
+    (/(?:^|\s)1\s*【[^】]{2,80}】/.test(source) &&
+      /(?:^|\s)2\s*【[^】]{2,80}】/.test(source))
   ) {
     return "";
   }
