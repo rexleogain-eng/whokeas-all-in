@@ -146,17 +146,19 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     .trim();
 
   const specificationLabels = source.match(
-    /\b(?:model|product\s+name|style|material|color|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list)\s*:/gi,
+    /\b(?:model|product\s+name|style|material|composition|pattern|color(?:\s+classification)?|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list)\s*:/gi,
   ) || [];
 
   const supplierCopyLabels = source.match(
-    /\b(?:overview|features?|fabric|composition|care\s+instructions?|net\s+weight|functions?|suggested\s+usage)\s*[:：]?/gi,
+    /\b(?:overview|features?|highlights?|fabric|composition|care\s+instructions?|net\s+weight|functions?|suggested\s+usage)\s*[:：]?/gi,
   ) || [];
 
   if (
     specificationLabels.length >= 2 ||
     supplierCopyLabels.length >= 2 ||
-    /\boverview\s*\d+\s*[.、:【]/i.test(source) ||
+    /\boverview\s*:?[\s]*\d+\s*[.、:【]/i.test(source) ||
+    /^\*{0,2}(?:overview|features?|highlights?)\*{0,2}\s*[:：]/i.test(source) ||
+    /^(?:color\s+classification|colour\s+classification)\s*[:：]/i.test(source) ||
     /^note\s*[:：].*?\boverview\b/i.test(source)
   ) {
     const productName = storefrontTitle(titleValue);
