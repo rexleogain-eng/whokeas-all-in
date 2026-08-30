@@ -34,7 +34,9 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
   if (
     slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
-    /\bhair\s+removal\s+cream\b/i.test(normalizedName)
+    slug === "high-light-brightening-repair-paste-922952" ||
+    /\bhair\s+removal\s+cream\b/i.test(normalizedName) ||
+    /\belectric\s+nail\s+clippers?\b/i.test(normalizedName)
   ) {
     return "Beauty";
   }
@@ -44,9 +46,25 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\bwalkie[-\s]?talkie\b/i.test(normalizedName) ||
     /\btwo[-\s]?way\s+radio\b/i.test(normalizedName) ||
     /\brgb\s+led\s+controller\b/i.test(normalizedName) ||
-    /\bled\s+controller\b/i.test(normalizedName)
+    /\bled\s+controller\b/i.test(normalizedName) ||
+    /\bwireless\s+bluetooth\s+headset\b/i.test(normalizedName) ||
+    /\bwireless\s+karaoke\s+(?:singing\s+)?mic(?:rophone)?\b/i.test(normalizedName)
   ) {
     return "Tech";
+  }
+
+  if (
+    /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(normalizedName) ||
+    /\bportable\s+power\s+washer\b/i.test(normalizedName)
+  ) {
+    return "Home";
+  }
+
+  if (
+    /\breusable\s+cable\s+organizer\b/i.test(normalizedName) ||
+    /\bcable\s+organizer\s+silicone\b/i.test(normalizedName)
+  ) {
+    return "Accessories";
   }
 
   return categoryName ? String(categoryName) : null;
