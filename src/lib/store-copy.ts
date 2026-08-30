@@ -157,6 +157,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     specificationLabels.length >= 2 ||
     supplierCopyLabels.length >= 2 ||
     /\boverview\s*:?[\s]*\d+\s*[.、:【]/i.test(source) ||
+    /(?:^|\s)\d+\s*【[^】]{2,80}】/.test(source) ||
     /^\*{0,2}(?:overview|features?|highlights?)\*{0,2}\s*[:：]/i.test(source) ||
     /^(?:color\s+classification|colour\s+classification)\s*[:：]/i.test(source) ||
     /^note\s*[:：].*?\boverview\b/i.test(source)
