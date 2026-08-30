@@ -25,7 +25,9 @@ export default function StoreProductCard({
   const compareAt = Number(product.compareAtPrice || 0);
   const current = Number(product.price || 0);
   const productTitle = storefrontTitle(product.name);
-  const productSummary = storefrontSummary(product.name, product.shortDescription);
+  const productSummary = /\bsuction\s+cup\b.*\b(?:mini\s+)?vise\b|\b(?:mini\s+)?vise\b.*\bsuction\s+cup\b/i.test(product.name)
+    ? "A compact suction-cup mini vise selected for small craft, engraving and bench-detail work."
+    : storefrontSummary(product.name, product.shortDescription);
   const categoryLabel = storefrontCategory(product);
   const deliveryWindow = usDeliveryWindow(product.deliveryDays);
   const discount =
