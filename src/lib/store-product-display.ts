@@ -154,6 +154,12 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\s*\n\s*/g, "\n")
     .trim();
 
+  const supplierSpecLabels = source.match(
+    /\b(?:model|product\s+name|product\s+list|list|clamping\s+range|product\s+angle|weight)\s*:/gi,
+  ) || [];
+
+  if (supplierSpecLabels.length >= 3) return "";
+
   source = source
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
