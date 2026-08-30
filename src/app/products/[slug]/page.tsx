@@ -27,7 +27,9 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
   if (
     slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
-    /\bhair\s+removal\s+cream\b/i.test(name)
+    slug === "high-light-brightening-repair-paste-922952" ||
+    /\bhair\s+removal\s+cream\b/i.test(name) ||
+    /\belectric\s+nail\s+clippers?\b/i.test(name)
   ) {
     return "Beauty";
   }
@@ -37,9 +39,25 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
     /\bwalkie[-\s]?talkie\b/i.test(name) ||
     /\btwo[-\s]?way\s+radio\b/i.test(name) ||
     /\brgb\s+led\s+controller\b/i.test(name) ||
-    /\bled\s+controller\b/i.test(name)
+    /\bled\s+controller\b/i.test(name) ||
+    /\bwireless\s+bluetooth\s+headset\b/i.test(name) ||
+    /\bwireless\s+karaoke\s+(?:singing\s+)?mic(?:rophone)?\b/i.test(name)
   ) {
     return "Tech";
+  }
+
+  if (
+    /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(name) ||
+    /\bportable\s+power\s+washer\b/i.test(name)
+  ) {
+    return "Home";
+  }
+
+  if (
+    /\breusable\s+cable\s+organizer\b/i.test(name) ||
+    /\bcable\s+organizer\s+silicone\b/i.test(name)
+  ) {
+    return "Accessories";
   }
 
   return String(categoryName || "General");
