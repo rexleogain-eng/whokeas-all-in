@@ -15,6 +15,8 @@ function cleanInline(value: unknown) {
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
     .replace(/\bwholesale\b/gi, "")
+    .replace(/\bforeign\s+trade\s+explosion\s*(?:--?|[-–—:])?\s*/gi, "")
+    .replace(/\b(?:note\s*:\s*)?MOQ\s*(?:is|[:=])?\s*\d+(?:\s*(?:pieces?|pcs?))?\b[.;,]?/gi, "")
     .replace(/\s+/g, " ")
     .replace(/^[,;:\-–—\s]+|[,;:\-–—\s]+$/g, "")
     .trim();
@@ -156,6 +158,8 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bCJ\s*dropshipping\b/gi, "")
     .replace(/\bdropshipping\b/gi, "")
     .replace(/\bwholesale\b/gi, "")
+    .replace(/\bforeign\s+trade\s+explosion\s*(?:--?|[-–—:])?\s*/gi, "")
+    .replace(/\b(?:note\s*:\s*)?MOQ\s*(?:is|[:=])?\s*\d+(?:\s*(?:pieces?|pcs?))?\b[.;,]?/gi, "")
     .replace(/^available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s*/i, "")
     .replace(/^(?:product\s+(?:information|description)|specifications?)\s*:?\s*$/gim, "")
     .replace(/\bproduct\s+(?:information|description)\s*:\s*/gi, "")
