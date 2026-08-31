@@ -95,7 +95,9 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\breusable\s+cable\s+organizer\b/i.test(normalizedName) ||
     /\bcable\s+organizer\s+silicone\b/i.test(normalizedName) ||
     /\bjewelry\s+ring\s+display\s+box\b/i.test(normalizedName) ||
-    /\bring\s+display\s+box\s+organizer\b/i.test(normalizedName)
+    /\bring\s+display\s+box\s+organizer\b/i.test(normalizedName) ||
+    (/\b(?:pet|dog|cat)\b/i.test(normalizedName) &&
+      /\b(?:pet\s+hair\s+remover|lint\s+remover|lint\s+roller|clothes?\s+roller)\b/i.test(normalizedName))
   ) {
     return "Accessories";
   }
