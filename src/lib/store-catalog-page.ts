@@ -146,7 +146,9 @@ function storefrontCategory(product: StoreProduct) {
     /\breusable\s+cable\s+organizer\b/i.test(name) ||
     /\bcable\s+organizer\s+silicone\b/i.test(name) ||
     /\bjewelry\s+ring\s+display\s+box\b/i.test(name) ||
-    /\bring\s+display\s+box\s+organizer\b/i.test(name)
+    /\bring\s+display\s+box\s+organizer\b/i.test(name) ||
+    (/\b(?:pet|dog|cat)\b/i.test(name) &&
+      /\b(?:pet\s+hair\s+remover|lint\s+remover|lint\s+roller|clothes?\s+roller)\b/i.test(name))
   ) {
     return "Accessories";
   }
