@@ -50,7 +50,9 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
     slug === "high-light-brightening-repair-paste-922952" ||
     /\bhair\s+removal\s+cream\b/i.test(normalizedName) ||
-    /\belectric\s+nail\s+clippers?\b/i.test(normalizedName)
+    /\belectric\s+nail\s+clippers?\b/i.test(normalizedName) ||
+    /\bhair\s*line\s+powder\b/i.test(normalizedName) ||
+    /\bhairline\s+powder\b/i.test(normalizedName)
   ) {
     return "Beauty";
   }
@@ -62,21 +64,27 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\brgb\s+led\s+controller\b/i.test(normalizedName) ||
     /\bled\s+controller\b/i.test(normalizedName) ||
     /\bwireless\s+bluetooth\s+headset\b/i.test(normalizedName) ||
-    /\bwireless\s+karaoke\s+(?:singing\s+)?mic(?:rophone)?\b/i.test(normalizedName)
+    /\bwireless\s+karaoke\s+(?:singing\s+)?mic(?:rophone)?\b/i.test(normalizedName) ||
+    /\braspberry\s+pi\b/i.test(normalizedName) ||
+    /\bredragon\s+k618\b/i.test(normalizedName)
   ) {
     return "Tech";
   }
 
   if (
     /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(normalizedName) ||
-    /\bportable\s+power\s+washer\b/i.test(normalizedName)
+    /\bportable\s+power\s+washer\b/i.test(normalizedName) ||
+    /\bpop[-\s]?up\s+aluminum\s+foil\s+sheets?\b/i.test(normalizedName) ||
+    /\bpineapple\s+(?:slicer|corer|cutter|peeler)\b/i.test(normalizedName)
   ) {
     return "Home";
   }
 
   if (
     /\breusable\s+cable\s+organizer\b/i.test(normalizedName) ||
-    /\bcable\s+organizer\s+silicone\b/i.test(normalizedName)
+    /\bcable\s+organizer\s+silicone\b/i.test(normalizedName) ||
+    /\bjewelry\s+ring\s+display\s+box\b/i.test(normalizedName) ||
+    /\bring\s+display\s+box\s+organizer\b/i.test(normalizedName)
   ) {
     return "Accessories";
   }
