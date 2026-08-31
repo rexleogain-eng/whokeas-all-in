@@ -154,7 +154,11 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\s*\n\s*/g, "\n")
     .trim();
 
-  if (/^PHOERA-New\s+24ML\s+makeup\s+lotion\s*Features:\s*isolation\s+moisturizing$/i.test(source.replace(/\n/g, " "))) {
+  const compactSource = source.replace(/\s+/g, " ").trim();
+  if (
+    /^PHOERA-New\s+24ML\s+makeup\s+lotion\b/i.test(compactSource) &&
+    /\bFeatures:\s*isolation\s+moisturizing\b/i.test(compactSource)
+  ) {
     return "A lightweight moisturizing makeup primer selected to help create a smooth base for everyday makeup.";
   }
 
