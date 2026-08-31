@@ -32,6 +32,15 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
   }
 
   if (
+    /\bwomen(?:'s)?\s+.*\bjumpsuits?\b/i.test(name) ||
+    (/\bwomen\b/i.test(name) && /\bsandals?\b/i.test(name)) ||
+    /\b(?:fluffy|platform)\s+slippers?\b/i.test(name) ||
+    /\b(?:bras?|bralettes?)\b/i.test(name)
+  ) {
+    return "Fashion";
+  }
+
+  if (
     slug ===
       "floor-lamp-with-table-narrow-3-tier-end-table-with-open-shelves-3-color-temperature-lighting-side-nightstand-bedside-desk-with-usb-203671"
   ) {
