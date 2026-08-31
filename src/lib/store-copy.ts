@@ -146,7 +146,7 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
     .trim();
 
   const specificationLabels = source.match(
-    /\b(?:model|product\s+name|style|material|composition|pattern|color(?:\s+classification)?|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list|transmission\s+range|transmission\s+distance|chip\s+type|battery\s+life|standby\s+time|bluetooth\s+version|impedance|rated\s+input|speaker\s+size|frequency\s+response|usage|design|included)\s*:/gi,
+    /\b(?:model|product\s+name|style|material|composition|pattern|color(?:\s+classification)?|colour|size|dimensions?|weight|clamping\s+range|applicable models?|specifications?|packing list|package includes?|list|transmission\s+range|transmission\s+distance|chip\s+type|battery\s+life|standby\s+time|bluetooth\s+version|impedance|rated\s+input|speaker\s+size|frequency\s+response|usage|design|included|main\s+fabric\s+component(?:\s*\d+)?|sleeve\s+length|version|collar\s+type)\s*:/gi,
   ) || [];
 
   const supplierCopyLabels = source.match(
@@ -156,11 +156,11 @@ export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   if (
     specificationLabels.length >= 2 ||
     supplierCopyLabels.length >= 2 ||
-    /\boverview\s*:?[\s]*\d+\s*[.、:【]/i.test(source) ||
-    /(?:^|\s)\d+\s*【[^】]{2,80}】/.test(source) ||
+    /\boverview\s*:?[\s]*\d+\s*[.、:【〖]/i.test(source) ||
+    /(?:^|\s)\d+\s*[.、:]?\s*[【〖][^】〗]{2,80}[】〗]/.test(source) ||
     /^\*{0,2}(?:overview|features?|highlights?)\*{0,2}\s*[:：]/i.test(source) ||
     /^(?:color\s+classification|colour\s+classification)\s*[:：]/i.test(source) ||
-    /^note\s*[:：].*?\boverview\b/i.test(source)
+    /^note\s*[:：].*?(?:\boverview\b|\bcompatible\b|[【〖])/i.test(source)
   ) {
     const productName = storefrontTitle(titleValue);
     return `${productName} selected for everyday use, with clear USD pricing and U.S. delivery through WHOKEAS.`;
