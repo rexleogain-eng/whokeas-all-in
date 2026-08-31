@@ -71,7 +71,7 @@ function storefrontCategory(product: StoreProduct) {
 
   if (
     /\bwomen(?:'s)?\s+.*\bjumpsuits?\b/i.test(name) ||
-    /\bwomen(?:'s)?\s+.*\bsandals?\b/i.test(name) ||
+    (/\bwomen\b/i.test(name) && /\bsandals?\b/i.test(name)) ||
     /\b(?:fluffy|platform)\s+slippers?\b/i.test(name) ||
     /\b(?:bras?|bralettes?)\b/i.test(name)
   ) {
