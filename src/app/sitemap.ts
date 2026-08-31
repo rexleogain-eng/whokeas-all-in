@@ -11,42 +11,13 @@ import {
   US_SHIPPING_MAX_DAYS,
   US_TARGET_COUNTRY_CODE,
 } from "../lib/seo";
+import { isRestrictedStorefrontProduct } from "../lib/store-catalog";
 
 export const revalidate = 3600;
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-26T00:00:00.000Z");
 const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
-
-const GOOGLE_RESTRICTED_PRODUCT_PATTERNS = [
-  /\bmini\s+fan\s+heater\s+wall[-\s]?mounted\s+dormitory\s+warm\s+artifact\b/i,
-  /\bhearing\s+(?:aid|amplifier)\b/i,
-  /\bpersonal\s+sound\s+amplifier\b/i,
-  /\b(?:medical|physiotherapy|rehabilitation|chiropractic)\b/i,
-  /\b(?:moxibustion|acupuncture|acupoint)\b/i,
-  /\b(?:blood\s+pressure|blood\s+glucose|glucose\s+meter|oximeter|nebulizer|insulin)\b/i,
-  /\b(?:pregnan\w*|fertility|ovulation|breast\s+pump)\b/i,
-  /\b(?:pelvic|vaginal|erectile|prostate|penis|sex\s+toy|adult\s+toy)\b/i,
-  /\b(?:plasma\s+(?:pen|spot)|electroporation|mesotherapy)\b/i,
-  /\b(?:mole|wart|tattoo|freckle)\s+remov(?:al|er)\b/i,
-  /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
-  /\b(?:microneedl\w*|derma\s+roller)\b/i,
-  /\b(?:eye\s+care\s+device|heated\s+eye\s+massager)\b/i,
-  /\b(?:radiation\s+protection|radiation\s+shield(?:ing)?)\b/i,
-];
-
-const GOOGLE_RESTRICTED_CLAIM_PATTERNS = [
-  /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping|body\s+sculpt(?:ing)?)\b/i,
-  /\b(?:face|facial)\s+sculpt(?:ing)?\b/i,
-  /\banti[-\s]?cellulite\b/i,
-  /\b(?:skin\s+tightening|facial\s+lifting)\b/i,
-  /\b(?:hair\s+growth|hair\s+regrowth|anti[-\s]?hair\s+loss|stimulates?\s+hair\s+follicles?)\b/i,
-  /\blymphatic\s+drainage\b/i,
-  /\b(?:skin\s+)?whitening\b/i,
-  /\bskin\s+rejuvenation\b/i,
-  /\bbreast\s+enlargement\b/i,
-  /\b(?:prevent|cure|treat(?:ment)?|heal(?:ing)?)\s+(?:a|an|the\s+)?(?:disease|condition|ailment|pain)\b/i,
-];
 
 type SitemapProduct = {
   slug: string;
@@ -85,10 +56,7 @@ function sitemapEligibleProduct(product: SitemapProduct) {
     return false;
   }
 
-  return ![
-    ...GOOGLE_RESTRICTED_PRODUCT_PATTERNS,
-    ...GOOGLE_RESTRICTED_CLAIM_PATTERNS,
-  ].some((pattern) => pattern.test(policyText));
+  return !isRestrictedStorefrontProduct(product);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
