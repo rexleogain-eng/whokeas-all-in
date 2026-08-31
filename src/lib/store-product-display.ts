@@ -208,6 +208,8 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\bPackage includes\s*:/gi, "Included:")
     .replace(/\bPackage content\s*:/gi, "Included:")
     .replace(/Included:\s*([^\n]+)/gi, (_, items: string) => formatIncludedBlock(items))
+    .replace(/([!?])(?=[A-Z])/g, "$1 ")
+    .replace(/\b([a-z]{2,})\.(?=[A-Z][a-z])/g, "$1. ")
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
