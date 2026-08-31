@@ -92,7 +92,9 @@ function storefrontCategory(product: StoreProduct) {
     /\bhair\s+removal\s+cream\b/i.test(name) ||
     /\belectric\s+nail\s+clippers?\b/i.test(name) ||
     /\bhair\s*line\s+powder\b/i.test(name) ||
-    /\bhairline\s+powder\b/i.test(name)
+    /\bhairline\s+powder\b/i.test(name) ||
+    (/\bmakeup\s+storage\s+box\b/i.test(name) && /\b(?:mirror|cosmetic)\b/i.test(name)) ||
+    (/\bcosmetic\s+mirror\b/i.test(name) && /\b(?:organizer|storage)\b/i.test(name))
   ) {
     return "Beauty";
   }
