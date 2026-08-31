@@ -154,6 +154,10 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/\s*\n\s*/g, "\n")
     .trim();
 
+  if (/^PHOERA-New\s+24ML\s+makeup\s+lotion\s*Features:\s*isolation\s+moisturizing$/i.test(source.replace(/\n/g, " "))) {
+    return "A lightweight moisturizing makeup primer selected to help create a smooth base for everyday makeup.";
+  }
+
   const supplierSpecLabels = source.match(
     /\b(?:model|product\s+name|product\s+list|list|clamping\s+range|product\s+angle|weight|transmission\s+range|transmission\s+distance|chip\s+type|battery\s+life|standby\s+time|bluetooth\s+version|impedance|rated\s+input|speaker\s+size|frequency\s+response|functions?|material|usage|design|included)\s*:/gi,
   ) || [];
