@@ -6,10 +6,14 @@ import { formatStorePrice } from "@/lib/store-currency";
 import { usDeliveryWindow } from "@/lib/seo";
 
 function storefrontCategory(product: StoreProduct) {
+  const name = String(product.name || "");
+
   if (
     product.slug ===
       "ouhoe-peach-hair-removal-cream-gentle-non-irritant-cleaning-ladies-facial-lip-hair-quick-hair-removal-cream-198383" ||
-    /\bhair\s+removal\s+cream\b/i.test(product.name)
+    /\bhair\s+removal\s+cream\b/i.test(name) ||
+    (/\bmakeup\s+storage\s+box\b/i.test(name) && /\b(?:mirror|cosmetic)\b/i.test(name)) ||
+    (/\bcosmetic\s+mirror\b/i.test(name) && /\b(?:organizer|storage)\b/i.test(name))
   ) {
     return "Beauty";
   }
