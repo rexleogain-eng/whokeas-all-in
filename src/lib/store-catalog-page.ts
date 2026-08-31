@@ -44,13 +44,28 @@ function compactSupplierSummary(value: string | null) {
   return `${preview.slice(0, cutAt).trimEnd()}…`;
 }
 
+function customerSafeSummary(product: StoreProduct, value: string | null) {
+  const cleaned = compactSupplierSummary(value);
+
+  if (
+    cleaned &&
+    !/^\s*Brand\s*:/i.test(cleaned) &&
+    !/^\s*\d+\s*[.)]\s*/.test(cleaned)
+  ) {
+    return cleaned;
+  }
+
+  const name = String(product.name || "Product").trim() || "Product";
+  return `${name} selected for everyday use, with clear USD pricing and U.S. delivery through WHOKEAS.`;
+}
+
 function cleanProductCopy(product: StoreProduct): StoreProduct {
   const description = cleanSupplierCopy(product.description);
-  const shortDescription = compactSupplierSummary(
+  const summarySource =
     cleanSupplierCopy(product.shortDescription) ||
-      description ||
-      "Selected for WHOKEAS customers.",
-  );
+    description ||
+    null;
+  const shortDescription = customerSafeSummary(product, summarySource);
 
   return {
     ...product,
