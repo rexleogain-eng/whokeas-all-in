@@ -61,7 +61,9 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\bhair\s+removal\s+cream\b/i.test(normalizedName) ||
     /\belectric\s+nail\s+clippers?\b/i.test(normalizedName) ||
     /\bhair\s*line\s+powder\b/i.test(normalizedName) ||
-    /\bhairline\s+powder\b/i.test(normalizedName)
+    /\bhairline\s+powder\b/i.test(normalizedName) ||
+    (/\bmakeup\s+storage\s+box\b/i.test(normalizedName) && /\b(?:mirror|cosmetic)\b/i.test(normalizedName)) ||
+    (/\bcosmetic\s+mirror\b/i.test(normalizedName) && /\b(?:organizer|storage)\b/i.test(normalizedName))
   ) {
     return "Beauty";
   }
