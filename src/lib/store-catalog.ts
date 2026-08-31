@@ -68,6 +68,7 @@ const STOREFRONT_RESTRICTED_PATTERNS = [
   /\b(?:orthodontic|dental\s+scaler|teeth?\s+whitening\s+(?:instrument|device))\b/i,
   /\b(?:microneedl\w*|derma\s+roller)\b/i,
   /\b(?:eye\s+care\s+device|heated\s+eye\s+massager)\b/i,
+  /\b(?:vacuum\s+)?suction\s+cup\s+massager\b/i,
   /\b(?:ear\s+wax\s+remov(?:al|er)|ear\s+clean(?:er|ing)\s+(?:device|tool)|vacuum\s+ear\s+cleaner)\b/i,
   /\b(?:radiation\s+protection|radiation\s+shield(?:ing)?)\b/i,
   /\b(?:slimming|weight\s*loss|fat\s*burn(?:ing)?|body\s+shaping|body\s+sculpt(?:ing)?)\b/i,
