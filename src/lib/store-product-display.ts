@@ -164,7 +164,7 @@ export function storefrontProductDetails(value: unknown) {
   // polished customer-facing details. Suppress them rather than publishing
   // awkward claims or translation artefacts verbatim.
   if (
-    (/\boverview\s*1\s*[.、:【]/i.test(source) &&
+    (/\boverview\s*:?\s*1\s*[.、:【]/i.test(source) &&
       /(?:\b2\s*[.、:【]|\b3\s*[.、:【])/i.test(source)) ||
     (/(?:^|\s)1\s*【[^】]{2,80}】/.test(source) &&
       /(?:^|\s)2\s*【[^】]{2,80}】/.test(source))
