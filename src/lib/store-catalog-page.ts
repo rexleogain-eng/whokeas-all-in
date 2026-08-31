@@ -14,7 +14,7 @@ function cleanSupplierCopy(value: string | null) {
     .replace(/<[^>]*>/g, " ")
     .replace(/[*_`]{1,3}/g, " ")
     .replace(
-      /\b(?:Highlights?|Specifications?|Details?|Product Description)\s*[:-]?\s*/gi,
+      /\b(?:Highlights?|Specifications?|Details?|Product Description|Overview|Properties)\s*[:-]?\s*/gi,
       " ",
     )
     .replace(/\b(?:undefined|null)\b/gi, " ")
@@ -65,6 +65,15 @@ function storefrontCategory(product: StoreProduct) {
   if (
     product.slug ===
       "vintage-women-hollow-out-short-dress-summer-v-neck-halter-dress-sleeveless-mini-dresses-backless-holiday-beach-sundress-vestidos-250210"
+  ) {
+    return "Fashion";
+  }
+
+  if (
+    /\bwomen(?:'s)?\s+.*\bjumpsuits?\b/i.test(name) ||
+    /\bwomen(?:'s)?\s+.*\bsandals?\b/i.test(name) ||
+    /\b(?:fluffy|platform)\s+slippers?\b/i.test(name) ||
+    /\b(?:bras?|bralettes?)\b/i.test(name)
   ) {
     return "Fashion";
   }
