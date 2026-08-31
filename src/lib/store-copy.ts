@@ -92,6 +92,9 @@ export function storefrontTitle(value: unknown) {
 export function storefrontSummary(titleValue: unknown, summaryValue: unknown) {
   const title = normalize(titleValue).toLowerCase();
 
+  if (/isolation\s+moisturi[sz]ing\s+makeup\s+primer/.test(title)) {
+    return "A lightweight moisturizing makeup primer selected to help create a smooth base for everyday makeup.";
+  }
   if (/power\s*bank/.test(title) && /digital\s*display/.test(title)) {
     return "Portable backup power with a clear digital display, selected for everyday charging and travel.";
   }
