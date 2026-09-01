@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import StoreHeader from "@/components/store/StoreHeader";
 import StoreProductCard from "@/components/store/StoreProductCard";
@@ -48,24 +49,25 @@ export async function generateMetadata({
   const category = filterValue(params.category);
   const sort = filterValue(params.sort);
   const page = positivePage(params.page);
+  const retiredCategory = category.toLowerCase() === "study";
   const canonicalQuery = new URLSearchParams();
 
-  if (category) canonicalQuery.set("category", category);
-  if (page > 1) canonicalQuery.set("page", String(page));
+  if (category && !retiredCategory) canonicalQuery.set("category", category);
+  if (page > 1 && !retiredCategory) canonicalQuery.set("page", String(page));
 
   const canonicalUrl = canonicalQuery.size > 0
     ? `${SITE_URL}/products?${canonicalQuery.toString()}`
     : `${SITE_URL}/products`;
   const baseTitle = query
     ? `Search results for “${query}”`
-    : category
+    : category && !retiredCategory
       ? `${category} Products Online`
       : "Shop Products Online in the U.S.";
-  const title = page > 1 ? `${baseTitle} – Page ${page}` : baseTitle;
-  const description = category
+  const title = page > 1 && !retiredCategory ? `${baseTitle} – Page ${page}` : baseTitle;
+  const description = category && !retiredCategory
     ? `Shop ${category} products from ${SITE_NAME}, with USD pricing and free standard U.S. shipping.`
     : `Browse curated products from ${SITE_NAME}, with USD pricing, free standard U.S. shipping and clear customer support.`;
-  const indexable = !query && !sort;
+  const indexable = !query && !sort && !retiredCategory;
 
   return {
     title,
@@ -95,6 +97,10 @@ export default async function ProductsPage({
   const category = filterValue(params.category);
   const sort = filterValue(params.sort) || "newest";
   const requestedPage = positivePage(params.page);
+
+  if (category.toLowerCase() === "study") {
+    redirect("/products");
+  }
 
   const [catalogPage, categories] = await Promise.all([
     getStoreProductPage({
