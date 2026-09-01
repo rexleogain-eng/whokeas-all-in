@@ -107,6 +107,9 @@ export default async function ProductsPage({
     getStoreCategories(),
   ]);
 
+  const visibleCategories = categories.filter(
+    (item) => item.name.toLowerCase() !== "study",
+  );
   const {
     products,
     total: totalAvailable,
@@ -186,7 +189,7 @@ export default async function ProductsPage({
               <span>→</span>
             </Link>
 
-            {categories.map((item) => {
+            {visibleCategories.map((item) => {
               const next = new URLSearchParams();
               if (query) next.set("q", query);
               next.set("category", item.name);
