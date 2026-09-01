@@ -78,6 +78,7 @@ export function storefrontTitle(value: unknown) {
   if (/vitamin\s*e/.test(lower) && /(oil|skin)/.test(lower)) return "Vitamin E Multi-Purpose Skin & Hair Oil";
   if (/moisturi[sz]ing/.test(lower) && /spray/.test(lower)) return "Refreshing Body & Hair Moisturizing Spray";
   if (/hair\s*identifier/.test(lower)) return "Facial Hair Identifier Spray & Razor Set";
+  if (/\badded\s+extension\s+tupe\s+water\s+dispenser\b/.test(lower)) return "Added Extension Tube Water Dispenser";
 
   const cleaned = trimRepeatedEdgePhrase(source)
     .replace(/^compatible\s+with\s*[,;:\-–—\s]+/i, "")
