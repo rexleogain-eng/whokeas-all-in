@@ -189,6 +189,7 @@ export function storefrontProductDetails(value: unknown) {
     .replace(/^available\s+ship\s+to:\s*(?:puerto\s+rico\s*,?\s*)?united\s+states\s*/i, "")
     .replace(/^(?:product\s+(?:information|description)|specifications?)\s*:?\s*$/gim, "")
     .replace(/\bproduct\s+(?:information|description)\s*:\s*/gi, "")
+    .replace(/\bNote\s*:\s*Non-Apple\s+brand\s+products\s*,?\s*Applicable\s+to\s+iPhone\s+models\.?/gi, "Compatibility: Designed for supported iPhone models; this is a third-party accessory, not an Apple-branded product.")
     .replace(/\bApplicable\s+Models?\s*:/gi, "Compatibility:")
     .replace(/\bStyle\s*:/gi, "Design:")
     .replace(/\bFunction\s*:/gi, "Features:")
