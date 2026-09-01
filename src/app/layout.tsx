@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     "home essentials online",
     "fashion essentials online",
     "beauty essentials online",
-    "study essentials online",
+    "accessories online",
     "everyday essentials online",
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
