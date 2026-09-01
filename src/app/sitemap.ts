@@ -16,6 +16,7 @@ import { isRestrictedStorefrontProduct } from "../lib/store-catalog";
 export const revalidate = 3600;
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-08-26T00:00:00.000Z");
+const STOREFRONT_PAGE_LAST_MODIFIED = new Date("2026-09-01T00:00:00.000Z");
 const DEAL_PAGE_LAST_MODIFIED = new Date("2026-08-23T00:00:00.000Z");
 const PRODUCT_TEMPLATE_LAST_MODIFIED = new Date("2026-08-24T01:34:14.824Z");
 
@@ -63,13 +64,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${SITE_URL}/`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      lastModified: STOREFRONT_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${SITE_URL}/products`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
+      lastModified: STOREFRONT_PAGE_LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.9,
     },
