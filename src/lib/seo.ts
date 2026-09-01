@@ -22,7 +22,7 @@ export function usDeliveryWindow(deliveryDays: unknown) {
 }
 
 export const SITE_DESCRIPTION =
-  "Shop curated tech, home, fashion, beauty, study and everyday essentials with USD pricing, free standard U.S. shipping, guest checkout and direct WHOKEAS order support.";
+  "Shop curated tech, home, fashion, beauty, accessories and everyday essentials with USD pricing, free standard U.S. shipping, guest checkout and direct WHOKEAS order support.";
 
 export const BRAND_ALTERNATE_NAMES = [
   "WHOKEAS",
