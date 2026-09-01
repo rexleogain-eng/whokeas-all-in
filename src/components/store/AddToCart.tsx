@@ -36,6 +36,12 @@ type AnalyticsWindow = Window & {
   dataLayer?: Array<Record<string, unknown>>;
 };
 
+function storefrontVariantName(name: string) {
+  return name
+    .replace(/(\d)(Doublesided\b)/gi, "$1 Double-sided")
+    .replace(/\bDoublesided\b/gi, "Double-sided");
+}
+
 function trackEvent(
   name: string,
   parameters: Record<string, unknown>,
@@ -79,6 +85,9 @@ export default function AddToCart({ product, variants }: Props) {
 
   const effectivePrice = Number(selectedVariant?.price ?? product.price);
   const unavailable = selectedVariant !== undefined && selectedVariant.stockQuantity < 1;
+  const selectedVariantName = selectedVariant
+    ? storefrontVariantName(selectedVariant.name)
+    : undefined;
 
   function analyticsPayload() {
     return {
@@ -88,7 +97,7 @@ export default function AddToCart({ product, variants }: Props) {
         {
           item_id: product.id,
           item_name: product.name,
-          item_variant: selectedVariant?.name ?? undefined,
+          item_variant: selectedVariantName,
           price: effectivePrice,
           quantity,
         },
@@ -112,7 +121,7 @@ export default function AddToCart({ product, variants }: Props) {
         variantId: selectedVariant?.id ?? null,
         slug: product.slug,
         name: product.name,
-        variantName: selectedVariant?.name ?? null,
+        variantName: selectedVariantName ?? null,
         price: effectivePrice,
         currency: "USD",
         quantity,
@@ -160,7 +169,7 @@ export default function AddToCart({ product, variants }: Props) {
                       : "border-[#cfc4b1] bg-[#fffdf8] text-[#514a40] hover:border-[#9b762c]"
                   } disabled:cursor-not-allowed disabled:opacity-45`}
                 >
-                  <span className="block font-bold">{variant.name}</span>
+                  <span className="block font-bold">{storefrontVariantName(variant.name)}</span>
                   <span className="mt-1 block text-[10px] text-[#8b8378]">
                     {variant.stockQuantity > 0 ? `${variant.stockQuantity} available` : "Unavailable"}
                   </span>
