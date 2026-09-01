@@ -39,7 +39,8 @@ type AnalyticsWindow = Window & {
 function storefrontVariantName(name: string) {
   return name
     .replace(/(\d)(Doublesided\b)/gi, "$1 Double-sided")
-    .replace(/\bDoublesided\b/gi, "Double-sided");
+    .replace(/\bDoublesided\b/gi, "Double-sided")
+    .replace(/(\d)(Air\b)/gi, "$1 Air");
 }
 
 function trackEvent(
