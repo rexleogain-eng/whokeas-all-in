@@ -79,7 +79,12 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
     /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(name) ||
     /\bportable\s+power\s+washer\b/i.test(name) ||
     /\bpop[-\s]?up\s+aluminum\s+foil\s+sheets?\b/i.test(name) ||
-    /\bpineapple\s+(?:slicer|corer|cutter|peeler)\b/i.test(name)
+    /\bpineapple\s+(?:slicer|corer|cutter|peeler)\b/i.test(name) ||
+    /\b(?:automatic\s+)?water\s+bottle\s+dispenser\b/i.test(name) ||
+    /\bwater\s+gallon\s+automatic\s+water\s+bottle\s+dispenser\b/i.test(name) ||
+    /\bbedside\s+table\s+lamp\b/i.test(name) ||
+    /\b(?:seat|hip)\s+cushion\b/i.test(name) ||
+    /\bcushion\s+lumbar\s+support\b/i.test(name)
   ) {
     return "Home";
   }
@@ -89,6 +94,7 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
     /\bcable\s+organizer\s+silicone\b/i.test(name) ||
     /\bjewelry\s+ring\s+display\s+box\b/i.test(name) ||
     /\bring\s+display\s+box\s+organizer\b/i.test(name) ||
+    /\bquartz\s+watch\b/i.test(name) ||
     (/\b(?:pet|dog|cat)\b/i.test(name) &&
       /\b(?:pet\s+hair\s+remover|lint\s+remover|lint\s+roller|clothes?\s+roller)\b/i.test(name))
   ) {
