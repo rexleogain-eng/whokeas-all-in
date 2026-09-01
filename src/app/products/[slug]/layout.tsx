@@ -86,7 +86,12 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\bhigh\s+pressure\s+cleaning\s+gun\b/i.test(normalizedName) ||
     /\bportable\s+power\s+washer\b/i.test(normalizedName) ||
     /\bpop[-\s]?up\s+aluminum\s+foil\s+sheets?\b/i.test(normalizedName) ||
-    /\bpineapple\s+(?:slicer|corer|cutter|peeler)\b/i.test(normalizedName)
+    /\bpineapple\s+(?:slicer|corer|cutter|peeler)\b/i.test(normalizedName) ||
+    /\b(?:automatic\s+)?water\s+bottle\s+dispenser\b/i.test(normalizedName) ||
+    /\bwater\s+gallon\s+automatic\s+water\s+bottle\s+dispenser\b/i.test(normalizedName) ||
+    /\bbedside\s+table\s+lamp\b/i.test(normalizedName) ||
+    /\b(?:seat|hip)\s+cushion\b/i.test(normalizedName) ||
+    /\bcushion\s+lumbar\s+support\b/i.test(normalizedName)
   ) {
     return "Home";
   }
@@ -96,6 +101,7 @@ function storefrontCategory(slug: string, name: unknown, categoryName: unknown) 
     /\bcable\s+organizer\s+silicone\b/i.test(normalizedName) ||
     /\bjewelry\s+ring\s+display\s+box\b/i.test(normalizedName) ||
     /\bring\s+display\s+box\s+organizer\b/i.test(normalizedName) ||
+    /\bquartz\s+watch\b/i.test(normalizedName) ||
     (/\b(?:pet|dog|cat)\b/i.test(normalizedName) &&
       /\b(?:pet\s+hair\s+remover|lint\s+remover|lint\s+roller|clothes?\s+roller)\b/i.test(normalizedName))
   ) {
