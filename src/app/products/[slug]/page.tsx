@@ -42,7 +42,9 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
 
   if (
     slug ===
-      "floor-lamp-with-table-narrow-3-tier-end-table-with-open-shelves-3-color-temperature-lighting-side-nightstand-bedside-desk-with-usb-203671"
+      "floor-lamp-with-table-narrow-3-tier-end-table-with-open-shelves-3-color-temperature-lighting-side-nightstand-bedside-desk-with-usb-203671" ||
+    slug ===
+      "cushion-office-sitting-for-a-long-time-is-not-tired-student-dormitory-250621"
   ) {
     return "Home";
   }
