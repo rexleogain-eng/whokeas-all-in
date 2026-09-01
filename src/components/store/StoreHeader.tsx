@@ -11,7 +11,6 @@ const nav = [
   "Fashion",
   "Beauty",
   "Accessories",
-  "Study",
 ];
 
 export default async function StoreHeader({
