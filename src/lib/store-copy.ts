@@ -39,7 +39,8 @@ function trimRepeatedEdgePhrase(value: string) {
 }
 
 export function storefrontTitle(value: unknown) {
-  const source = removeSupplierNoise(normalize(value));
+  const source = removeSupplierNoise(normalize(value))
+    .replace(/\bBluetooth\s+Speake\b/gi, "Bluetooth Speaker");
   const lower = source.toLowerCase();
 
   if (/power\s*bank/.test(lower)) {
