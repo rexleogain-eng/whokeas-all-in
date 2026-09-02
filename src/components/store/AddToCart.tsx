@@ -44,11 +44,11 @@ function storefrontVariantName(name: string) {
 }
 
 function isUsRegionalVariant(name: string) {
-  return /\b(?:US|USA)\b/i.test(name);
+  return /\b(?:US|USA|American Standard)\b/i.test(name);
 }
 
 function isNonUsRegionalVariant(name: string) {
-  return /\b(?:EU|AU)\b/i.test(name);
+  return /\b(?:EU|AU|British Standard|European Standard|National Standard)\b/i.test(name);
 }
 
 function trackEvent(
