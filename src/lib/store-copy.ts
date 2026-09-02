@@ -61,6 +61,7 @@ export function storefrontTitle(value: unknown) {
     return "Wireless Car FM Transmitter";
   }
 
+  if (/g[-\s]*shaped\s+led\s+lamp/.test(lower) && /bluetooth\s+speaker/.test(lower) && /wireless\s+charger/.test(lower)) return "G-Shaped LED Lamp with Bluetooth Speaker & Wireless Charger";
   if (/hair\s*removal/.test(lower) && /spray/.test(lower)) return "Gentle Hair Removal Spray";
   if (/hair\s*removal/.test(lower) && /cream/.test(lower)) return "Hair Removal Cream";
   if (/crystal/.test(lower) && /hair\s*(?:removal|eraser)/.test(lower)) return "Crystal Hair Eraser";
