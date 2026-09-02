@@ -43,6 +43,14 @@ function storefrontVariantName(name: string) {
     .replace(/(\d)(Air\b)/gi, "$1 Air");
 }
 
+function isUsRegionalVariant(name: string) {
+  return /\b(?:US|USA)\b/i.test(name);
+}
+
+function isNonUsRegionalVariant(name: string) {
+  return /\b(?:EU|AU)\b/i.test(name);
+}
+
 function trackEvent(
   name: string,
   parameters: Record<string, unknown>,
@@ -71,17 +79,30 @@ function readCart(): CartItem[] {
 }
 
 export default function AddToCart({ product, variants }: Props) {
+  const marketVariants = useMemo(() => {
+    const hasUsRegionalVariant = variants.some((variant) =>
+      isUsRegionalVariant(variant.name),
+    );
+    const hasNonUsRegionalVariant = variants.some((variant) =>
+      isNonUsRegionalVariant(variant.name),
+    );
+
+    return hasUsRegionalVariant && hasNonUsRegionalVariant
+      ? variants.filter((variant) => isUsRegionalVariant(variant.name))
+      : variants;
+  }, [variants]);
+
   const [selectedVariantId, setSelectedVariantId] = useState(
-    variants.find((variant) => variant.stockQuantity > 0)?.id ??
-      variants[0]?.id ??
+    marketVariants.find((variant) => variant.stockQuantity > 0)?.id ??
+      marketVariants[0]?.id ??
       "",
   );
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
 
   const selectedVariant = useMemo(
-    () => variants.find((variant) => variant.id === selectedVariantId),
-    [selectedVariantId, variants],
+    () => marketVariants.find((variant) => variant.id === selectedVariantId),
+    [selectedVariantId, marketVariants],
   );
 
   const effectivePrice = Number(selectedVariant?.price ?? product.price);
@@ -150,13 +171,13 @@ export default function AddToCart({ product, variants }: Props) {
 
   return (
     <div>
-      {variants.length > 0 && (
+      {marketVariants.length > 0 && (
         <fieldset>
           <legend className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#746d62]">
             Choose an option
           </legend>
           <div className="grid grid-cols-2 gap-2">
-            {variants.map((variant) => {
+            {marketVariants.map((variant) => {
               const active = variant.id === selectedVariantId;
               return (
                 <button
@@ -188,7 +209,7 @@ export default function AddToCart({ product, variants }: Props) {
         <select
           id="quantity"
           value={quantity}
-          onChange={(event) => setQuantity(Number(event.target.value))}
+          onChange={(event) => setQuantity(Number(event.target.value))
           className="w-24 border border-[#cfc4b1] bg-[#fffdf8] px-3 py-2.5 text-sm outline-none focus:border-[#9b762c]"
         >
           {[1, 2, 3, 4, 5].map((value) => (
