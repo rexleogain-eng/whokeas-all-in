@@ -197,7 +197,9 @@ function merchantItem(row: MerchantProductRow) {
 
   const brand = verifiedMerchantBrand(row.brand, [SITE_NAME]) || "";
   const gtin = productLevelGtin(row.supplierRawData);
-  const identifierExists = Boolean(brand || gtin);
+  // This feed does not emit MPN. Per Google Merchant requirements, brand alone
+  // is not enough to claim that a complete unique product identifier exists.
+  const identifierExists = Boolean(gtin);
 
   if (!productId || !title || !mainImage || priceUsd <= 0) return null;
 
