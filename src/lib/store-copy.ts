@@ -62,6 +62,7 @@ export function storefrontTitle(value: unknown) {
   }
 
   if (/g[-\s]*shaped\s+led\s+lamp/.test(lower) && /bluetooth\s+speaker/.test(lower) && /wireless\s+charger/.test(lower)) return "G-Shaped LED Lamp with Bluetooth Speaker & Wireless Charger";
+  if (/casual\s+v[-\s]*neck/.test(lower) && /knit\s+fabric/.test(lower) && /long\s+sleeve/.test(lower) && /solid\s+colo(?:r)?\b/.test(lower)) return "Women's Solid-Color V-Neck Long-Sleeve Knit Top";
   if (/hair\s*removal/.test(lower) && /spray/.test(lower)) return "Gentle Hair Removal Spray";
   if (/hair\s*removal/.test(lower) && /cream/.test(lower)) return "Hair Removal Cream";
   if (/crystal/.test(lower) && /hair\s*(?:removal|eraser)/.test(lower)) return "Crystal Hair Eraser";
