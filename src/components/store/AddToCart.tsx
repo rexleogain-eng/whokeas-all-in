@@ -209,7 +209,7 @@ export default function AddToCart({ product, variants }: Props) {
         <select
           id="quantity"
           value={quantity}
-          onChange={(event) => setQuantity(Number(event.target.value))
+          onChange={(event) => setQuantity(Number(event.target.value))}
           className="w-24 border border-[#cfc4b1] bg-[#fffdf8] px-3 py-2.5 text-sm outline-none focus:border-[#9b762c]"
         >
           {[1, 2, 3, 4, 5].map((value) => (
