@@ -106,6 +106,21 @@ function storefrontCategory(slug: string, name: string, categoryName: unknown) {
   return String(categoryName || "General");
 }
 
+function usStorefrontVariants<T extends { name: unknown }>(variants: T[]) {
+  const regionalStandard = /\b(?:american|british|european|national)\s+standard\b|\b(?:us|usa|uk|eu|au)\s+(?:plug|standard)\b/i;
+  const usStandard = /\bamerican\s+standard\b|\b(?:us|usa)\s+(?:plug|standard)\b/i;
+  const hasRegionalStandards = variants.some((variant) =>
+    regionalStandard.test(String(variant.name || "")),
+  );
+  const hasUsStandard = variants.some((variant) =>
+    usStandard.test(String(variant.name || "")),
+  );
+
+  return hasRegionalStandards && hasUsStandard
+    ? variants.filter((variant) => usStandard.test(String(variant.name || "")))
+    : variants;
+}
+
 export default async function ProductPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
@@ -120,7 +135,7 @@ export default async function ProductPage({ params }: PageProps) {
   const displayDetails = storefrontProductDetails(product.description);
   const categoryLabel = storefrontCategory(slug, rawName, product.categoryName);
   const deliveryWindow = usDeliveryWindow(product.deliveryDays);
-  const displayVariants = variants.map((variant) => ({
+  const displayVariants = usStorefrontVariants(variants).map((variant) => ({
     id: String(variant.id),
     name: storefrontVariantName(rawName, variant.name),
     price: String(variant.price),
