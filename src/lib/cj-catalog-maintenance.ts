@@ -119,8 +119,11 @@ export async function runEnhancedCJCatalogueCycle() {
 }
 
 export async function runEnhancedCJSynchronization() {
-  const sync = await syncCJProducts(20);
-  const repair = await repairHiddenCJProductsSequential(10);
+  // Keep the scheduled sync comfortably inside Vercel's 300s function limit.
+  // The job runs repeatedly, so smaller batches preserve steady catalogue
+  // maintenance without allowing one invocation to monopolize the runtime.
+  const sync = await syncCJProducts(10);
+  const repair = await repairHiddenCJProductsSequential(5);
 
   return {
     sync,
