@@ -145,9 +145,9 @@ export default function CartClient() {
           <span className="text-sm">Subtotal ({items.reduce((total, item) => total + item.quantity, 0)} items)</span>
           <span className="text-xl font-bold">{formatStorePrice(subtotal)}</span>
         </div>
-        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Catalogue prices are shown in USD. Your final delivery-country currency and fulfilment price are calculated securely at checkout.</div>
+        <div className="mt-5 border border-[#c8bda9] bg-[#fffdf8] p-4 text-xs leading-6 text-[#625b50]">Catalogue prices are shown in USD. Standard U.S. shipping is free, and your final order total is confirmed securely at checkout.</div>
         <Link href="/checkout" className="classic-button-dark mt-5 w-full">Proceed to checkout</Link>
-        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Guest checkout · International market quote · Secure verification</p>
+        <p className="mt-4 text-center text-[10px] uppercase tracking-[0.1em] text-[#8b8378]">Guest checkout · U.S. delivery · Secure verification</p>
       </aside>
     </div>
   );
