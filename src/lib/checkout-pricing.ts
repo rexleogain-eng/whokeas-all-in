@@ -6,6 +6,8 @@ import {
 import {
   ensureGlobalMarketSchema,
 } from "@/lib/global-markets";
+import { US_SHIPPING_MAX_DAYS } from "@/lib/seo";
+import { isRestrictedStorefrontProduct } from "@/lib/store-catalog";
 
 export type CheckoutRequestItem = {
   productId?: string;
@@ -92,19 +94,25 @@ export async function getCheckoutMarkets():
   const sql = catalogSql();
 
   const rows = await sql`
-    SELECT DISTINCT ON (country_code)
-      country_code AS "countryCode",
-      market_name AS "countryName",
-      currency,
-      locale
-    FROM product_market_prices
-    WHERE available = TRUE
-      AND selling_price_local > 0
-      AND country_code = ${STOREFRONT_COUNTRY}
-      AND UPPER(currency) = ${STOREFRONT_CURRENCY}
+    SELECT DISTINCT ON (market.country_code)
+      market.country_code AS "countryCode",
+      market.market_name AS "countryName",
+      market.currency,
+      market.locale
+    FROM product_market_prices market
+    JOIN products product ON product.id = market.product_id
+    WHERE market.available = TRUE
+      AND market.selling_price_local > 0
+      AND product.status::text = 'active'
+      AND market.country_code = ${STOREFRONT_COUNTRY}
+      AND market.currency = ${STOREFRONT_CURRENCY}
+      AND (
+        market.estimated_delivery_days IS NULL
+        OR market.estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+      )
     ORDER BY
-      country_code,
-      updated_at DESC
+      market.country_code,
+      market.updated_at DESC
   `;
 
   if (!rows[0]) {
@@ -185,6 +193,8 @@ export async function quoteCheckout(input: {
       SELECT
         product.id::text AS "productId",
         product.name AS "productName",
+        product.short_description AS "productShortDescription",
+        product.description AS "productDescription",
         product.status::text AS "productStatus",
         product.price::text AS "productPrice",
         COALESCE(
@@ -233,10 +243,22 @@ export async function quoteCheckout(input: {
         LIMIT 1
       ) variant_anchor ON TRUE
 
-      LEFT JOIN product_market_prices market
-        ON market.product_id = product.id
-       AND market.country_code = ${STOREFRONT_COUNTRY}
-       AND UPPER(market.currency) = ${STOREFRONT_CURRENCY}
+      LEFT JOIN LATERAL (
+        SELECT market_name, currency, locale, selling_price_local,
+          landed_cost_local, available
+        FROM product_market_prices
+        WHERE product_id = product.id
+          AND country_code = ${STOREFRONT_COUNTRY}
+          AND currency = ${STOREFRONT_CURRENCY}
+          AND available = TRUE
+          AND selling_price_local > 0
+          AND (
+            estimated_delivery_days IS NULL
+            OR estimated_delivery_days <= ${US_SHIPPING_MAX_DAYS}
+          )
+        ORDER BY is_primary DESC, updated_at DESC
+        LIMIT 1
+      ) market ON TRUE
 
       WHERE product.id::text = ${productId}
       LIMIT 1
@@ -252,6 +274,14 @@ export async function quoteCheckout(input: {
         "A cart product is unavailable.",
         409,
       );
+    }
+
+    if (isRestrictedStorefrontProduct({
+      name: String(row.productName || ""),
+      shortDescription: row.productShortDescription ? String(row.productShortDescription) : null,
+      description: row.productDescription ? String(row.productDescription) : null,
+    })) {
+      throw new CheckoutQuoteError("A cart product is unavailable.", 409);
     }
 
     if (variantId) {
