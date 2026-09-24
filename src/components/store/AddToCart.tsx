@@ -135,6 +135,10 @@ export default function AddToCart({ product, variants }: Props) {
     const existing = cart.find((item) => item.key === key);
 
     if (existing) {
+      if (existing.quantity + quantity > 5) {
+        setMessage("Maximum five of each option per order");
+        return false;
+      }
       existing.quantity += quantity;
     } else {
       cart.push({
@@ -152,10 +156,11 @@ export default function AddToCart({ product, variants }: Props) {
 
     localStorage.setItem("whokeas-cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("whokeas-cart-updated"));
+    return true;
   }
 
   function addItem() {
-    saveItem();
+    if (!saveItem()) return;
     trackEvent("add_to_cart", analyticsPayload());
     setMessage("Added to your cart");
     window.setTimeout(() => setMessage(""), 2200);
@@ -164,7 +169,7 @@ export default function AddToCart({ product, variants }: Props) {
   function buyNow() {
     if (unavailable) return;
 
-    saveItem();
+    if (!saveItem()) return;
     trackEvent("begin_checkout", analyticsPayload());
     window.location.assign("/checkout");
   }
